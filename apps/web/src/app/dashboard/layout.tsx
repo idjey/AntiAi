@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 export default function DashboardLayout({
     children,
@@ -128,8 +129,8 @@ export default function DashboardLayout({
                                 key={item.name}
                                 href={item.href}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${isActive
-                                        ? 'bg-primary/10 text-primary border border-primary/20'
-                                        : 'text-text-secondary hover:text-white hover:bg-white/5'
+                                    ? 'bg-primary/10 text-primary border border-primary/20'
+                                    : 'text-text-secondary hover:text-white hover:bg-white/5'
                                     }`}
                             >
                                 <span className={isActive ? 'text-primary' : 'text-text-secondary group-hover:text-white'}>
@@ -183,11 +184,14 @@ export default function DashboardLayout({
                             antiai<span className="text-primary">.me</span>
                         </span>
                     </div>
-                    <button className="text-text-secondary">
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-                        </svg>
-                    </button>
+                    <div className="flex items-center gap-4">
+                        <ThemeToggle />
+                        <button className="text-text-secondary">
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+                            </svg>
+                        </button>
+                    </div>
                 </header>
 
                 <div className="p-6 md:p-8 flex-1 overflow-auto">

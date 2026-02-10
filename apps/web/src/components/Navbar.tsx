@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { ThemeToggle } from './ThemeToggle'
 
 export default function Navbar() {
     const [scrolled, setScrolled] = useState(false)
@@ -64,6 +65,7 @@ export default function Navbar() {
 
                     {/* CTA Buttons */}
                     <div className="flex items-center gap-3">
+                        <ThemeToggle />
                         <Link
                             href="/login"
                             className="hidden sm:inline-flex text-sm font-medium text-text-secondary hover:text-text-primary transition-colors"

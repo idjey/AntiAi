@@ -5,13 +5,56 @@
 /* ==================== BASE STYLES ==================== */
 
 :root {
-  --background: #0B0F14;
-  --surface: #111827;
-  --surface-light: #1F2937;
-  --primary: #22C55E;
-  --secondary: #3B82F6;
-  --text-primary: #E5E7EB;
-  --text-secondary: #9CA3AF;
+  /* Light Mode */
+  --background: 255 255 255;
+  /* #FFFFFF */
+  --surface: 249 250 251;
+  /* #F9FAFB */
+  --surface-light: 243 244 246;
+  /* #F3F4F6 */
+
+  --primary: 34 197 94;
+  /* #22C55E */
+  --primary-foreground: 255 255 255;
+
+  --secondary: 59 130 246;
+  /* #3B82F6 */
+  --secondary-foreground: 255 255 255;
+
+  --text-primary: 17 24 39;
+  /* #111827 */
+  --text-secondary: 75 85 99;
+  /* #4B5563 */
+  --text-muted: 156 163 175;
+  /* #9CA3AF */
+
+  --border: 229 231 235;
+  /* #E5E7EB */
+}
+
+.dark {
+  --background: 11 15 20;
+  /* #0B0F14 */
+  --surface: 17 24 39;
+  /* #111827 */
+  --surface-light: 31 41 55;
+  /* #1F2937 */
+
+  --primary: 34 197 94;
+  --primary-foreground: 255 255 255;
+
+  --secondary: 59 130 246;
+  --secondary-foreground: 255 255 255;
+
+  --text-primary: 229 231 235;
+  /* #E5E7EB */
+  --text-secondary: 156 163 175;
+  /* #9CA3AF */
+  --text-muted: 107 114 128;
+  /* #6B7280 */
+
+  --border: 55 65 81;
+  /* #374151 */
 }
 
 html {

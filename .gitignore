@@ -37,4 +37,6 @@ apps/extension/dist/
 
 # Misc
 *.tsbuildinfo
-.turbo
+
+# Secrets
+apps/api/keys.txt

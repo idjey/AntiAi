@@ -10,13 +10,15 @@ module.exports = {
     extend: {
       colors: {
         // Primary background
-        background: '#0B0F14',
+        background: 'rgb(var(--background) / <alpha-value>)',
         // Surface/card colors
-        surface: '#111827',
-        'surface-light': '#1F2937',
+        surface: 'rgb(var(--surface) / <alpha-value>)',
+        'surface-light': 'rgb(var(--surface-light) / <alpha-value>)',
+        
         // Primary accent (verification green)
         primary: {
-          DEFAULT: '#22C55E',
+          DEFAULT: 'rgb(var(--primary) / <alpha-value>)',
+          foreground: 'rgb(var(--primary-foreground) / <alpha-value>)',
           50: '#f0fdf4',
           100: '#dcfce7',
           200: '#bbf7d0',
@@ -28,7 +30,8 @@ module.exports = {
         },
         // Secondary accent (calm blue)
         secondary: {
-          DEFAULT: '#3B82F6',
+          DEFAULT: 'rgb(var(--secondary) / <alpha-value>)',
+          foreground: 'rgb(var(--secondary-foreground) / <alpha-value>)',
           50: '#eff6ff',
           100: '#dbeafe',
           200: '#bfdbfe',
@@ -39,10 +42,12 @@ module.exports = {
         },
         // Text colors
         text: {
-          primary: '#E5E7EB',
-          secondary: '#9CA3AF',
-          muted: '#6B7280',
+          primary: 'rgb(var(--text-primary) / <alpha-value>)',
+          secondary: 'rgb(var(--text-secondary) / <alpha-value>)',
+          muted: 'rgb(var(--text-muted) / <alpha-value>)',
         },
+        // Border
+        border: 'rgb(var(--border) / <alpha-value>)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],

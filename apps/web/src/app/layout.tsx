@@ -1,6 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import CookieConsent from '@/components/CookieConsent'
+import { ThemeProvider } from '@/components/providers/ThemeProvider'
 
 export const metadata: Metadata = {
     title: 'AntiAI.me - The Authenticity Badge for Real Creators',
@@ -37,8 +38,10 @@ export default function RootLayout({
                 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
             </head>
             <body className="bg-background text-text-primary antialiased">
-                {children}
-                <CookieConsent />
+                <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+                    {children}
+                    <CookieConsent />
+                </ThemeProvider>
             </body>
         </html>
     )
