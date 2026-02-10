@@ -1,0 +1,225 @@
+'use client'
+
+import { useState } from 'react'
+import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
+
+export default function SignupPage() {
+    const router = useRouter()
+    const searchParams = useSearchParams()
+    const [email, setEmail] = useState('')
+    const [password, setPassword] = useState('')
+    const [handle, setHandle] = useState(searchParams.get('handle') || '')
+    const [handleStatus, setHandleStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle')
+    const [suggestions, setSuggestions] = useState<string[]>([])
+    const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState('')
+
+    // Debounce check
+    const checkHandleAvailability = async (val: string) => {
+        setHandleStatus('checking')
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/auth/check-handle?handle=${val}`)
+            const data = await res.json()
+            if (data.available) {
+                setHandleStatus('available')
+                setSuggestions([])
+            } else {
+                setHandleStatus('taken')
+                setSuggestions(data.suggestions || [])
+            }
+        } catch (err) {
+            console.error('Failed to check handle:', err)
+            setHandleStatus('idle')
+        }
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setIsLoading(true)
+        setError('')
+
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/auth/signup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, handle: handle || undefined }),
+            })
+
+            if (!res.ok) {
+                const data = await res.json()
+                throw new Error(data.message || 'Signup failed')
+            }
+
+            // Signup successful, redirect to login
+            router.push('/login?registered=true')
+        } catch (err: any) {
+            setError(err.message)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    return (
+        <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+            {/* Background accents */}
+            <div className="absolute top-1/4 -left-1/4 w-[600px] h-[600px] rounded-full bg-primary/5 blur-[120px]" />
+            <div className="absolute bottom-1/4 -right-1/4 w-[500px] h-[500px] rounded-full bg-secondary/5 blur-[100px]" />
+            <div className="absolute inset-0 bg-grid opacity-20" />
+
+            <div className="w-full max-w-md relative z-10">
+                <Link href="/" className="flex items-center justify-center gap-2 mb-8">
+                    <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                        <svg className="w-5 h-5 text-background" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+                        </svg>
+                    </div>
+                    <span className="text-xl font-bold tracking-tight">
+                        antiai<span className="text-primary">.me</span>
+                    </span>
+                </Link>
+
+                {/* Card */}
+                <div className="bg-surface border border-white/10 rounded-2xl p-8 shadow-card backdrop-blur-sm">
+                    <h1 className="text-2xl font-bold text-center mb-2">Create your account</h1>
+                    <p className="text-text-secondary text-center text-sm mb-8">
+                        Start verifying your content in minutes.
+                    </p>
+
+                    {error && (
+                        <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                            {error}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {/* Handle field */}
+                        <div>
+                            <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                                Creator Handle
+                            </label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm">
+                                    antiai.me/
+                                </span>
+                                <input
+                                    type="text"
+                                    required
+                                    value={handle}
+                                    onChange={(e) => {
+                                        const val = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')
+                                        setHandle(val)
+                                        // Trigger check if length > 2
+                                        if (val.length > 2) checkHandleAvailability(val)
+                                        else setHandleStatus('idle')
+                                    }}
+                                    placeholder="yourname"
+                                    className={`w-full pl-[90px] pr-10 py-2.5 bg-surface-light border rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 transition-all font-medium ${handleStatus === 'available' ? 'border-green-500/50 focus:border-green-500 focus:ring-green-500/50' :
+                                        handleStatus === 'taken' ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/50' :
+                                            'border-white/5 focus:border-primary/50 focus:ring-primary/50'
+                                        }`}
+                                />
+                                {/* Status Icon */}
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                    {handleStatus === 'checking' && <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />}
+                                    {handleStatus === 'available' && (
+                                        <svg className="w-5 h-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                        </svg>
+                                    )}
+                                    {handleStatus === 'taken' && (
+                                        <svg className="w-5 h-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                        </svg>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Suggestions */}
+                            {handleStatus === 'taken' && suggestions.length > 0 && (
+                                <div className="mt-2 text-sm">
+                                    <p className="text-red-400 mb-1">Handle is already taken. Try one of these:</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {suggestions.map((s) => (
+                                            <button
+                                                key={s}
+                                                type="button"
+                                                onClick={() => {
+                                                    setHandle(s)
+                                                    setHandleStatus('available')
+                                                    setSuggestions([])
+                                                }}
+                                                className="px-2 py-1 bg-surface border border-white/10 rounded text-text-secondary hover:text-primary hover:border-primary/50 transition-colors text-xs"
+                                            >
+                                                {s}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {handleStatus === 'available' && (
+                                <p className="mt-1 text-xs text-green-500">Handle is available!</p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                                Email Address
+                            </label>
+                            <input
+                                type="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full px-4 py-2.5 bg-surface-light border border-white/5 rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all"
+                                placeholder="you@example.com"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                                Password
+                            </label>
+                            <input
+                                type="password"
+                                required
+                                minLength={8}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full px-4 py-2.5 bg-surface-light border border-white/5 rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all"
+                                placeholder="••••••••"
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={isLoading || handleStatus === 'taken' || handleStatus === 'checking'}
+                            className="w-full btn-primary py-2.5 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isLoading ? (
+                                <div className="w-5 h-5 border-2 border-background/30 border-t-background rounded-full animate-spin mx-auto" />
+                            ) : (
+                                'Create account'
+                            )}
+                        </button>
+                    </form>
+
+                    <div className="mt-6 pt-6 border-t border-white/5 text-center text-sm text-text-secondary">
+                        Already have an account?{' '}
+                        <Link href="/login" className="text-primary hover:text-primary-400 font-medium transition-colors">
+                            Log in
+                        </Link>
+                    </div>
+                </div>
+
+                <p className="text-center text-xs text-text-muted mt-8">
+                    By continuing, you agree to our{' '}
+                    <Link href="/terms" className="hover:text-text-primary underline">Terms of Service</Link>
+                    {' '}and{' '}
+                    <Link href="/privacy" className="hover:text-text-primary underline">Privacy Policy</Link>
+                </p>
+            </div>
+        </div>
+    )
+}

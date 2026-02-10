@@ -1,0 +1,163 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==================== BASE STYLES ==================== */
+
+:root {
+  --background: #0B0F14;
+  --surface: #111827;
+  --surface-light: #1F2937;
+  --primary: #22C55E;
+  --secondary: #3B82F6;
+  --text-primary: #E5E7EB;
+  --text-secondary: #9CA3AF;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ==================== TYPOGRAPHY ==================== */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* ==================== COMPONENT UTILITIES ==================== */
+
+@layer components {
+
+  /* Primary button */
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3;
+    @apply bg-primary text-background font-semibold;
+    @apply rounded-button;
+    @apply transition-all duration-150 ease-out;
+    @apply hover:brightness-110 hover:-translate-y-0.5;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/50;
+  }
+
+  .btn-primary-lg {
+    @apply btn-primary px-8 py-4 text-lg;
+  }
+
+  /* Secondary button */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3;
+    @apply bg-surface border border-surface-light text-text-primary font-medium;
+    @apply rounded-button;
+    @apply transition-all duration-150 ease-out;
+    @apply hover:bg-surface-light hover:-translate-y-0.5;
+    @apply focus:outline-none focus:ring-2 focus:ring-secondary/50;
+  }
+
+  /* Card styles */
+  .card {
+    @apply bg-surface rounded-card p-6;
+    @apply border border-white/5;
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .card-hover {
+    @apply card;
+    @apply hover:shadow-card-hover hover:scale-[1.01] hover:border-white/10;
+  }
+
+  /* Section styles */
+  .section {
+    @apply py-20 md:py-28 px-4;
+  }
+
+  .section-title {
+    @apply text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-4;
+  }
+
+  .section-subtitle {
+    @apply text-lg md:text-xl text-text-secondary text-center max-w-2xl mx-auto mb-12;
+  }
+
+  /* Container */
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Link style */
+  .link {
+    @apply text-text-secondary hover:text-text-primary transition-colors duration-150;
+  }
+
+  .link-primary {
+    @apply text-primary hover:text-primary-400 transition-colors duration-150;
+  }
+}
+
+/* ==================== CUSTOM UTILITIES ==================== */
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary;
+  }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .glow-primary {
+    box-shadow: 0 0 30px rgba(34, 197, 94, 0.2);
+  }
+}
+
+/* ==================== ANIMATIONS ==================== */
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* ==================== SCROLLBAR ==================== */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-light);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #374151;
+}

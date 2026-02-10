@@ -1,0 +1,154 @@
+// ==================== API TYPES ====================
+
+// Auth
+export interface SignupRequest {
+    email: string;
+    password: string;
+}
+
+export interface LoginRequest {
+    email: string;
+    password: string;
+}
+
+export interface AuthTokenResponse {
+    access_token: string;
+    token_type: 'Bearer';
+    expires_in: number;
+}
+
+export interface MeResponse {
+    id: string;
+    email: string;
+    role: 'creator' | 'admin';
+}
+
+// Channels
+export interface Channel {
+    id: string;
+    youtube_channel_id: string;
+    channel_handle: string | null;
+    channel_name: string;
+    channel_url: string | null;
+    avatar_url: string | null;
+    verification_status: 'pending' | 'verified' | 'revoked';
+    verified_at: string | null;
+}
+
+export interface ChannelVerifyStartRequest {
+    youtube_channel_id: string;
+    method: 'oauth' | 'about_token' | 'video_token' | 'pinned_comment';
+    requested_handle?: string;
+}
+
+export interface ChannelVerifyStartResponse {
+    channel_id: string;
+    method: string;
+    token: string | null;
+    instructions: string | null;
+    token_expires_at: string;
+}
+
+// Videos
+export interface Video {
+    id: string;
+    channel_id: string;
+    youtube_video_id: string;
+    title: string | null;
+    video_url: string | null;
+    published_at: string | null;
+}
+
+export interface VideoImportRequest {
+    video_url: string;
+    channel_id?: string;
+}
+
+// Proofs
+export interface Proof {
+    id: string;
+    video_id: string;
+    channel_id: string;
+    alg: 'Ed25519';
+    kid: string;
+    payload_json: Record<string, unknown>;
+    payload_b64: string;
+    signature_b64: string;
+    issued_at: string;
+    expires_at: string;
+    status: 'active' | 'expired' | 'revoked' | 'superseded';
+    supersedes_proof_id: string | null;
+    superseded_at: string | null;
+    revoked_at: string | null;
+    revoke_reason: string | null;
+}
+
+export interface ProofIssueRequest {
+    video_id: string;
+    expires_at: string;
+}
+
+export interface ProofReissueRequest {
+    video_id: string;
+    expires_at: string;
+    reason: 'extend_expiry' | 'key_rotation' | 'security_incident';
+    note?: string;
+}
+
+// Public API
+export interface PublicVerifyResponse {
+    status: 'verified' | 'unverified' | 'revoked' | 'expired';
+    youtube_video_id: string;
+    youtube_channel_id: string | null;
+    channel_name: string | null;
+    channel_handle: string | null;
+    proof: Proof | null;
+    public_creator_url: string | null;
+    message: string | null;
+}
+
+export interface PublicProofResponse {
+    alg: 'Ed25519';
+    kid: string;
+    payload_b64: string;
+    signature_b64: string;
+    expires_at: string;
+}
+
+export interface SigningKey {
+    kid: string;
+    alg: 'Ed25519';
+    public_key_b64: string;
+}
+
+// Billing
+export interface BillingCheckoutRequest {
+    plan: 'pro' | 'elite';
+    success_url: string;
+    cancel_url: string;
+}
+
+export interface BillingStatusResponse {
+    plan: 'free' | 'pro' | 'elite';
+    status: 'trialing' | 'active' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete' | 'incomplete_expired';
+    current_period_end: string | null;
+    videos_used: number;
+    videos_limit: number;
+}
+
+// Error
+export interface ApiError {
+    error: string;
+    message: string;
+    details?: Record<string, unknown>;
+}
+
+// ==================== CONSTANTS ====================
+
+export const PLAN_LIMITS = {
+    free: 10,
+    pro: 100,
+    elite: Infinity,
+} as const;
+
+export const PROOF_DEFAULT_EXPIRY_DAYS = 90;

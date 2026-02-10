@@ -1,0 +1,427 @@
+// This is your Prisma schema file for AntiAI.me
+// Based on the specification: Ed25519-only proofs, versioned, immutable, one ACTIVE per video
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum UserRole {
+  creator
+  admin
+}
+
+enum VerificationStatus {
+  pending
+  verified
+  revoked
+}
+
+enum ProofStatus {
+  active
+  expired
+  revoked
+  superseded
+}
+
+enum ChallengeStatus {
+  active
+  paused
+  expired
+}
+
+enum ChallengeType {
+  object
+  phrase
+  object_phrase
+}
+
+enum ReportStatus {
+  open
+  reviewed
+  closed
+}
+
+enum SubscriptionStatus {
+  trialing
+  active
+  past_due
+  canceled
+  unpaid
+  incomplete
+  incomplete_expired
+}
+
+enum PlanTier {
+  free
+  pro
+  elite
+}
+
+// ==================== USERS ====================
+
+model User {
+  id              String    @id @default(uuid()) @db.Uuid
+  email           String    @unique @db.Citext
+  passwordHash    String?   @map("password_hash")
+  role            UserRole  @default(creator)
+  isEmailVerified Boolean   @default(false) @map("is_email_verified")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  lastLoginAt     DateTime? @map("last_login_at")
+
+  // Relations
+  oauthAccounts   OAuthAccount[]
+  channels        Channel[]
+  subscription    Subscription?
+  auditLogs       AuditLog[]
+  reviewedReports Report[] @relation("ReviewedBy")
+  profile         CreatorProfile?
+  links           CreatorLink[]
+
+  @@map("users")
+}
+
+// ==================== CREATOR PROFILES (Linktree-style) ====================
+
+model CreatorProfile {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @unique @map("user_id") @db.Uuid
+  handle          String    @unique @db.Citext // Custom vanity URL: antiai.me/creators/{handle}
+  displayName     String?   @map("display_name")
+  bio             String?   @db.Text
+  avatarUrl       String?   @map("avatar_url")
+  bannerUrl       String?   @map("banner_url")
+  featuredVideoId String?   @map("featured_video_id") @db.Uuid
+  isPublic        Boolean   @default(true) @map("is_public")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  featuredVideo Video? @relation(fields: [featuredVideoId], references: [id], onDelete: SetNull)
+
+  @@index([handle])
+  @@map("creator_profiles")
+}
+
+model CreatorLink {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  label     String   // "Website", "Twitter", "Instagram", etc.
+  url       String
+  icon      String?  // Optional icon identifier: "website", "twitter", "instagram", etc.
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, sortOrder])
+  @@map("creator_links")
+}
+
+model OAuthAccount {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  provider        String    // 'google'
+  providerUserId  String    @map("provider_user_id")
+  accessTokenEnc  Bytes?    @map("access_token_enc")
+  refreshTokenEnc Bytes?    @map("refresh_token_enc")
+  tokenExpiry     DateTime? @map("token_expiry")
+  scope           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@unique([userId, provider])
+  @@map("oauth_accounts")
+}
+
+// ==================== SIGNING KEYS ====================
+
+model SigningKey {
+  id           String    @id // kid, e.g. "k_2026_01"
+  alg          String    @default("Ed25519")
+  publicKeyB64 String    @map("public_key_b64") // base64 of raw 32-byte Ed25519 public key
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  retiredAt    DateTime? @map("retired_at")
+
+  // Relations
+  proofs Proof[]
+
+  @@index([isActive])
+  @@map("signing_keys")
+}
+
+// ==================== CHANNELS ====================
+
+model Channel {
+  id                  String             @id @default(uuid()) @db.Uuid
+  userId              String             @map("user_id") @db.Uuid
+  youtubeChannelId    String             @unique @map("youtube_channel_id")
+  channelHandle       String?            @map("channel_handle")
+  channelName         String             @map("channel_name")
+  channelUrl          String?            @map("channel_url")
+  avatarUrl           String?            @map("avatar_url")
+  verificationStatus  VerificationStatus @default(pending) @map("verification_status")
+  verificationMethod  String?            @map("verification_method") // 'oauth' | 'about_token' | 'video_token' | 'pinned_comment'
+  verificationToken   String?            @map("verification_token") // Token for non-OAuth verification
+  tokenExpiresAt      DateTime?          @map("token_expires_at")
+  verifiedAt          DateTime?          @map("verified_at")
+  revokedAt           DateTime?          @map("revoked_at")
+  revokeReason        String?            @map("revoke_reason")
+  createdAt           DateTime           @default(now()) @map("created_at")
+  updatedAt           DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videos     Video[]
+  proofs     Proof[]
+  challenges Challenge[]
+  reports    Report[]
+
+  @@unique([userId, youtubeChannelId])
+  @@index([userId])
+  @@index([verificationStatus])
+  @@map("channels")
+}
+
+// ==================== VIDEOS ====================
+
+model Video {
+  id             String    @id @default(uuid()) @db.Uuid
+  channelId      String    @map("channel_id") @db.Uuid
+  youtubeVideoId String    @unique @map("youtube_video_id")
+  title          String?
+  videoUrl       String?   @map("video_url")
+  thumbnailUrl   String?   @map("thumbnail_url")
+  publishedAt    DateTime? @map("published_at")
+  registeredAt   DateTime  @default(now()) @map("registered_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  channel    Channel          @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  proofs     Proof[]
+  challenges Challenge[]
+  reports    Report[]
+  featuredBy CreatorProfile[] // Profiles that feature this video
+
+  @@index([channelId])
+  @@index([publishedAt])
+  @@map("videos")
+}
+
+// ==================== PROOFS ====================
+
+// STRICT RULES:
+// - alg must be Ed25519
+// - payload_b64 + signature_b64 are immutable for a given row
+// - multiple proofs per video allowed
+// - only ONE active proof per video enforced via application logic
+// - reissue uses supersedesProofId + supersededAt and sets old to 'superseded'
+
+model Proof {
+  id               String      @id @default(uuid()) @db.Uuid
+  videoId          String      @map("video_id") @db.Uuid
+  channelId        String      @map("channel_id") @db.Uuid
+  
+  // Signing material
+  alg              String      @default("Ed25519")
+  kid              String      // References SigningKey.id
+  
+  // Canonical payload & signature (IMMUTABLE after creation)
+  payloadJson      Json        @map("payload_json") // stored for debugging/inspection
+  payloadB64       String      @map("payload_b64")  // base64url(canonical JSON bytes)
+  signatureB64     String      @map("signature_b64") // base64url(Ed25519 signature 64 bytes)
+  
+  issuedAt         DateTime    @default(now()) @map("issued_at")
+  expiresAt        DateTime    @map("expires_at")
+  status           ProofStatus @default(active)
+  
+  // Version lineage for re-issue
+  supersedesProofId String?    @unique @map("supersedes_proof_id") @db.Uuid
+  supersededAt      DateTime?  @map("superseded_at")
+  
+  // Revocation (only for security/abuse)
+  revokedAt        DateTime?   @map("revoked_at")
+  revokeReason     String?     @map("revoke_reason")
+  
+  createdAt        DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  video           Video      @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  channel         Channel    @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  signingKey      SigningKey @relation(fields: [kid], references: [id], onDelete: Restrict)
+  supersedesProof Proof?     @relation("ProofSupersedes", fields: [supersedesProofId], references: [id], onDelete: SetNull)
+  supersededBy    Proof?     @relation("ProofSupersedes")
+  reports         Report[]
+
+  @@index([videoId])
+  @@index([channelId])
+  @@index([status, expiresAt])
+  @@map("proofs")
+}
+
+// ==================== TRANSPARENCY LOG ====================
+
+model TransparencyLog {
+  id         BigInt   @id @default(autoincrement())
+  eventType  String   @map("event_type") // 'channel_verified','proof_issued','proof_superseded','proof_revoked','channel_revoked'
+  entityType String   @map("entity_type") // 'channel','proof'
+  entityId   String   @map("entity_id") @db.Uuid
+  eventTime  DateTime @default(now()) @map("event_time")
+  data       Json
+
+  @@index([entityType, entityId])
+  @@index([eventTime(sort: Desc)])
+  @@map("transparency_log")
+}
+
+// ==================== CHALLENGES (Optional Layer) ====================
+
+model Challenge {
+  id               String          @id // short id for URL
+  videoId          String          @map("video_id") @db.Uuid
+  channelId        String          @map("channel_id") @db.Uuid
+  type             ChallengeType   @default(object)
+  objectCode       String?         @map("object_code")
+  objectLabel      String?         @map("object_label")
+  phrase           String?
+  startsAt         DateTime        @default(now()) @map("starts_at")
+  expiresAt        DateTime        @map("expires_at")
+  status           ChallengeStatus @default(active)
+  decoyPoolVersion Int             @default(1) @map("decoy_pool_version")
+  createdAt        DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  video    Video              @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  channel  Channel            @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  options  ChallengeOption[]
+  attempts ChallengeAttempt[]
+  reports  Report[]
+
+  @@index([videoId])
+  @@index([channelId])
+  @@index([status, expiresAt])
+  @@map("challenges")
+}
+
+model ChallengeOption {
+  id          String  @id @default(uuid()) @db.Uuid
+  challengeId String  @map("challenge_id")
+  optionCode  String  @map("option_code")
+  optionLabel String  @map("option_label")
+  isCorrect   Boolean @default(false) @map("is_correct")
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  // Relations
+  challenge Challenge          @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  attempts  ChallengeAttempt[]
+
+  @@index([challengeId])
+  @@map("challenge_options")
+}
+
+model ChallengeAttempt {
+  id                    String   @id @default(uuid()) @db.Uuid
+  challengeId           String   @map("challenge_id")
+  selectedOptionId      String?  @map("selected_option_id") @db.Uuid
+  isCorrect             Boolean  @map("is_correct")
+  ipHash                Bytes?   @map("ip_hash")
+  userAgentHash         Bytes?   @map("user_agent_hash")
+  deviceFingerprintHash Bytes?   @map("device_fingerprint_hash")
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  // Relations
+  challenge      Challenge        @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  selectedOption ChallengeOption? @relation(fields: [selectedOptionId], references: [id], onDelete: SetNull)
+
+  @@index([challengeId, createdAt(sort: Desc)])
+  @@index([ipHash, createdAt(sort: Desc)])
+  @@map("challenge_attempts")
+}
+
+// ==================== BILLING ====================
+
+model Subscription {
+  id                   String             @id @default(uuid()) @db.Uuid
+  userId               String             @unique @map("user_id") @db.Uuid
+  plan                 PlanTier           @default(free)
+  status               SubscriptionStatus @default(active)
+  stripeCustomerId     String?            @map("stripe_customer_id")
+  stripeSubscriptionId String?            @map("stripe_subscription_id")
+  currentPeriodEnd     DateTime?          @map("current_period_end")
+  cancelAtPeriodEnd    Boolean            @default(false) @map("cancel_at_period_end")
+  
+  // Usage tracking
+  videosThisMonth      Int                @default(0) @map("videos_this_month")
+  usagePeriodStart     DateTime           @default(now()) @map("usage_period_start")
+  
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("subscriptions")
+}
+
+// ==================== AUDIT LOGS ====================
+
+model AuditLog {
+  id         BigInt   @id @default(autoincrement())
+  userId     String?  @map("user_id") @db.Uuid
+  action     String
+  entityType String?  @map("entity_type")
+  entityId   String?  @map("entity_id")
+  metadata   Json     @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+// ==================== REPORTS ====================
+
+model Report {
+  id              String       @id @default(uuid()) @db.Uuid
+  channelId       String?      @map("channel_id") @db.Uuid
+  videoId         String?      @map("video_id") @db.Uuid
+  proofId         String?      @map("proof_id") @db.Uuid
+  challengeId     String?      @map("challenge_id")
+  reporterIpHash  Bytes?       @map("reporter_ip_hash")
+  reason          String
+  details         String?
+  status          ReportStatus @default(open)
+  createdAt       DateTime     @default(now()) @map("created_at")
+  reviewedAt      DateTime?    @map("reviewed_at")
+  reviewedById    String?      @map("reviewed_by") @db.Uuid
+
+  // Relations
+  channel    Channel?   @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  video      Video?     @relation(fields: [videoId], references: [id], onDelete: SetNull)
+  proof      Proof?     @relation(fields: [proofId], references: [id], onDelete: SetNull)
+  challenge  Challenge? @relation(fields: [challengeId], references: [id], onDelete: SetNull)
+  reviewedBy User?      @relation("ReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt(sort: Desc)])
+  @@map("reports")
+}

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AntiAI Logo Generator</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 40px; background: #111; color: white; }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; margin-top: 40px; }
+        .card { background: #222; padding: 20px; border-radius: 12px; text-align: center; }
+        button { margin-top: 15px; padding: 10px 20px; background: #22C55E; border: none; border-radius: 6px; color: white; cursor: pointer; font-weight: bold; }
+        button:hover { background: #16A34A; }
+    </style>
+</head>
+<body>
+    <h1>Generate Extension Icons</h1>
+    <p>The extension requires PNG files. I've prepared your logo below.</p>
+    <p>Click each button to download, then save/move them to <code>antiai/apps/extension/icons/</code></p>
+
+    <div class="grid">
+        <div class="card">
+            <h3>128x128</h3>
+            <canvas id="c128" width="128" height="128"></canvas><br>
+            <button onclick="dl('c128', 'icon128.png')">Download</button>
+        </div>
+        <div class="card">
+            <h3>48x48</h3>
+            <canvas id="c48" width="48" height="48"></canvas><br>
+            <button onclick="dl('c48', 'icon48.png')">Download</button>
+        </div>
+        <div class="card">
+            <h3>16x16</h3>
+            <canvas id="c16" width="16" height="16"></canvas><br>
+            <button onclick="dl('c16', 'icon16.png')">Download</button>
+        </div>
+    </div>
+
+    <script>
+        const svgXML = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+          <rect width="32" height="32" rx="8" fill="#22C55E" />
+          <g transform="translate(4, 4)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0B0F14" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+            </svg>
+          </g>
+        </svg>`;
+
+        function draw(id, size) {
+            const canvas = document.getElementById(id);
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            // We need to scale the SVG to fit the canvas
+            // The SVG viewBox is 0 0 32 32.
+            // We can just set width/height in the SVG string if we want, or rely on drawImage scaling.
+            // Let's modify the SVG string to have the target width/height for better rendering if possible,
+            // but drawImage is easier.
+            
+            const b64 = btoa(svgXML);
+            img.src = 'data:image/svg+xml;base64,' + b64;
+            
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0, size, size);
+            };
+        }
+
+        draw('c128', 128);
+        draw('c48', 48);
+        draw('c16', 16);
+
+        function dl(id, name) {
+            const link = document.createElement('a');
+            link.download = name;
+            link.href = document.getElementById(id).toDataURL();
+            link.click();
+        }
+    </script>
+</body>
+</html>

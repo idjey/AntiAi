@@ -1,0 +1,103 @@
+.antiai-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: 16px;
+    padding: 4px 10px;
+    margin-left: 12px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    vertical-align: middle;
+    position: relative;
+    font-family: Roboto, Arial, sans-serif;
+}
+
+.antiai-badge:hover {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.4);
+    transform: translateY(-1px);
+}
+
+.antiai-icon {
+    width: 16px;
+    height: 16px;
+    fill: #10B981;
+}
+
+.antiai-text {
+    color: #10B981;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* Tooltip */
+.antiai-tooltip {
+    visibility: hidden;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    /* Align left edge with badge */
+    margin-top: 8px;
+
+    background: #111827 !important;
+    /* Solid dark background */
+    border: 1px solid rgba(75, 85, 99, 1) !important;
+    color: #F3F4F6 !important;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+
+    width: 240px;
+    /* Slightly wider */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 1), 0 2px 4px -1px rgba(0, 0, 0, 0.8) !important;
+
+    z-index: 2147483647 !important;
+    /* Max z-index to overlay everything */
+    opacity: 0;
+    transition: opacity 0.2s, visibility 0.2s;
+    text-align: left;
+    /* Better readability */
+    pointer-events: none;
+    /* Prevent interfering with clicks */
+    white-space: normal;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.antiai-tooltip strong {
+    color: #10B981;
+    display: block;
+    margin-bottom: 4px;
+    font-size: 13px;
+}
+
+.antiai-tooltip span {
+    display: block;
+    margin-top: 8px;
+    color: #9CA3AF;
+    font-style: italic;
+    font-size: 11px;
+}
+
+.antiai-badge:hover .antiai-tooltip {
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Triangle for tooltip */
+.antiai-tooltip::after {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    left: 20px;
+    /* Align with left side */
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent transparent #111827 transparent;
+}
