@@ -13,7 +13,14 @@ export default function DashboardLayout({
     const router = useRouter()
     const pathname = usePathname()
     const [user, setUser] = useState<any>(null)
+
     const [isLoading, setIsLoading] = useState(true)
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+    // Close mobile menu when path changes
+    useEffect(() => {
+        setIsMobileMenuOpen(false)
+    }, [pathname])
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -95,6 +102,13 @@ export default function DashboardLayout({
             )
         },
         {
+            name: 'Billing', href: '/dashboard/billing', icon: (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+            )
+        },
+        {
             name: 'Settings', href: '/dashboard/settings', icon: (
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -104,9 +118,11 @@ export default function DashboardLayout({
         },
     ]
 
+
+
     return (
         <div className="min-h-screen bg-background flex">
-            {/* Sidebar */}
+            {/* Sidebar (Desktop) */}
             <aside className="w-64 bg-surface border-r border-white/5 flex-shrink-0 hidden md:flex flex-col">
                 <div className="p-6">
                     <div className="flex items-center gap-2">
@@ -170,10 +186,87 @@ export default function DashboardLayout({
                 </div>
             </aside>
 
+            {/* Mobile Sidebar Overlay */}
+            {isMobileMenuOpen && (
+                <div
+                    className="fixed inset-0 bg-black/80 z-40 md:hidden backdrop-blur-sm"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                />
+            )}
+
+            {/* Mobile Sidebar */}
+            <div className={`fixed inset-y-0 left-0 w-64 bg-surface border-r border-white/5 z-50 transform transition-transform duration-300 md:hidden flex flex-col ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <div className="p-6 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                            <svg className="w-5 h-5 text-background" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+                            </svg>
+                        </div>
+                        <span className="text-xl font-bold tracking-tight">
+                            antiai<span className="text-primary">.me</span>
+                        </span>
+                    </div>
+                    <button onClick={() => setIsMobileMenuOpen(false)} className="text-text-secondary hover:text-white">
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <nav className="flex-1 px-4 py-4 space-y-1">
+                    {navItems.map((item) => {
+                        const isActive = pathname === item.href
+                        return (
+                            <Link
+                                key={item.name}
+                                href={item.href}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${isActive
+                                    ? 'bg-primary/10 text-primary border border-primary/20'
+                                    : 'text-text-secondary hover:text-white hover:bg-white/5'
+                                    }`}
+                            >
+                                <span className={isActive ? 'text-primary' : 'text-text-secondary group-hover:text-white'}>
+                                    {item.icon}
+                                </span>
+                                {item.name}
+                            </Link>
+                        )
+                    })}
+                </nav>
+
+                <div className="p-4 border-t border-white/5">
+                    <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-surface-light/30">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-background font-bold uppercase">
+                                {user?.email?.substring(0, 2) || '??'}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-white truncate max-w-[100px]" title={user?.email}>
+                                    {user?.email?.split('@')[0]}
+                                </p>
+                                <p className="text-xs text-text-secondary truncate capitalize">
+                                    {user?.role || 'Creator'}
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleLogout}
+                            className="text-text-secondary hover:text-red-400 transition-colors p-1"
+                            title="Log out"
+                        >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             {/* Main Content */}
-            <main className="flex-1 flex flex-col min-h-screen relative overflow-hidden">
+            <main className="flex-1 flex flex-col min-h-screen relative overflow-hidden transition-all duration-300">
                 {/* Mobile Header */}
-                <header className="md:hidden flex items-center justify-between p-4 border-b border-white/5 bg-surface">
+                <header className="md:hidden flex items-center justify-between p-4 border-b border-white/5 bg-surface sticky top-0 z-30">
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                             <svg className="w-5 h-5 text-background" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -186,7 +279,10 @@ export default function DashboardLayout({
                     </div>
                     <div className="flex items-center gap-4">
                         <ThemeToggle />
-                        <button className="text-text-secondary">
+                        <button
+                            onClick={() => setIsMobileMenuOpen(true)}
+                            className="text-text-secondary hover:text-white p-1"
+                        >
                             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
                             </svg>
@@ -194,7 +290,7 @@ export default function DashboardLayout({
                     </div>
                 </header>
 
-                <div className="p-6 md:p-8 flex-1 overflow-auto">
+                <div className="p-4 md:p-8 flex-1 overflow-auto">
                     {children}
                 </div>
             </main>

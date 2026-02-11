@@ -83,11 +83,19 @@ export class BillingService {
             });
         }
 
-        // Get price ID based on plan
-        const priceId =
-            dto.plan === 'pro'
-                ? this.configService.get<string>('STRIPE_PRICE_PRO')
-                : this.configService.get<string>('STRIPE_PRICE_ELITE');
+        // Get price ID based on plan and interval
+        const isYearly = dto.interval === 'year';
+        let priceId: string | undefined;
+
+        if (dto.plan === 'pro') {
+            priceId = isYearly
+                ? this.configService.get<string>('STRIPE_PRICE_PRO_YEAR')
+                : this.configService.get<string>('STRIPE_PRICE_PRO_MONTH');
+        } else {
+            priceId = isYearly
+                ? this.configService.get<string>('STRIPE_PRICE_ELITE_YEAR')
+                : this.configService.get<string>('STRIPE_PRICE_ELITE_MONTH');
+        }
 
         if (!priceId) {
             throw new BadRequestException('Price not configured');
@@ -104,6 +112,27 @@ export class BillingService {
         });
 
         return { checkout_url: session.url };
+    }
+
+    async createPortalSession(userId: string, returnUrl: string) {
+        if (!this.stripe) {
+            throw new BadRequestException('Stripe not configured');
+        }
+
+        const subscription = await this.prisma.subscription.findUnique({
+            where: { userId },
+        });
+
+        if (!subscription?.stripeCustomerId) {
+            throw new BadRequestException('No billing account found');
+        }
+
+        const session = await this.stripe.billingPortal.sessions.create({
+            customer: subscription.stripeCustomerId,
+            return_url: returnUrl,
+        });
+
+        return { url: session.url };
     }
 
     async handleWebhook(rawBody: Buffer, signature: string) {

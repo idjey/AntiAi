@@ -33,6 +33,13 @@ export class BillingController {
         return this.billingService.createCheckout(user.id, dto);
     }
 
+    @Post('portal')
+    @UseGuards(AuthGuard('jwt'))
+    @HttpCode(HttpStatus.OK)
+    async portal(@CurrentUser() user: any, @Body() body: { return_url: string }) {
+        return this.billingService.createPortalSession(user.id, body.return_url);
+    }
+
     @Post('webhook')
     @HttpCode(HttpStatus.OK)
     async webhook(

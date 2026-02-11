@@ -1,12 +1,10 @@
-import { IsString, IsEnum, IsUrl } from 'class-validator';
-
 export class CheckoutDto {
-    @IsEnum(['pro', 'elite'])
     plan: 'pro' | 'elite';
-
-    @IsUrl()
+    interval: 'month' | 'year';
     success_url: string;
-
-    @IsUrl()
     cancel_url: string;
+}
+
+export class BillingPortalDto {
+    return_url: string;
 }

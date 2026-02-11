@@ -9,8 +9,8 @@ export default function Pricing() {
     const plans = [
         {
             name: 'Free',
-            monthlyPrice: 0,
-            yearlyPrice: 0,
+            monthlyPrice: '0',
+            yearlyPrice: '0',
             description: 'Get started with the basics',
             features: [
                 '10 videos per month',
@@ -23,8 +23,8 @@ export default function Pricing() {
         },
         {
             name: 'Pro',
-            monthlyPrice: 15,
-            yearlyPrice: 150, // 15 * 10 (2 months free)
+            monthlyPrice: '29.99',
+            yearlyPrice: '329.89', // 1 month free
             description: 'For serious creators',
             features: [
                 '100 videos per month',
@@ -39,8 +39,8 @@ export default function Pricing() {
         },
         {
             name: 'Elite',
-            monthlyPrice: 79,
-            yearlyPrice: 790, // 79 * 10 (2 months free)
+            monthlyPrice: '99.99',
+            yearlyPrice: '1,099.89', // 1 month free
             description: 'For teams and agencies',
             features: [
                 'Unlimited videos',
@@ -85,7 +85,7 @@ export default function Pricing() {
                         <span className={`text-sm font-medium transition-colors flex items-center gap-2 ${billingCycle === 'yearly' ? 'text-text-primary' : 'text-text-secondary'}`}>
                             Yearly
                             <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                                2 months free
+                                1 month free
                             </span>
                         </span>
                     </div>
@@ -122,7 +122,7 @@ export default function Pricing() {
                                             ${price}
                                         </span>
                                         <span className="text-text-secondary text-sm">
-                                            {price === 0 ? 'forever' : period}
+                                            {price === '0' ? 'forever' : period}
                                         </span>
                                     </div>
                                     <p className="text-sm text-text-secondary mt-2">
