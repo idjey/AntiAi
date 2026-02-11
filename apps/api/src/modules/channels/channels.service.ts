@@ -3,6 +3,7 @@ import {
     BadRequestException,
     ConflictException,
     NotFoundException,
+    ServiceUnavailableException,
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -126,14 +127,99 @@ export class ChannelsService {
             throw new BadRequestException('Verification token expired');
         }
 
-        // TODO: Actually verify the token placement via YouTube API
-        // For MVP, we'll trust the user clicked confirm
-        // In production, this would call YouTube Data API to check:
-        // - Channel description contains token
-        // - Video description/title contains token
-        // - Pinned comment contains token
+        // Check if API key is configured
+        const apiKey = process.env.YOUTUBE_API_KEY;
+        if (!apiKey) {
+            throw new ServiceUnavailableException(
+                'YouTube API Key not configured. Please add YOUTUBE_API_KEY to .env or contact admin.'
+            );
+        }
 
-        // For now, mark as verified (you'll need to implement actual verification)
+        // Verify token placement via YouTube API
+        try {
+            let youtubeChannel;
+
+            // Determine if input is likely a Channel ID (UC...) or Handle
+            // Handles usually don't start with UC unless coincidentally, but IDs always do and are 24 chars
+            const isLikelyChannelId = channel.youtubeChannelId.startsWith('UC') && channel.youtubeChannelId.length === 24;
+
+            // Strategy 1: Try as ID
+            if (isLikelyChannelId) {
+                const response = await fetch(
+                    `https://www.googleapis.com/youtube/v3/channels?part=snippet&id=${channel.youtubeChannelId}&key=${apiKey}`
+                );
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.items?.length > 0) {
+                        youtubeChannel = data.items[0];
+                    }
+                }
+            }
+
+            // Strategy 2: If no result yet, try as Handle
+            if (!youtubeChannel) {
+                // Determine handle (add @ if missing)
+                const handle = channel.youtubeChannelId.startsWith('@')
+                    ? channel.youtubeChannelId
+                    : `@${channel.youtubeChannelId}`;
+
+                const response = await fetch(
+                    `https://www.googleapis.com/youtube/v3/channels?part=snippet&forHandle=${encodeURIComponent(handle)}&key=${apiKey}`
+                );
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.items?.length > 0) {
+                        youtubeChannel = data.items[0];
+                    }
+                } else {
+                    // If both failed, capture the last error for debugging
+                    const errorText = await response.text();
+                    console.error('YouTube API Error:', response.status, errorText);
+
+                    if (response.status === 403) {
+                        throw new ServiceUnavailableException('YouTube API Quota Exceeded or Invalid Key');
+                    }
+                    if (response.status === 400) {
+                        throw new BadRequestException('Invalid Request to YouTube API');
+                    }
+                }
+            }
+
+            if (!youtubeChannel) {
+                throw new NotFoundException('YouTube channel not found. Please check your Channel ID or Handle.');
+            }
+
+            const description = youtubeChannel.snippet?.description || '';
+
+            // Check if token exists in description
+            if (!description.includes(channel.verificationToken)) {
+                throw new BadRequestException(
+                    'Verification token not found in channel description. Please add the token and try again.'
+                );
+            }
+
+            // If we verified via handle, we should update the DB to use the stable Channel ID properly
+            // This prevents future lookup issues if they change their handle
+            if (youtubeChannel.id && youtubeChannel.id !== channel.youtubeChannelId) {
+                await this.prisma.channel.update({
+                    where: { id: channel.id },
+                    data: { youtubeChannelId: youtubeChannel.id }
+                });
+                // Update local object for the final update call
+                channel.youtubeChannelId = youtubeChannel.id;
+            }
+
+        } catch (error) {
+            if (error instanceof BadRequestException || error instanceof NotFoundException || error instanceof ServiceUnavailableException) {
+                throw error;
+            }
+            console.error('YouTube verification error:', error);
+            // Include original error message if available
+            throw new ServiceUnavailableException(`Failed to verify with YouTube API: ${error.message}`);
+        }
+
+        // Mark as verified
         const updatedChannel = await this.prisma.channel.update({
             where: { id: channel.id },
             data: {
