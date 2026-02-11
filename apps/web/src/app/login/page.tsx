@@ -34,8 +34,15 @@ export default function LoginPage() {
             // Store JWT in cookie or local storage (MVP uses simple storage for now, ideal is httpOnly cookie)
             localStorage.setItem('token', data.access_token)
 
-            // Redirect to dashboard
-            router.push('/dashboard')
+            // Check for plan and interval
+            const plan = searchParams.get('plan')
+            const interval = searchParams.get('interval')
+
+            if (plan && interval) {
+                router.push(`/checkout/init?plan=${plan}&interval=${interval}`)
+            } else {
+                router.push('/dashboard')
+            }
         } catch (err: any) {
             setError(err.message)
         } finally {

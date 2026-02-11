@@ -39,11 +39,17 @@ export class AuthService {
         // Hash password
         const passwordHash = await bcrypt.hash(dto.password, 12);
 
+        // Generate OTP
+        const otp = Math.floor(10000000 + Math.random() * 90000000).toString();
+        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
         // Create user with free subscription and profile
         const user = await this.prisma.user.create({
             data: {
                 email: dto.email.toLowerCase(),
                 passwordHash,
+                otp,
+                otpExpiresAt,
                 subscription: {
                     create: {
                         plan: 'free',
@@ -56,6 +62,42 @@ export class AuthService {
                         displayName: dto.handle, // Default display name to handle
                     }
                 }
+            },
+        });
+
+        // Send OTP (Mock for now)
+        console.log(`[AUTH] sent OTP to ${user.email}: ${otp}`);
+
+        return {
+            message: 'Signup successful. Please verify your email with the OTP sent.',
+            email: user.email,
+        };
+    }
+
+    async verifyOtp(email: string, otp: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { email: email.toLowerCase() },
+        });
+
+        if (!user) {
+            throw new BadRequestException('User not found');
+        }
+
+        if (user.otp !== otp) {
+            throw new BadRequestException('Invalid OTP');
+        }
+
+        if (user.otpExpiresAt && user.otpExpiresAt < new Date()) {
+            throw new BadRequestException('OTP expired');
+        }
+
+        // Clear OTP and mark verified
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                otp: null,
+                otpExpiresAt: null,
+                isEmailVerified: true,
             },
         });
 

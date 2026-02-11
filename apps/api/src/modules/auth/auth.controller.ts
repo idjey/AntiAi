@@ -41,4 +41,10 @@ export class AuthController {
         }
         return this.authService.checkHandle(handle);
     }
+
+    @Post('verify-otp')
+    @HttpCode(HttpStatus.OK)
+    async verifyOtp(@Body('email') email: string, @Body('otp') otp: string) {
+        return this.authService.verifyOtp(email, otp);
+    }
 }

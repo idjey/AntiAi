@@ -20,6 +20,7 @@ export default function Pricing() {
             ],
             cta: 'Start free',
             featured: false,
+            href: '/signup'
         },
         {
             name: 'Pro',
@@ -157,7 +158,7 @@ export default function Pricing() {
 
                                 {/* CTA */}
                                 <Link
-                                    href="/signup"
+                                    href={`/signup?plan=${plan.name.toUpperCase()}&interval=${billingCycle === 'monthly' ? 'month' : 'year'}`}
                                     className={`block w-full text-center py-3 rounded-button font-semibold transition-all duration-300 ${plan.featured
                                         ? 'bg-primary text-background hover:brightness-110 hover:shadow-[0_0_20px_rgba(34,197,94,0.4)]'
                                         : 'bg-surface-light text-text-primary group-hover:bg-primary group-hover:text-background'
