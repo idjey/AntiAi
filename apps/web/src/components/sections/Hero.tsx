@@ -1,13 +1,39 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 
 export default function Hero() {
     const [handle, setHandle] = useState('')
+    const containerRef = useRef<HTMLDivElement>(null)
+    const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+
+    useEffect(() => {
+        const container = containerRef.current
+        if (!container) return
+
+        const handleMouseMove = (e: MouseEvent) => {
+            const rect = container.getBoundingClientRect()
+            setMousePosition({
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top,
+            })
+        }
+
+        container.addEventListener('mousemove', handleMouseMove)
+        return () => container.removeEventListener('mousemove', handleMouseMove)
+    }, [])
 
     return (
-        <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
+        <section ref={containerRef} className="relative min-h-screen flex items-center pt-20 overflow-hidden group">
+            {/* Spotlight effect */}
+            <div
+                className="pointer-events-none absolute inset-0 z-[1] transition-opacity duration-300 opacity-0 group-hover:opacity-100"
+                style={{
+                    background: `radial-gradient(600px circle at ${mousePosition.x}px ${mousePosition.y}px, rgb(var(--primary) / 0.30), transparent 40%)`,
+                }}
+            />
+
             {/* Background grid */}
             <div className="absolute inset-0 bg-grid opacity-50" />
 
