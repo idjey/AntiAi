@@ -75,7 +75,7 @@ export default function Pricing() {
                         </span>
                         <button
                             onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
-                            className="relative w-14 h-8 bg-surface border border-white/10 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            className="relative w-14 h-8 bg-surface border border-border rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
                             aria-label="Toggle billing cycle"
                         >
                             <div
@@ -103,7 +103,7 @@ export default function Pricing() {
                                 key={index}
                                 className={`relative rounded-card p-6 lg:p-8 transition-all duration-300 group hover:-translate-y-2 hover:shadow-[0_0_30px_rgba(34,197,94,0.2)] ${plan.featured
                                     ? 'bg-surface border-2 border-primary shadow-glow scale-105 lg:scale-110 z-10'
-                                    : 'bg-surface border border-white/5 hover:border-primary/50'
+                                    : 'bg-surface border border-border hover:border-primary/50'
                                     }`}
                             >
                                 {/* Featured badge */}

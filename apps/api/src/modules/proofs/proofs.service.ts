@@ -226,7 +226,7 @@ export class ProofsService {
         };
     }
 
-    async getActiveProofByVideoId(youtubeVideoId: string) {
+    async getActiveProofByVideoId(youtubeVideoId: string): Promise<any> {
         const video = await this.prisma.video.findUnique({
             where: { youtubeVideoId },
             include: {

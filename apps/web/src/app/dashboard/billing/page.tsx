@@ -8,7 +8,7 @@ interface BillingStatus {
     status: 'active' | 'past_due' | 'canceled' | 'unpaid' | 'trialing'
     current_period_end: string | null
     videos_used: number
-    videos_limit: number
+    videos_limit: number | null // Infinity becomes null in JSON
 }
 
 const PLANS = {
@@ -39,16 +39,26 @@ export default function BillingPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [isActionLoading, setIsActionLoading] = useState(false)
     const [error, setError] = useState('')
-    const [interval, setInterval] = useState<'month' | 'year'>('month')
+    const [billingInterval, setBillingInterval] = useState<'month' | 'year'>('month')
 
     useEffect(() => {
         fetchStatus()
 
         if (searchParams.get('success')) {
-            // clear params
-            router.replace('/dashboard/billing')
+            // Poll for status update for 15 seconds
+            const startTime = Date.now()
+            const pollId = setInterval(() => {
+                if (Date.now() - startTime > 15000) {
+                    clearInterval(pollId)
+                    router.replace('/dashboard/billing')
+                } else {
+                    fetchStatus()
+                }
+            }, 2000)
+
+            return () => clearInterval(pollId)
         }
-    }, [])
+    }, [searchParams])
 
     const fetchStatus = async () => {
         const token = localStorage.getItem('token')
@@ -83,7 +93,7 @@ export default function BillingPage() {
                 },
                 body: JSON.stringify({
                     plan,
-                    interval,
+                    interval: billingInterval,
                     success_url: `${window.location.origin}/dashboard/billing?success=true`,
                     cancel_url: `${window.location.origin}/dashboard/billing?canceled=true`,
                 })
@@ -139,6 +149,7 @@ export default function BillingPage() {
     }
 
     const currentPlan = status?.plan || 'free'
+    const currentInterval = status?.interval || 'month'
     const usagePercent = status ? Math.min((status.videos_used / status.videos_limit) * 100, 100) : 0
 
     return (
@@ -170,12 +181,20 @@ export default function BillingPage() {
                 <h3 className="text-lg font-semibold mb-4">Current Usage</h3>
                 <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                        <span className="text-text-secondary">Videos Protected</span>
-                        <span className="font-medium">
-                            {status?.videos_used} / {status?.videos_limit === Infinity ? 'Unlimited' : status?.videos_limit}
-                        </span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-text-secondary">Plan</span>
+                            <span className="font-medium capitalize">{currentPlan} ({currentInterval})</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-text-secondary">Videos Protected</span>
+                            <span className="font-medium">
+                                {status?.videos_used} / {status?.videos_limit === null || status?.videos_limit === Infinity ? (
+                                    <span className="text-primary font-bold">Unlimited videos</span>
+                                ) : status?.videos_limit}
+                            </span>
+                        </div>
                     </div>
-                    {status?.videos_limit !== Infinity && (
+                    {status?.videos_limit !== null && status?.videos_limit !== Infinity && (
                         <div className="h-2 bg-surface-light rounded-full overflow-hidden">
                             <div
                                 className={`h-full transition-all duration-500 ${usagePercent > 90 ? 'bg-red-500' : 'bg-primary'}`}
@@ -193,19 +212,19 @@ export default function BillingPage() {
             <div className="flex justify-center mt-12 mb-8">
                 <div className="bg-surface-light p-1 rounded-lg flex items-center relative">
                     <button
-                        onClick={() => setInterval('month')}
-                        className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${interval === 'month'
-                            ? 'bg-surface text-white shadow-sm'
-                            : 'text-text-secondary hover:text-white'
+                        onClick={() => setBillingInterval('month')}
+                        className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${billingInterval === 'month'
+                            ? 'bg-surface text-text-primary shadow-sm'
+                            : 'text-text-secondary hover:text-text-primary'
                             }`}
                     >
                         Monthly
                     </button>
                     <button
-                        onClick={() => setInterval('year')}
-                        className={`px-6 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${interval === 'year'
-                            ? 'bg-surface text-white shadow-sm'
-                            : 'text-text-secondary hover:text-white'
+                        onClick={() => setBillingInterval('year')}
+                        className={`px-6 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${billingInterval === 'year'
+                            ? 'bg-surface text-text-primary shadow-sm'
+                            : 'text-text-secondary hover:text-text-primary'
                             }`}
                     >
                         Yearly
@@ -220,8 +239,8 @@ export default function BillingPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {(Object.keys(PLANS) as Array<keyof typeof PLANS>).map((planKey) => {
                     const plan = PLANS[planKey]
-                    const isCurrent = currentPlan === planKey
-                    const price = plan.prices[interval]
+                    const isCurrent = currentPlan === planKey && (planKey === 'free' || currentInterval === billingInterval)
+                    const price = plan.prices[billingInterval]
 
                     return (
                         <div key={planKey} className={`card p-6 flex flex-col relative ${isCurrent ? 'border-primary ring-1 ring-primary/50' : ''}`}>
@@ -234,14 +253,14 @@ export default function BillingPage() {
                             <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
                             <div className="text-3xl font-bold mb-1">
                                 {price}
-                                <span className="text-sm font-normal text-text-secondary">/{interval}</span>
+                                <span className="text-sm font-normal text-text-secondary">/{billingInterval}</span>
                             </div>
-                            {interval === 'year' && planKey !== 'free' && (
+                            {billingInterval === 'year' && planKey !== 'free' && (
                                 <div className="text-xs text-green-400 font-medium mb-6">
                                     Save ~9% with yearly
                                 </div>
                             )}
-                            {interval === 'month' || planKey === 'free' ? (
+                            {billingInterval === 'month' || planKey === 'free' ? (
                                 <div className="mb-6 h-4" />
                             ) : null}
 
@@ -257,14 +276,14 @@ export default function BillingPage() {
                             </ul>
 
                             <button
-                                onClick={() => handleUpgrade(planKey as 'pro' | 'elite')}
+                                onClick={() => planKey === 'free' ? handleManageSubscription() : handleUpgrade(planKey as 'pro' | 'elite')}
                                 disabled={isCurrent || isActionLoading}
                                 className={`w-full py-2.5 rounded-lg font-medium transition-colors ${isCurrent
                                     ? 'bg-surface-light text-text-muted cursor-default'
                                     : 'btn-primary'
                                     }`}
                             >
-                                {isCurrent ? 'Active' : `Upgrade to ${plan.name}`}
+                                {isCurrent ? 'Active' : (planKey === 'free' ? 'Manage Subscription' : `Upgrade to ${plan.name}`)}
                             </button>
                         </div>
                     )

@@ -123,7 +123,7 @@ export default function DashboardLayout({
     return (
         <div className="min-h-screen bg-background flex">
             {/* Sidebar (Desktop) */}
-            <aside className="w-64 bg-surface border-r border-white/5 flex-shrink-0 hidden md:flex flex-col">
+            <aside className="w-64 bg-surface border-r border-border flex-shrink-0 hidden md:flex flex-col">
                 <div className="p-6">
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
@@ -146,10 +146,10 @@ export default function DashboardLayout({
                                 href={item.href}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${isActive
                                     ? 'bg-primary/10 text-primary border border-primary/20'
-                                    : 'text-text-secondary hover:text-white hover:bg-white/5'
+                                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-light'
                                     }`}
                             >
-                                <span className={isActive ? 'text-primary' : 'text-text-secondary group-hover:text-white'}>
+                                <span className={isActive ? 'text-primary' : 'text-text-secondary group-hover:text-text-primary'}>
                                     {item.icon}
                                 </span>
                                 {item.name}
@@ -158,14 +158,14 @@ export default function DashboardLayout({
                     })}
                 </nav>
 
-                <div className="p-4 border-t border-white/5">
+                <div className="p-4 border-t border-border">
                     <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-surface-light/30">
                         <div className="flex items-center gap-3 min-w-0">
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-background font-bold uppercase">
                                 {user?.email?.substring(0, 2) || '??'}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-white truncate max-w-[100px]" title={user?.email}>
+                                <p className="text-sm font-medium text-text-primary truncate max-w-[100px]" title={user?.email}>
                                     {user?.email?.split('@')[0]}
                                 </p>
                                 <p className="text-xs text-text-secondary truncate capitalize">
@@ -195,7 +195,7 @@ export default function DashboardLayout({
             )}
 
             {/* Mobile Sidebar */}
-            <div className={`fixed inset-y-0 left-0 w-64 bg-surface border-r border-white/5 z-50 transform transition-transform duration-300 md:hidden flex flex-col ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <div className={`fixed inset-y-0 left-0 w-64 bg-surface border-r border-border z-50 transform transition-transform duration-300 md:hidden flex flex-col ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 <div className="p-6 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
@@ -207,7 +207,7 @@ export default function DashboardLayout({
                             antiai<span className="text-primary">.me</span>
                         </span>
                     </div>
-                    <button onClick={() => setIsMobileMenuOpen(false)} className="text-text-secondary hover:text-white">
+                    <button onClick={() => setIsMobileMenuOpen(false)} className="text-text-secondary hover:text-text-primary">
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -223,10 +223,10 @@ export default function DashboardLayout({
                                 href={item.href}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${isActive
                                     ? 'bg-primary/10 text-primary border border-primary/20'
-                                    : 'text-text-secondary hover:text-white hover:bg-white/5'
+                                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-light'
                                     }`}
                             >
-                                <span className={isActive ? 'text-primary' : 'text-text-secondary group-hover:text-white'}>
+                                <span className={isActive ? 'text-primary' : 'text-text-secondary group-hover:text-text-primary'}>
                                     {item.icon}
                                 </span>
                                 {item.name}
@@ -235,14 +235,14 @@ export default function DashboardLayout({
                     })}
                 </nav>
 
-                <div className="p-4 border-t border-white/5">
+                <div className="p-4 border-t border-border">
                     <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-surface-light/30">
                         <div className="flex items-center gap-3 min-w-0">
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-background font-bold uppercase">
                                 {user?.email?.substring(0, 2) || '??'}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-white truncate max-w-[100px]" title={user?.email}>
+                                <p className="text-sm font-medium text-text-primary truncate max-w-[100px]" title={user?.email}>
                                     {user?.email?.split('@')[0]}
                                 </p>
                                 <p className="text-xs text-text-secondary truncate capitalize">
@@ -281,7 +281,7 @@ export default function DashboardLayout({
                         <ThemeToggle />
                         <button
                             onClick={() => setIsMobileMenuOpen(true)}
-                            className="text-text-secondary hover:text-white p-1"
+                            className="text-text-secondary hover:text-text-primary p-1"
                         >
                             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />

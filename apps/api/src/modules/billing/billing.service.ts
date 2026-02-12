@@ -27,6 +27,7 @@ export class BillingService {
         if (!subscription) {
             return {
                 plan: 'free',
+                interval: 'month',
                 status: 'active',
                 current_period_end: null,
                 videos_used: 0,
@@ -36,6 +37,7 @@ export class BillingService {
 
         return {
             plan: subscription.plan,
+            interval: subscription.interval,
             status: subscription.status,
             current_period_end: subscription.currentPeriodEnd?.toISOString() || null,
             videos_used: subscription.videosThisMonth,
@@ -77,6 +79,7 @@ export class BillingService {
                 create: {
                     userId,
                     plan: 'free',
+                    interval: 'month',
                     status: 'active',
                     stripeCustomerId: customerId,
                 },
@@ -108,7 +111,11 @@ export class BillingService {
             mode: 'subscription',
             success_url: dto.success_url,
             cancel_url: dto.cancel_url,
-            metadata: { userId, plan: dto.plan },
+            metadata: {
+                userId,
+                plan: dto.plan,
+                interval: dto.interval
+            },
         });
 
         return { checkout_url: session.url };
@@ -172,13 +179,20 @@ export class BillingService {
     private async handleCheckoutComplete(session: Stripe.Checkout.Session) {
         const userId = session.metadata?.userId;
         const plan = session.metadata?.plan as 'pro' | 'elite';
+        const interval = session.metadata?.interval as 'month' | 'year' || 'month';
 
-        if (!userId || !plan) return;
+        if (!userId || !plan) {
+            console.error('[STRIPE] Missing metadata in checkout session', { userId, plan });
+            return;
+        }
+
+        console.log(`[STRIPE] Processing checkout completion for user ${userId} -> ${plan} (${interval})`);
 
         await this.prisma.subscription.update({
             where: { userId },
             data: {
                 plan,
+                interval,
                 status: 'active',
                 stripeSubscriptionId: session.subscription as string,
             },
@@ -186,29 +200,45 @@ export class BillingService {
     }
 
     private async syncSubscription(stripeSubscription: Stripe.Subscription) {
-        const subscription = await this.prisma.subscription.findFirst({
-            where: { stripeSubscriptionId: stripeSubscription.id },
-        });
+        try {
+            const subscription = await this.prisma.subscription.findFirst({
+                where: { stripeSubscriptionId: stripeSubscription.id },
+            });
 
-        if (!subscription) return;
+            if (!subscription) {
+                console.log(`[STRIPE] Subscription ${stripeSubscription.id} not found locally (yet)`);
+                return;
+            }
 
-        const statusMap: Record<string, any> = {
-            active: 'active',
-            past_due: 'past_due',
-            canceled: 'canceled',
-            unpaid: 'unpaid',
-            trialing: 'trialing',
-            incomplete: 'incomplete',
-            incomplete_expired: 'incomplete_expired',
-        };
+            const statusMap: Record<string, any> = {
+                active: 'active',
+                past_due: 'past_due',
+                canceled: 'canceled',
+                unpaid: 'unpaid',
+                trialing: 'trialing',
+                incomplete: 'incomplete',
+                incomplete_expired: 'incomplete_expired',
+            };
 
-        await this.prisma.subscription.update({
-            where: { id: subscription.id },
-            data: {
-                status: statusMap[stripeSubscription.status] || 'active',
-                currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
-                cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-            },
-        });
+            const mappedStatus = statusMap[stripeSubscription.status] || 'active';
+
+            // Extract interval from the first item's price
+            const interval = stripeSubscription.items.data[0]?.price.recurring?.interval || 'month';
+
+            console.log(`[STRIPE] Syncing subscription ${stripeSubscription.id} -> ${mappedStatus} (${interval})`);
+
+            await this.prisma.subscription.update({
+                where: { id: subscription.id },
+                data: {
+                    status: mappedStatus,
+                    interval,
+                    currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+                    cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+                },
+            });
+        } catch (error) {
+            console.error('[STRIPE] Error syncing subscription:', error);
+            throw error;
+        }
     }
 }

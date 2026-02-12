@@ -3,11 +3,13 @@
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [citext]
 }
 
 // ==================== ENUMS ====================
@@ -362,6 +364,7 @@ model Subscription {
   id                   String             @id @default(uuid()) @db.Uuid
   userId               String             @unique @map("user_id") @db.Uuid
   plan                 PlanTier           @default(free)
+  interval             String             @default("month") // 'month' or 'year'
   status               SubscriptionStatus @default(active)
   stripeCustomerId     String?            @map("stripe_customer_id")
   stripeSubscriptionId String?            @map("stripe_subscription_id")

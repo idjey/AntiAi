@@ -40,10 +40,14 @@ export default function CheckoutInitPage() {
                 })
 
                 const data = await res.json()
+                if (!res.ok) {
+                    throw new Error(data.message || 'Failed to start checkout')
+                }
+
                 if (data.checkout_url) {
                     window.location.href = data.checkout_url
                 } else {
-                    throw new Error('Failed to start checkout')
+                    throw new Error('Invalid response from server')
                 }
             } catch (err: any) {
                 console.error(err)
