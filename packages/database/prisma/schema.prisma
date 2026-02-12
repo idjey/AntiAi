@@ -2,7 +2,7 @@
 // Based on the specification: Ed25519-only proofs, versioned, immutable, one ACTIVE per video
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
 }
 
@@ -85,7 +85,7 @@ model User {
   channels        Channel[]
   subscription    Subscription?
   auditLogs       AuditLog[]
-  reviewedReports Report[] @relation("ReviewedBy")
+  reviewedReports Report[]        @relation("ReviewedBy")
   profile         CreatorProfile?
   links           CreatorLink[]
 
@@ -95,17 +95,18 @@ model User {
 // ==================== CREATOR PROFILES (Linktree-style) ====================
 
 model CreatorProfile {
-  id              String    @id @default(uuid()) @db.Uuid
-  userId          String    @unique @map("user_id") @db.Uuid
-  handle          String    @unique @db.Citext // Custom vanity URL: antiai.me/creators/{handle}
-  displayName     String?   @map("display_name")
-  bio             String?   @db.Text
-  avatarUrl       String?   @map("avatar_url")
-  bannerUrl       String?   @map("banner_url")
-  featuredVideoId String?   @map("featured_video_id") @db.Uuid
-  isPublic        Boolean   @default(true) @map("is_public")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @unique @map("user_id") @db.Uuid
+  handle          String   @unique @db.Citext // Custom vanity URL: antiai.me/creators/{handle}
+  displayName     String?  @map("display_name")
+  bio             String?  @db.Text
+  avatarUrl       String?  @map("avatar_url")
+  bannerUrl       String?  @map("banner_url")
+  featuredVideoId String?  @map("featured_video_id") @db.Uuid
+  isPublic        Boolean  @default(true) @map("is_public")
+  appearance      Json?    @default("{}") // { theme, primaryColor, backgroundColor, backgroundImageUrl, ... }
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   // Relations
   user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -118,9 +119,9 @@ model CreatorProfile {
 model CreatorLink {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @map("user_id") @db.Uuid
-  label     String   // "Website", "Twitter", "Instagram", etc.
+  label     String // "Website", "Twitter", "Instagram", etc.
   url       String
-  icon      String?  // Optional icon identifier: "website", "twitter", "instagram", etc.
+  icon      String? // Optional icon identifier: "website", "twitter", "instagram", etc.
   sortOrder Int      @default(0) @map("sort_order")
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
@@ -136,7 +137,7 @@ model CreatorLink {
 model OAuthAccount {
   id              String    @id @default(uuid()) @db.Uuid
   userId          String    @map("user_id") @db.Uuid
-  provider        String    // 'google'
+  provider        String // 'google'
   providerUserId  String    @map("provider_user_id")
   accessTokenEnc  Bytes?    @map("access_token_enc")
   refreshTokenEnc Bytes?    @map("refresh_token_enc")
@@ -173,22 +174,22 @@ model SigningKey {
 // ==================== CHANNELS ====================
 
 model Channel {
-  id                  String             @id @default(uuid()) @db.Uuid
-  userId              String             @map("user_id") @db.Uuid
-  youtubeChannelId    String             @unique @map("youtube_channel_id")
-  channelHandle       String?            @map("channel_handle")
-  channelName         String             @map("channel_name")
-  channelUrl          String?            @map("channel_url")
-  avatarUrl           String?            @map("avatar_url")
-  verificationStatus  VerificationStatus @default(pending) @map("verification_status")
-  verificationMethod  String?            @map("verification_method") // 'oauth' | 'about_token' | 'video_token' | 'pinned_comment'
-  verificationToken   String?            @map("verification_token") // Token for non-OAuth verification
-  tokenExpiresAt      DateTime?          @map("token_expires_at")
-  verifiedAt          DateTime?          @map("verified_at")
-  revokedAt           DateTime?          @map("revoked_at")
-  revokeReason        String?            @map("revoke_reason")
-  createdAt           DateTime           @default(now()) @map("created_at")
-  updatedAt           DateTime           @updatedAt @map("updated_at")
+  id                 String             @id @default(uuid()) @db.Uuid
+  userId             String             @map("user_id") @db.Uuid
+  youtubeChannelId   String             @unique @map("youtube_channel_id")
+  channelHandle      String?            @map("channel_handle")
+  channelName        String             @map("channel_name")
+  channelUrl         String?            @map("channel_url")
+  avatarUrl          String?            @map("avatar_url")
+  verificationStatus VerificationStatus @default(pending) @map("verification_status")
+  verificationMethod String?            @map("verification_method") // 'oauth' | 'about_token' | 'video_token' | 'pinned_comment'
+  verificationToken  String?            @map("verification_token") // Token for non-OAuth verification
+  tokenExpiresAt     DateTime?          @map("token_expires_at")
+  verifiedAt         DateTime?          @map("verified_at")
+  revokedAt          DateTime?          @map("revoked_at")
+  revokeReason       String?            @map("revoke_reason")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
 
   // Relations
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -238,32 +239,32 @@ model Video {
 // - reissue uses supersedesProofId + supersededAt and sets old to 'superseded'
 
 model Proof {
-  id               String      @id @default(uuid()) @db.Uuid
-  videoId          String      @map("video_id") @db.Uuid
-  channelId        String      @map("channel_id") @db.Uuid
-  
+  id        String @id @default(uuid()) @db.Uuid
+  videoId   String @map("video_id") @db.Uuid
+  channelId String @map("channel_id") @db.Uuid
+
   // Signing material
-  alg              String      @default("Ed25519")
-  kid              String      // References SigningKey.id
-  
+  alg String @default("Ed25519")
+  kid String // References SigningKey.id
+
   // Canonical payload & signature (IMMUTABLE after creation)
-  payloadJson      Json        @map("payload_json") // stored for debugging/inspection
-  payloadB64       String      @map("payload_b64")  // base64url(canonical JSON bytes)
-  signatureB64     String      @map("signature_b64") // base64url(Ed25519 signature 64 bytes)
-  
-  issuedAt         DateTime    @default(now()) @map("issued_at")
-  expiresAt        DateTime    @map("expires_at")
-  status           ProofStatus @default(active)
-  
+  payloadJson  Json   @map("payload_json") // stored for debugging/inspection
+  payloadB64   String @map("payload_b64") // base64url(canonical JSON bytes)
+  signatureB64 String @map("signature_b64") // base64url(Ed25519 signature 64 bytes)
+
+  issuedAt  DateTime    @default(now()) @map("issued_at")
+  expiresAt DateTime    @map("expires_at")
+  status    ProofStatus @default(active)
+
   // Version lineage for re-issue
-  supersedesProofId String?    @unique @map("supersedes_proof_id") @db.Uuid
-  supersededAt      DateTime?  @map("superseded_at")
-  
+  supersedesProofId String?   @unique @map("supersedes_proof_id") @db.Uuid
+  supersededAt      DateTime? @map("superseded_at")
+
   // Revocation (only for security/abuse)
-  revokedAt        DateTime?   @map("revoked_at")
-  revokeReason     String?     @map("revoke_reason")
-  
-  createdAt        DateTime    @default(now()) @map("created_at")
+  revokedAt    DateTime? @map("revoked_at")
+  revokeReason String?   @map("revoke_reason")
+
+  createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
   video           Video      @relation(fields: [videoId], references: [id], onDelete: Cascade)
@@ -370,13 +371,13 @@ model Subscription {
   stripeSubscriptionId String?            @map("stripe_subscription_id")
   currentPeriodEnd     DateTime?          @map("current_period_end")
   cancelAtPeriodEnd    Boolean            @default(false) @map("cancel_at_period_end")
-  
+
   // Usage tracking
-  videosThisMonth      Int                @default(0) @map("videos_this_month")
-  usagePeriodStart     DateTime           @default(now()) @map("usage_period_start")
-  
-  createdAt            DateTime           @default(now()) @map("created_at")
-  updatedAt            DateTime           @updatedAt @map("updated_at")
+  videosThisMonth  Int      @default(0) @map("videos_this_month")
+  usagePeriodStart DateTime @default(now()) @map("usage_period_start")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -407,18 +408,18 @@ model AuditLog {
 // ==================== REPORTS ====================
 
 model Report {
-  id              String       @id @default(uuid()) @db.Uuid
-  channelId       String?      @map("channel_id") @db.Uuid
-  videoId         String?      @map("video_id") @db.Uuid
-  proofId         String?      @map("proof_id") @db.Uuid
-  challengeId     String?      @map("challenge_id")
-  reporterIpHash  Bytes?       @map("reporter_ip_hash")
-  reason          String
-  details         String?
-  status          ReportStatus @default(open)
-  createdAt       DateTime     @default(now()) @map("created_at")
-  reviewedAt      DateTime?    @map("reviewed_at")
-  reviewedById    String?      @map("reviewed_by") @db.Uuid
+  id             String       @id @default(uuid()) @db.Uuid
+  channelId      String?      @map("channel_id") @db.Uuid
+  videoId        String?      @map("video_id") @db.Uuid
+  proofId        String?      @map("proof_id") @db.Uuid
+  challengeId    String?      @map("challenge_id")
+  reporterIpHash Bytes?       @map("reporter_ip_hash")
+  reason         String
+  details        String?
+  status         ReportStatus @default(open)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  reviewedAt     DateTime?    @map("reviewed_at")
+  reviewedById   String?      @map("reviewed_by") @db.Uuid
 
   // Relations
   channel    Channel?   @relation(fields: [channelId], references: [id], onDelete: SetNull)

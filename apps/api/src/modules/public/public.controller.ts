@@ -54,12 +54,13 @@ export class PublicController {
      * GET /public/creators/:handle
      */
     @Get('creators/:handle')
-    async getCreatorProfile(@Param('handle') handle: string) {
+    async getCreatorProfile(@Param('handle') handle: string): Promise<any> {
         const result = await this.publicService.getCreatorProfile(handle);
         if (!result) {
             throw new NotFoundException('Creator not found');
         }
         return result;
     }
+
 }
 

@@ -42,6 +42,9 @@ export class CreateProfileDto {
     @IsOptional()
     @IsUUID()
     featured_video_id?: string;
+
+    @IsOptional()
+    appearance?: any;
 }
 
 export class UpdateProfileDto {
@@ -79,6 +82,9 @@ export class UpdateProfileDto {
     @IsOptional()
     @IsBoolean()
     is_public?: boolean;
+
+    @IsOptional()
+    appearance?: any;
 }
 
 // ==================== LINKS ====================

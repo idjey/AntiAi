@@ -21,3 +21,4 @@ export class LoginDto {
     @IsString()
     password: string;
 }
+export * from './change-password.dto';

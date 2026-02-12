@@ -47,4 +47,10 @@ export class AuthController {
     async verifyOtp(@Body('email') email: string, @Body('otp') otp: string) {
         return this.authService.verifyOtp(email, otp);
     }
+    @Post('change-password')
+    @UseGuards(AuthGuard('jwt'))
+    @HttpCode(HttpStatus.OK)
+    async changePassword(@CurrentUser() user: any, @Body() dto: any) {
+        return this.authService.changePassword(user.id, dto);
+    }
 }

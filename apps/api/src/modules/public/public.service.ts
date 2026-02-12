@@ -148,7 +148,7 @@ export class PublicService {
     /**
      * Get public creator profile by handle (Linktree-style page)
      */
-    async getCreatorProfile(handle: string) {
+    async getCreatorProfile(handle: string): Promise<any> {
         const profile = await this.prisma.creatorProfile.findUnique({
             where: { handle: handle.toLowerCase() },
             include: {
@@ -187,20 +187,24 @@ export class PublicService {
 
         // Get recent verified videos from all channels
         const channelIds = profile.user.channels.map(c => c.id);
-        const recentVideos = await this.prisma.video.findMany({
-            where: {
-                channelId: { in: channelIds },
-                proofs: { some: { status: 'active' } },
-            },
-            include: {
-                proofs: {
-                    where: { status: 'active' },
-                    take: 1,
+        let recentVideos: any[] = [];
+
+        if (channelIds.length > 0) {
+            recentVideos = await this.prisma.video.findMany({
+                where: {
+                    channelId: { in: channelIds },
+                    proofs: { some: { status: 'active' } },
                 },
-            },
-            orderBy: { createdAt: 'desc' },
-            take: 6,
-        });
+                include: {
+                    proofs: {
+                        where: { status: 'active' },
+                        take: 1,
+                    },
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 6,
+            });
+        }
 
         return {
             handle: profile.handle,
@@ -208,6 +212,7 @@ export class PublicService {
             bio: profile.bio,
             avatar_url: profile.avatarUrl,
             banner_url: profile.bannerUrl,
+            appearance: profile.appearance,
             channels: profile.user.channels.map(c => ({
                 youtube_channel_id: c.youtubeChannelId,
                 channel_name: c.channelName,

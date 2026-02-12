@@ -1,0 +1,326 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+
+export default function SettingsPage() {
+    const router = useRouter()
+    const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile')
+    const [isLoading, setIsLoading] = useState(true)
+    const [isSaving, setIsSaving] = useState(false)
+    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+
+    // Profile State
+    const [profile, setProfile] = useState({
+        displayName: '',
+        handle: '',
+        bio: '',
+        avatarUrl: '',
+        isPublic: false
+    })
+
+    // Password State
+    const [passwordData, setPasswordData] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    })
+
+    useEffect(() => {
+        fetchProfile()
+    }, [])
+
+    const fetchProfile = async () => {
+        try {
+            const token = localStorage.getItem('token')
+            if (!token) return
+
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/profile`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+
+            if (res.ok) {
+                const data = await res.json()
+                if (data.profile) {
+                    setProfile({
+                        displayName: data.profile.display_name || '',
+                        handle: data.profile.handle || '',
+                        bio: data.profile.bio || '',
+                        avatarUrl: data.profile.avatar_url || '',
+                        isPublic: data.profile.is_public || false
+                    })
+                }
+            }
+        } catch (err) {
+            console.error('Failed to fetch profile', err)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const handleProfileUpdate = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setIsSaving(true)
+        setMessage(null)
+
+        try {
+            const token = localStorage.getItem('token')
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/profile`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    display_name: profile.displayName,
+                    handle: profile.handle,
+                    bio: profile.bio,
+                    avatar_url: profile.avatarUrl,
+                    is_public: profile.isPublic
+                })
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                throw new Error(data.message || 'Failed to update profile')
+            }
+
+            setMessage({ type: 'success', text: 'Profile updated successfully' })
+        } catch (err: any) {
+            setMessage({ type: 'error', text: err.message })
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
+    const handlePasswordChange = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setIsSaving(true)
+        setMessage(null)
+
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            setMessage({ type: 'error', text: 'New passwords do not match' })
+            setIsSaving(false)
+            return
+        }
+
+        if (passwordData.newPassword.length < 8) {
+            setMessage({ type: 'error', text: 'Password must be at least 8 characters' })
+            setIsSaving(false)
+            return
+        }
+
+        try {
+            const token = localStorage.getItem('token')
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/auth/change-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    currentPassword: passwordData.currentPassword,
+                    newPassword: passwordData.newPassword
+                })
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                throw new Error(data.message || 'Failed to change password')
+            }
+
+            setMessage({ type: 'success', text: 'Password changed successfully' })
+            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
+        } catch (err: any) {
+            setMessage({ type: 'error', text: err.message })
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
+    if (isLoading) {
+        return <div className="p-8 text-center text-text-secondary">Loading settings...</div>
+    }
+
+    return (
+        <div className="max-w-4xl mx-auto space-y-8">
+            <div className="flex flex-col gap-2">
+                <h1 className="text-3xl font-bold tracking-tight text-text-primary">Settings</h1>
+                <p className="text-text-secondary">Manage your profile and account security</p>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex items-center gap-1 border-b border-border">
+                <button
+                    onClick={() => setActiveTab('profile')}
+                    className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'profile'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-text-secondary hover:text-text-primary'
+                        }`}
+                >
+                    Profile
+                </button>
+                <button
+                    onClick={() => setActiveTab('security')}
+                    className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'security'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-text-secondary hover:text-text-primary'
+                        }`}
+                >
+                    Security
+                </button>
+            </div>
+
+            {/* Notification Message */}
+            {message && (
+                <div className={`p-4 rounded-lg border ${message.type === 'success'
+                    ? 'bg-green-500/10 border-green-500/20 text-green-500'
+                    : 'bg-red-500/10 border-red-500/20 text-red-500'
+                    }`}>
+                    {message.text}
+                </div>
+            )}
+
+            {/* Profile Tab */}
+            {activeTab === 'profile' && (
+                <form onSubmit={handleProfileUpdate} className="space-y-6 max-w-2xl">
+                    {/* Avatar Preview */}
+                    <div className="flex items-center gap-6">
+                        <div className="w-20 h-20 rounded-full bg-surface-light border border-border flex items-center justify-center overflow-hidden">
+                            {profile.avatarUrl ? (
+                                <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="text-2xl font-bold text-text-secondary uppercase">
+                                    {profile.displayName?.substring(0, 2) || '??'}
+                                </span>
+                            )}
+                        </div>
+                        <div className="flex-1 space-y-2">
+                            <label className="block text-sm font-medium text-text-secondary">Avatar URL</label>
+                            <input
+                                type="url"
+                                value={profile.avatarUrl}
+                                onChange={(e) => setProfile({ ...profile, avatarUrl: e.target.value })}
+                                placeholder="https://example.com/avatar.jpg"
+                                className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-text-primary focus:outline-none focus:border-primary transition-colors"
+                            />
+                            <p className="text-xs text-text-secondary">Paste a direct link to an image (we'll implement file upload later)</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-text-secondary">Display Name</label>
+                            <input
+                                type="text"
+                                value={profile.displayName}
+                                onChange={(e) => setProfile({ ...profile, displayName: e.target.value })}
+                                className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-text-primary focus:outline-none focus:border-primary transition-colors"
+                                placeholder="My Name"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-text-secondary">Handle</label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-2 text-text-muted">@</span>
+                                <input
+                                    type="text"
+                                    value={profile.handle}
+                                    onChange={(e) => setProfile({ ...profile, handle: e.target.value })}
+                                    className="w-full bg-surface border border-border rounded-lg pl-8 pr-4 py-2 text-text-primary focus:outline-none focus:border-primary transition-colors"
+                                    placeholder="handle"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="block text-sm font-medium text-text-secondary">Bio</label>
+                        <textarea
+                            value={profile.bio}
+                            onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                            rows={3}
+                            className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-text-primary focus:outline-none focus:border-primary transition-colors resize-none"
+                            placeholder="Tell us about yourself..."
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-3 p-4 bg-surface rounded-lg border border-border">
+                        <input
+                            type="checkbox"
+                            checked={profile.isPublic}
+                            onChange={(e) => setProfile({ ...profile, isPublic: e.target.checked })}
+                            className="w-5 h-5 rounded border-gray-600 text-primary focus:ring-primary bg-transparent"
+                        />
+                        <div>
+                            <p className="font-medium text-text-primary">Public Profile</p>
+                            <p className="text-sm text-text-secondary">Allow everyone to see your profile and videos</p>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end pt-4">
+                        <button
+                            type="submit"
+                            disabled={isSaving}
+                            className={`btn-primary px-8 ${isSaving ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        >
+                            {isSaving ? 'Saving...' : 'Save Profile'}
+                        </button>
+                    </div>
+                </form>
+            )}
+
+            {/* Security Tab */}
+            {activeTab === 'security' && (
+                <form onSubmit={handlePasswordChange} className="space-y-6 max-w-xl">
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-text-secondary">Current Password</label>
+                            <input
+                                type="password"
+                                value={passwordData.currentPassword}
+                                onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                                required
+                                className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-text-primary focus:outline-none focus:border-primary transition-colors"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-text-secondary">New Password</label>
+                            <input
+                                type="password"
+                                value={passwordData.newPassword}
+                                onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                                required
+                                minLength={8}
+                                className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-text-primary focus:outline-none focus:border-primary transition-colors"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-text-secondary">Confirm New Password</label>
+                            <input
+                                type="password"
+                                value={passwordData.confirmPassword}
+                                onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                                required
+                                minLength={8}
+                                className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary transition-colors"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end pt-4">
+                        <button
+                            type="submit"
+                            disabled={isSaving}
+                            className={`btn-primary px-8 ${isSaving ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        >
+                            {isSaving ? 'Updating...' : 'Change Password'}
+                        </button>
+                    </div>
+                </form>
+            )}
+        </div>
+    )
+}

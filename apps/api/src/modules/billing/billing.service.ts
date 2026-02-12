@@ -227,13 +227,21 @@ export class BillingService {
 
             console.log(`[STRIPE] Syncing subscription ${stripeSubscription.id} -> ${mappedStatus} (${interval})`);
 
+            const newPeriodEnd = new Date(stripeSubscription.current_period_end * 1000);
+            const isRenewal = subscription.currentPeriodEnd && newPeriodEnd.getTime() > subscription.currentPeriodEnd.getTime();
+
+            if (isRenewal) {
+                console.log(`[STRIPE] Subscription renewed! Resetting usage for user ${subscription.userId}`);
+            }
+
             await this.prisma.subscription.update({
                 where: { id: subscription.id },
                 data: {
                     status: mappedStatus,
                     interval,
-                    currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+                    currentPeriodEnd: newPeriodEnd,
                     cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+                    ...(isRenewal ? { videosThisMonth: 0 } : {}),
                 },
             });
         } catch (error) {
