@@ -8,7 +8,10 @@ import { VideosModule } from './modules/videos/videos.module';
 import { ProofsModule } from './modules/proofs/proofs.module';
 import { PublicModule } from './modules/public/public.module';
 import { BillingModule } from './modules/billing/billing.module';
+import { UploadModule } from './modules/upload/upload.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -17,6 +20,12 @@ import { HealthController } from './health.controller';
         ConfigModule.forRoot({
             isGlobal: true,
             envFilePath: ['.env', '../../.env'],
+        }),
+
+        // Serve Static Files (Uploads)
+        ServeStaticModule.forRoot({
+            rootPath: join(__dirname, '..', 'uploads'),
+            serveRoot: '/uploads',
         }),
 
         // Rate limiting
@@ -36,6 +45,7 @@ import { HealthController } from './health.controller';
         PublicModule,
         BillingModule,
         ProfilesModule,
+        UploadModule,
     ],
     controllers: [HealthController],
 })

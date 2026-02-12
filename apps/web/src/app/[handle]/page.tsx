@@ -53,6 +53,41 @@ export default async function PublicProfilePage({ params }: Props) {
                 <div className="fixed inset-0 pointer-events-none opacity-30 bg-gradient-to-tr from-purple-500/20 via-blue-500/20 to-teal-500/20 z-0" />
             )}
 
+            {/* Logo Rendering */}
+            {appearance.logo_url && (
+                <>
+                    {appearance.logo_position === 'scatter' ? (
+                        <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-10 z-0">
+                            {[...Array(6)].map((_, i) => (
+                                <img
+                                    key={i}
+                                    src={appearance.logo_url}
+                                    className="absolute w-32 h-32 object-contain opacity-50 grayscale"
+                                    style={{
+                                        top: `${Math.random() * 80}%`,
+                                        left: `${Math.random() * 80}%`,
+                                        transform: `rotate(${Math.random() * 360}deg)`
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className={`fixed inset-0 z-0 pointer-events-none p-6 flex w-full h-full max-w-4xl mx-auto ${appearance.logo_position === 'top_left' ? 'items-start justify-start' :
+                                appearance.logo_position === 'top_right' ? 'items-start justify-end' :
+                                    appearance.logo_position === 'center_top' ? 'items-start justify-center' :
+                                        appearance.logo_position === 'center' ? 'items-center justify-center' :
+                                            appearance.logo_position === 'bottom_left' ? 'items-end justify-start' :
+                                                appearance.logo_position === 'bottom_right' ? 'items-end justify-end' : ''
+                            }`}>
+                            <img
+                                src={appearance.logo_url}
+                                className={`${appearance.logo_position === 'center' ? 'w-full max-w-[400px] opacity-10' : 'w-20 h-20'} object-contain`}
+                            />
+                        </div>
+                    )}
+                </>
+            )}
+
             {/* Profile Card */}
             <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative z-10">
 

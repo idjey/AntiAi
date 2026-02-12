@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { SocialIcon, getIconType } from '@/components/SocialIcon';
+import { ImageUpload } from '@/components/ImageUpload';
 
 interface CreatorLink {
     id: string;
@@ -22,6 +23,8 @@ interface Profile {
         primary_color?: string;
         background_color?: string;
         icon_style?: 'monochrome' | 'color';
+        logo_url?: string;
+        logo_position?: 'center_top' | 'top_left' | 'top_right' | 'center' | 'bottom_left' | 'bottom_right' | 'scatter';
     };
 }
 
@@ -30,6 +33,8 @@ export default function CreatorCardPage() {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isVerifyingLogo, setIsVerifyingLogo] = useState(false);
+    const [logoUrlError, setLogoUrlError] = useState<string | null>(null);
 
     // Filter/Tab State
     const [activeTab, setActiveTab] = useState<'links' | 'appearance'>('links');
@@ -39,7 +44,9 @@ export default function CreatorCardPage() {
         theme: 'modern_dark',
         primary_color: '#10b981',
         background_color: '#000000',
-        icon_style: 'monochrome' as 'monochrome' | 'color'
+        icon_style: 'monochrome' as 'monochrome' | 'color',
+        logo_url: '',
+        logo_position: 'center_top' as 'center_top' | 'top_left' | 'top_right' | 'center' | 'bottom_left' | 'bottom_right' | 'scatter'
     });
 
     // Form State (Links)
@@ -188,6 +195,29 @@ export default function CreatorCardPage() {
     if (isLoading) return <div className="p-8 text-center text-text-secondary">Loading...</div>;
 
     const publicUrl = profile ? `${window.location.origin}/${profile.handle}` : '';
+
+    const handleRandomize = () => {
+        const themes = ['modern_dark', 'holographic', 'minimal'];
+        const randomTheme = themes[Math.floor(Math.random() * themes.length)];
+
+        const generateRandomColor = () => {
+            return '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+        };
+
+        const randomPrimary = generateRandomColor();
+        const randomBackground = generateRandomColor();
+
+        const iconStyles = ['monochrome', 'color'];
+        const randomIconStyle = iconStyles[Math.floor(Math.random() * iconStyles.length)];
+
+        setAppearance(prev => ({
+            ...prev,
+            theme: randomTheme,
+            primary_color: randomPrimary,
+            background_color: randomBackground,
+            icon_style: randomIconStyle as any
+        }));
+    };
 
     return (
         <div className="max-w-6xl mx-auto h-[calc(100vh-100px)] flex gap-8">
@@ -343,7 +373,18 @@ export default function CreatorCardPage() {
                 ) : (
                     <div className="space-y-6">
                         <div className="bg-surface border border-border rounded-xl p-6 space-y-6">
-                            <h2 className="text-lg font-bold text-text-primary">Theme & Colors</h2>
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-lg font-bold text-text-primary">Theme & Colors</h2>
+                                <button
+                                    onClick={handleRandomize}
+                                    className="text-sm px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2 shadow-lg shadow-purple-500/20"
+                                >
+                                    <svg className="w-4 h-4 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                                    </svg>
+                                    Surprise Me
+                                </button>
+                            </div>
 
                             {/* Theme Selector */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -382,40 +423,165 @@ export default function CreatorCardPage() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* Primary Color */}
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     <label className="text-sm font-medium text-text-secondary">Primary Color</label>
-                                    <div className="flex items-center gap-3">
-                                        <input
-                                            type="color"
-                                            value={appearance.primary_color}
-                                            onChange={(e) => setAppearance(prev => ({ ...prev, primary_color: e.target.value }))}
-                                            className="w-12 h-12 rounded-lg border border-border bg-transparent cursor-pointer"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={appearance.primary_color}
-                                            onChange={(e) => setAppearance(prev => ({ ...prev, primary_color: e.target.value }))}
-                                            className="flex-1 bg-background border border-border rounded-lg px-4 py-2 text-text-primary uppercase"
-                                        />
+                                    <div className="flex flex-wrap gap-2">
+                                        {['#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#ef4444'].map(color => (
+                                            <button
+                                                key={color}
+                                                onClick={() => setAppearance(prev => ({ ...prev, primary_color: color }))}
+                                                className={`w-8 h-8 rounded-full border-2 transition-all ${appearance.primary_color === color ? 'border-text-primary scale-110' : 'border-transparent hover:scale-105'}`}
+                                                style={{ backgroundColor: color }}
+                                                aria-label={`Select color ${color}`}
+                                            />
+                                        ))}
+                                        <div className="relative">
+                                            <input
+                                                type="color"
+                                                value={appearance.primary_color}
+                                                onChange={(e) => setAppearance(prev => ({ ...prev, primary_color: e.target.value }))}
+                                                className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                                            />
+                                            <div
+                                                className="w-8 h-8 rounded-full border border-border flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-300 text-black text-[10px]"
+                                                title="Custom Color"
+                                            >
+                                                +
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="text-xs text-text-secondary font-mono uppercase">
+                                        {appearance.primary_color}
                                     </div>
                                 </div>
 
                                 {/* Background Color */}
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     <label className="text-sm font-medium text-text-secondary">Background Color</label>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex flex-wrap gap-2">
+                                        {['#000000', '#0f172a', '#18181b', '#1e1b4b', '#312e81', '#ffffff'].map(color => (
+                                            <button
+                                                key={color}
+                                                onClick={() => setAppearance(prev => ({ ...prev, background_color: color }))}
+                                                className={`w-8 h-8 rounded-full border-2 transition-all ${appearance.background_color === color ? 'border-primary scale-110' : 'border-white/10 hover:scale-105'}`}
+                                                style={{ backgroundColor: color }}
+                                                aria-label={`Select background ${color}`}
+                                            />
+                                        ))}
+                                        <div className="relative group">
+                                            <input
+                                                type="color"
+                                                value={appearance.background_color}
+                                                onChange={(e) => setAppearance(prev => ({ ...prev, background_color: e.target.value }))}
+                                                className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10"
+                                            />
+                                            <div
+                                                className="w-8 h-8 rounded-full border border-border flex items-center justify-center bg-surface-light group-hover:bg-surface text-text-secondary"
+                                                title="Custom Background"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="text-xs text-text-secondary font-mono uppercase">
+                                        {appearance.background_color}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Logo Settings */}
+                            <div className="space-y-4 pt-4 border-t border-border">
+                                <h3 className="font-bold text-text-primary">Logo Settings</h3>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-text-secondary">Logo URL</label>
+                                    <div className="relative">
                                         <input
-                                            type="color"
-                                            value={appearance.background_color}
-                                            onChange={(e) => setAppearance(prev => ({ ...prev, background_color: e.target.value }))}
-                                            className="w-12 h-12 rounded-lg border border-border bg-transparent cursor-pointer"
+                                            type="url"
+                                            value={appearance.logo_url || ''}
+                                            onChange={(e) => {
+                                                const url = e.target.value;
+                                                setAppearance(prev => ({ ...prev, logo_url: url }));
+                                                setLogoUrlError(null);
+                                                if (url) {
+                                                    setIsVerifyingLogo(true);
+                                                    const img = new Image();
+                                                    img.onload = () => {
+                                                        setIsVerifyingLogo(false);
+                                                        setLogoUrlError(null);
+                                                    };
+                                                    img.onerror = () => {
+                                                        setIsVerifyingLogo(false);
+                                                        setLogoUrlError('Unable to load image. Ensure URL points directly to an image file (png/jpg).');
+                                                    };
+                                                    img.src = url;
+                                                }
+                                            }}
+                                            className={`w-full bg-background border ${logoUrlError ? 'border-red-500' : 'border-border'} rounded-lg px-4 py-2 text-text-primary focus:outline-none focus:border-primary placeholder:text-text-muted/50`}
+                                            placeholder="https://example.com/logo.png"
                                         />
-                                        <input
-                                            type="text"
-                                            value={appearance.background_color}
-                                            onChange={(e) => setAppearance(prev => ({ ...prev, background_color: e.target.value }))}
-                                            className="flex-1 bg-background border border-border rounded-lg px-4 py-2 text-text-primary uppercase"
-                                        />
+                                        {isVerifyingLogo && (
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-primary animate-pulse">
+                                                Verifying...
+                                            </div>
+                                        )}
+                                    </div>
+                                    {logoUrlError && <p className="text-xs text-red-500 mt-1">{logoUrlError}</p>}
+                                    <p className="text-xs text-text-secondary mt-1">Enter a direct link to your logo image (PNG/JPG/SVG).</p>
+
+                                    <div className="flex gap-2 pt-2">
+                                        <ImageUpload
+                                            onUpload={(url) => {
+                                                setAppearance(prev => ({ ...prev, logo_url: url }));
+                                                setLogoUrlError(null);
+                                            }}
+                                            className="inline-block"
+                                        >
+                                            <button className="flex items-center gap-2 px-4 py-2 bg-surface border border-dashed border-border rounded-lg text-sm text-text-secondary hover:text-primary hover:border-primary transition-colors">
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                                </svg>
+                                                Upload Image
+                                            </button>
+                                        </ImageUpload>
+
+                                        <button
+                                            onClick={() => {
+                                                setAppearance(prev => ({ ...prev, logo_url: '/logo.svg', logo_position: 'scatter' }));
+                                                setLogoUrlError(null);
+                                            }}
+                                            className="flex items-center gap-2 px-4 py-2 bg-surface border border-border rounded-lg text-sm text-text-secondary hover:text-primary hover:border-primary transition-colors"
+                                        >
+                                            Use Official Logo
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-text-secondary">Logo Position</label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {[
+                                            { id: 'top_left', label: 'Top Left' },
+                                            { id: 'center_top', label: 'Top Center' },
+                                            { id: 'top_right', label: 'Top Right' },
+                                            { id: 'center', label: 'Center (Hero)' },
+                                            { id: 'scatter', label: 'Scatter Pattern' },
+                                            { id: 'bottom_left', label: 'Btm Left' },
+                                            { id: 'bottom_right', label: 'Btm Right' },
+                                        ].map(pos => (
+                                            <button
+                                                key={pos.id}
+                                                onClick={() => setAppearance(prev => ({ ...prev, logo_position: pos.id as any }))}
+                                                className={`py-2 px-2 text-xs rounded-lg border transition-all ${appearance.logo_position === pos.id
+                                                    ? 'border-primary bg-primary/10 text-primary font-medium'
+                                                    : 'border-border bg-background text-text-secondary hover:border-primary/50'
+                                                    }`}
+                                            >
+                                                {pos.label}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
@@ -423,7 +589,7 @@ export default function CreatorCardPage() {
                             <button
                                 onClick={handleAppearanceSave}
                                 disabled={isSaving}
-                                className="btn-primary w-full md:w-auto"
+                                className="btn-primary w-full md:w-auto mt-4"
                             >
                                 {isSaving ? 'Saving...' : 'Save Changes'}
                             </button>
@@ -450,6 +616,41 @@ export default function CreatorCardPage() {
                             {/* Theme Effects */}
                             {appearance.theme === 'holographic' && (
                                 <div className="absolute inset-0 pointer-events-none opacity-30 bg-gradient-to-tr from-purple-500/20 via-blue-500/20 to-teal-500/20" />
+                            )}
+
+                            {/* Logo Rendering */}
+                            {appearance.logo_url && (
+                                <>
+                                    {appearance.logo_position === 'scatter' ? (
+                                        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
+                                            {[...Array(6)].map((_, i) => (
+                                                <img
+                                                    key={i}
+                                                    src={appearance.logo_url}
+                                                    className="absolute w-24 h-24 object-contain opacity-20"
+                                                    style={{
+                                                        top: `${[10, 60, 20, 80, 40, 70][i]}%`,
+                                                        left: `${[10, 20, 80, 70, 40, 90][i]}%`,
+                                                        transform: `rotate(${[15, -20, 45, -15, 10, -30][i]}deg)`
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className={`absolute z-20 pointer-events-none p-6 flex w-full h-full ${appearance.logo_position === 'top_left' ? 'items-start justify-start' :
+                                            appearance.logo_position === 'top_right' ? 'items-start justify-end' :
+                                                appearance.logo_position === 'center_top' ? 'items-start justify-center' :
+                                                    appearance.logo_position === 'center' ? 'items-center justify-center' :
+                                                        appearance.logo_position === 'bottom_left' ? 'items-end justify-start' :
+                                                            appearance.logo_position === 'bottom_right' ? 'items-end justify-end' : ''
+                                            }`}>
+                                            <img
+                                                src={appearance.logo_url}
+                                                className={`${appearance.logo_position === 'center' ? 'w-full max-w-[200px] opacity-10' : 'w-16 h-16'} object-contain`}
+                                            />
+                                        </div>
+                                    )}
+                                </>
                             )}
 
                             {/* Cover Banner */}
