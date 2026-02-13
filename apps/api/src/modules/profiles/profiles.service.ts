@@ -90,7 +90,7 @@ export class ProfilesService {
                 avatarUrl: dto.avatar_url,
                 bannerUrl: dto.banner_url,
                 featuredVideoId: dto.featured_video_id,
-                appearance: dto.appearance ?? {},
+                appearance: (dto.appearance ?? {}) as any,
             },
         });
 
@@ -134,7 +134,7 @@ export class ProfilesService {
                 bannerUrl: dto.banner_url,
                 featuredVideoId: dto.featured_video_id,
                 isPublic: dto.is_public,
-                appearance: dto.appearance,
+                appearance: dto.appearance as any,
             },
             include: {
                 featuredVideo: true,

@@ -8,9 +8,94 @@ import {
     MinLength,
     MaxLength,
     Matches,
+    IsNumber,
+    ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 // ==================== PROFILE ====================
+
+export class AppearanceDto {
+    @IsOptional()
+    @IsString()
+    theme?: string;
+
+    @IsOptional()
+    @IsString()
+    primary_color?: string;
+
+    @IsOptional()
+    @IsString()
+    background_color?: string;
+
+    @IsOptional()
+    @IsString()
+    icon_style?: string;
+
+    @IsOptional()
+    @IsString()
+    logo_url?: string;
+
+    @IsOptional()
+    @IsString()
+    logo_position?: string;
+
+    @IsOptional()
+    @IsNumber()
+    logo_opacity?: number;
+
+    @IsOptional()
+    @IsNumber()
+    logo_count?: number;
+
+    @IsOptional()
+    @IsString()
+    scatter_style?: string;
+
+    @IsOptional()
+    @IsString()
+    background_image?: string;
+
+    // Public Page Background
+    @IsOptional()
+    @IsString()
+    public_background_type?: 'color' | 'gradient' | 'image';
+
+    @IsOptional()
+    @IsString()
+    public_background_color?: string;
+
+    @IsOptional()
+    @IsString()
+    public_background_gradient?: string;
+
+    @IsOptional()
+    @IsString()
+    public_background_image?: string;
+
+    @IsOptional()
+    @IsNumber()
+    public_background_overlay?: number;
+
+    @IsOptional()
+    @IsNumber()
+    public_background_blur?: number;
+    @IsOptional()
+    @IsNumber()
+    public_background_vignette?: number;
+
+    @IsOptional()
+    @IsNumber()
+    public_background_grain?: number;
+
+    @IsOptional()
+    @IsString()
+    public_card_theme?: 'light' | 'dark';
+
+    @IsOptional()
+    @IsNumber()
+    public_card_glow?: number;
+}
 
 export class CreateProfileDto {
     @IsString()
@@ -44,7 +129,9 @@ export class CreateProfileDto {
     featured_video_id?: string;
 
     @IsOptional()
-    appearance?: any;
+    @ValidateNested()
+    @Type(() => AppearanceDto)
+    appearance?: AppearanceDto;
 }
 
 export class UpdateProfileDto {
@@ -84,7 +171,9 @@ export class UpdateProfileDto {
     is_public?: boolean;
 
     @IsOptional()
-    appearance?: any;
+    @ValidateNested()
+    @Type(() => AppearanceDto)
+    appearance?: AppearanceDto;
 }
 
 // ==================== LINKS ====================

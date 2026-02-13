@@ -5,18 +5,61 @@ interface ImageUploadProps {
     onUpload: (url: string) => void;
     className?: string;
     children?: React.ReactNode;
+    maxDimension?: number;
 }
 
-export const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, className, children }) => {
+export const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, className, children, maxDimension }) => {
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Reset input
+        // Reset input to allow selecting same file again
         e.target.value = '';
+
+        handleFile(file);
+    };
+
+    const handleFile = async (file: File) => {
+        // Validate types
+        if (!file.type.startsWith('image/')) {
+            alert('Please upload an image file');
+            return;
+        }
+
+        // Validate size (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('File size must be less than 5MB');
+            return;
+        }
+
+        // Validate resolution
+        const checkResolution = (): Promise<boolean> => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    URL.revokeObjectURL(img.src);
+                    const limit = maxDimension || 512;
+                    if (img.width > limit || img.height > limit) {
+                        alert(`Image resolution too high (${img.width}x${img.height}px). Max allowed is ${limit}x${limit}px.`);
+                        resolve(false);
+                    } else {
+                        resolve(true);
+                    }
+                };
+                img.onerror = () => {
+                    URL.revokeObjectURL(img.src);
+                    alert('Failed to load image for validation');
+                    resolve(false);
+                };
+                img.src = URL.createObjectURL(file);
+            });
+        };
+
+        const isValidResolution = await checkResolution();
+        if (!isValidResolution) return;
 
         setIsUploading(true);
         try {

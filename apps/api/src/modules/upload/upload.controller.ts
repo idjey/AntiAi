@@ -1,5 +1,5 @@
 
-import { Controller, Post, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
+import { Controller, Post, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -25,26 +25,32 @@ export class UploadController {
             },
         }),
     }))
-    uploadFile(@UploadedFile(
-        new ParseFilePipe({
-            validators: [
-                new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
-                new FileTypeValidator({ fileType: /.*/ }), // Temporarily allow all types to debug
-            ],
-        }),
-    ) file: any) {
-        console.log('File uploaded:', file);
-        if (file) {
-            console.log('MimeType:', file.mimetype);
-        }
+    uploadFile(@UploadedFile() file: any) {
         if (!file) {
-            throw new Error('File not received');
+            throw new BadRequestException('File not received');
         }
+
+        console.log('File uploaded:', {
+            originalname: file.originalname,
+            mimetype: file.mimetype,
+            size: file.size
+        });
+
+        // Manual Validation
+        const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/svg+xml', 'image/webp'];
+        if (!allowedMimeTypes.includes(file.mimetype)) {
+            throw new BadRequestException(`Invalid file type: ${file.mimetype}. Allowed: jpg, png, svg, webp`);
+        }
+
+        if (file.size > 5 * 1024 * 1024) { // 5MB
+            throw new BadRequestException('File size exceeds 5MB limit');
+        }
+
         // Return the public URL
         const apiUrl = process.env.API_URL || 'http://localhost:4000';
         return {
             url: `${apiUrl}/uploads/${file.filename}`,
-            mimetype: file.mimetype // Returning for debug purposes
+            mimetype: file.mimetype
         };
     }
 }
