@@ -93,6 +93,14 @@ export class AppearanceDto {
     public_card_theme?: 'light' | 'dark';
 
     @IsOptional()
+    @IsString()
+    card_style?: 'classic' | 'modern' | 'sharp' | 'pill';
+
+    @IsOptional()
+    @IsString()
+    link_style?: 'list' | 'grid' | 'row';
+
+    @IsOptional()
     @IsNumber()
     public_card_glow?: number;
 }

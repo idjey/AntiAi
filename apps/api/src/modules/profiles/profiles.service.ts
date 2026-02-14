@@ -59,12 +59,28 @@ export class ProfilesService {
             },
         });
 
+        // Fetch verified videos (latest 6)
+        const verifiedVideos = await this.prisma.video.findMany({
+            where: {
+                channel: { userId },
+                proofs: { some: { status: 'active' } }
+            },
+            take: 6,
+            orderBy: { publishedAt: 'desc' },
+            include: {
+                proofs: {
+                    where: { status: 'active' },
+                    take: 1,
+                },
+            },
+        });
+
         if (!profile) {
             return { profile: null };
         }
 
         return {
-            profile: this.formatProfile(profile),
+            profile: this.formatProfile(profile, verifiedVideos),
         };
     }
 
@@ -141,7 +157,23 @@ export class ProfilesService {
             },
         });
 
-        return { profile: this.formatProfile(profile) };
+        // Fetch verified videos (latest 6)
+        const verifiedVideos = await this.prisma.video.findMany({
+            where: {
+                channel: { userId },
+                proofs: { some: { status: 'active' } }
+            },
+            take: 6,
+            orderBy: { publishedAt: 'desc' },
+            include: {
+                proofs: {
+                    where: { status: 'active' },
+                    take: 1,
+                },
+            },
+        });
+
+        return { profile: this.formatProfile(profile, verifiedVideos) };
     }
 
     // ==================== LINKS ====================
@@ -294,7 +326,7 @@ export class ProfilesService {
         return 'website';
     }
 
-    private formatProfile(profile: any) {
+    private formatProfile(profile: any, verifiedVideos: any[] = []) {
         return {
             id: profile.id,
             handle: profile.handle,
@@ -313,6 +345,14 @@ export class ProfilesService {
                     has_active_proof: profile.featuredVideo.proofs?.length > 0,
                 }
                 : null,
+            verified_videos: verifiedVideos.map(v => ({
+                id: v.id,
+                youtube_video_id: v.youtubeVideoId,
+                title: v.title,
+                thumbnail_url: v.thumbnailUrl,
+                proof_id: v.proofs?.[0]?.id,
+                published_at: v.publishedAt,
+            })),
             is_public: profile.isPublic,
             public_url: `https://antiai.me/${profile.handle}`,
             created_at: profile.createdAt.toISOString(),

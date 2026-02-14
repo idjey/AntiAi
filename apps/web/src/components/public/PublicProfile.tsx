@@ -3,17 +3,23 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { SocialIcon } from '@/components/SocialIcon';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface Props {
     creator: any;
 }
 
 export const PublicProfile = ({ creator }: Props) => {
+    const { track } = useAnalytics();
+    const [hasTrackedScroll, setHasTrackedScroll] = useState(false);
+    const [isSocialExpanded, setIsSocialExpanded] = useState(false);
+
     const appearance = creator.appearance || {
         theme: 'modern_dark',
         primary_color: '#10b981',
         background_color: '#050505',
-        icon_style: 'monochrome'
+        icon_style: 'monochrome',
+        link_style: 'list' as 'list' | 'grid' | 'row'
     };
 
     // Page Background Logic
@@ -30,6 +36,17 @@ export const PublicProfile = ({ creator }: Props) => {
     const cardTheme = appearance.public_card_theme || 'dark';
     const cardGlow = appearance.public_card_glow || 0;
     const isLightMode = cardTheme === 'light';
+    const cardStyle = appearance.card_style || 'modern';
+
+    // Shape CSS Mapping
+    const shapeClasses = {
+        classic: { card: 'rounded-xl', link: 'rounded-lg' },
+        modern: { card: 'rounded-[2.5rem]', link: 'rounded-2xl' },
+        sharp: { card: 'rounded-none', link: 'rounded-none' },
+        pill: { card: 'rounded-[3rem]', link: 'rounded-full' }
+    };
+
+    const currentShape = shapeClasses[cardStyle as keyof typeof shapeClasses] || shapeClasses.modern;
 
     // Text Colors derived from Card Theme
     const textColor = isLightMode ? 'text-black' : 'text-white';
@@ -108,7 +125,7 @@ export const PublicProfile = ({ creator }: Props) => {
                 <div
                     className="absolute inset-0 z-20 pointer-events-none transition-all duration-500"
                     style={{
-                        background: `radial-gradient(circle, transparent 40%, rgba(0,0,0,${(bgVignette || 0) / 100}) 150%)`
+                        background: `radial-gradient(circle, transparent 40%, rgba(0,0,0,${Math.max((bgVignette || 0) + 20, 40) / 100}) 150%)`
                     }}
                 />
 
@@ -123,15 +140,15 @@ export const PublicProfile = ({ creator }: Props) => {
             </div>
 
             {/* 3. Scrollable Content Wrapper */}
-            <div className="relative z-10 w-full min-h-screen overflow-y-auto overflow-x-hidden py-12 px-4 flex flex-col items-center justify-center">
+            <div className="relative z-10 w-full min-h-screen overflow-y-auto overflow-x-hidden py-6 px-3 flex flex-col items-center justify-center">
 
                 {/* 4. The "Card" (Content Container) */}
                 <div
-                    className="w-full max-w-md relative overflow-hidden rounded-[2.5rem] shadow-2xl transition-all duration-500 animate-in fade-in zoom-in-95 slide-in-from-bottom-8 duration-700"
+                    className={`w-full max-w-md relative overflow-hidden ${currentShape.card} shadow-2xl border border-white/10 transition-all duration-500 animate-in fade-in zoom-in-95 slide-in-from-bottom-8 duration-700`}
                     style={{
                         backgroundColor: appearance.background_color, // Inner Card Color
                         color: isLightMode ? '#000000' : '#ffffff',
-                        boxShadow: `0 25px 50px -12px rgba(0, 0, 0, 0.5)${cardGlow > 0 ? `, 0 0 ${cardGlow * 30}px ${appearance.primary_color}60` : ''}`
+                        boxShadow: `0 40px 80px -12px rgba(0, 0, 0, 0.6)${cardGlow > 0 ? `, 0 0 ${cardGlow * 40}px ${appearance.primary_color}50` : ''}`
                     }}
                 >
                     {/* Inner Card Background Image (Legacy/Specific) */}
@@ -186,12 +203,19 @@ export const PublicProfile = ({ creator }: Props) => {
                     )}
 
                     {/* Content Wrapper (Relative z-10 to stay above bg effects) */}
-                    <div className="relative z-10 flex flex-col p-8 pb-12">
+                    <div className="relative z-10 flex flex-col p-6 pb-8">
 
                         {/* Avatar & Info */}
-                        <div className="text-center space-y-4 mb-8">
+                        <div className="text-center space-y-4 mb-6">
                             {/* Avatar */}
-                            <div className="mx-auto w-28 h-28 rounded-full p-1" style={{ background: `linear-gradient(to bottom right, ${appearance.primary_color}, ${appearance.primary_color}40)` }}>
+                            {/* Avatar */}
+                            <div
+                                className="mx-auto w-28 h-28 rounded-full p-1 animate-pulse-glow"
+                                style={{
+                                    background: `linear-gradient(to bottom right, ${appearance.primary_color}, ${appearance.primary_color}40)`,
+                                    '--pulse-color': `${appearance.primary_color}60`
+                                } as React.CSSProperties}
+                            >
                                 <div className="w-full h-full rounded-full overflow-hidden bg-surface border-4" style={{ borderColor: appearance.background_color }}>
                                     {creator.avatar_url ? (
                                         <img src={creator.avatar_url} alt={creator.display_name} className="w-full h-full object-cover transition-transform hover:scale-110 duration-500" />
@@ -227,25 +251,49 @@ export const PublicProfile = ({ creator }: Props) => {
                         </div>
 
                         {/* Links */}
-                        <div className="space-y-3 w-full">
-                            {creator.links.map((link: any, i: number) => (
+                        <div className={
+                            appearance.link_style === 'grid' ? "grid grid-cols-2 gap-2 w-full" :
+                                appearance.link_style === 'row' ? "flex flex-wrap justify-center gap-3 w-full" :
+                                    "space-y-2 w-full"
+                        }>
+                            {(appearance.link_style === 'row' && !isSocialExpanded && creator.links.length > 4
+                                ? creator.links.slice(0, 4)
+                                : creator.links
+                            ).map((link: any, i: number) => (
                                 <a
-                                    key={link.id}
+                                    key={link.id || i}
                                     href={link.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="block w-full border p-4 rounded-xl flex items-center gap-4 transition-all hover:scale-[1.02] active:scale-[0.98] group backdrop-blur-sm relative overflow-hidden"
+                                    className={`
+                                        block border ${currentShape.link} transition-all hover:scale-105 active:scale-90 group backdrop-blur-sm relative overflow-hidden shadow-sm hover:shadow-md
+                                        ${appearance.link_style === 'row'
+                                            ? 'p-3 w-12 h-12 flex items-center justify-center'
+                                            : appearance.link_style === 'grid'
+                                                ? 'w-full p-4 flex flex-col justify-center text-center aspect-square gap-4'
+                                                : 'w-full p-4 flex items-center gap-4'
+                                        }
+                                    `}
                                     style={{
-                                        backgroundColor: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.05)',
+                                        backgroundColor: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.08)',
                                         borderColor: `${appearance.primary_color}30`,
-                                        animationDelay: `${i * 100}ms`
+                                        animationDelay: `${i * 100}ms`,
+                                        minWidth: appearance.link_style === 'row' ? '44px' : undefined,
+                                        minHeight: appearance.link_style === 'row' ? '44px' : undefined
                                     }}
+                                    aria-label={link.label}
+                                    title={appearance.link_style === 'row' ? link.label : undefined}
+                                    onClick={() => track('link_click', {
+                                        link_id: link.id,
+                                        link_type: link.icon,
+                                        link_style: appearance.link_style
+                                    })}
                                 >
-                                    {/* Hover Fill Effect */}
+                                    <div className={`absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity ${isLightMode ? 'bg-black/5' : 'bg-white/10'}`} />
                                     <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                                    <div className="relative z-10 transition-transform duration-300 group-hover:scale-110">
-                                        <div className="w-6 h-6 flex items-center justify-center">
+                                    <div className="relative z-10 transition-transform duration-300">
+                                        <div className={appearance.link_style === 'grid' ? "w-8 h-8 mx-auto mb-2 flex items-center justify-center" : "w-6 h-6 flex items-center justify-center"}>
                                             <SocialIcon
                                                 type={link.icon}
                                                 url={link.url}
@@ -254,11 +302,40 @@ export const PublicProfile = ({ creator }: Props) => {
                                             />
                                         </div>
                                     </div>
-                                    <span className="font-medium text-center flex-1 pr-10 relative z-10">{link.label}</span>
+                                    {appearance.link_style !== 'row' && (
+                                        <span className={`font-medium ${appearance.link_style === 'grid' ? 'text-xs' : 'text-center flex-1 pr-10'} relative z-10`}>{link.label}</span>
+                                    )}
                                 </a>
                             ))}
+
+                            {/* Expand Toggle for Social Row */}
+                            {appearance.link_style === 'row' && creator.links.length > 4 && (
+                                <button
+                                    onClick={() => setIsSocialExpanded(!isSocialExpanded)}
+                                    className={`
+                                        border ${currentShape.link} transition-all hover:scale-105 active:scale-90 group backdrop-blur-sm relative overflow-hidden shadow-sm hover:shadow-md
+                                        p-3 w-12 h-12 flex items-center justify-center
+                                    `}
+                                    style={{
+                                        backgroundColor: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.08)',
+                                        borderColor: `${appearance.primary_color}30`,
+                                        minWidth: '44px',
+                                        minHeight: '44px'
+                                    }}
+                                    aria-label={isSocialExpanded ? "Collapse links" : "Show all links"}
+                                >
+                                    <div className={`absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity ${isLightMode ? 'bg-black/5' : 'bg-white/10'}`} />
+                                    <svg
+                                        className={`w-5 h-5 transition-transform duration-300 ${isSocialExpanded ? 'rotate-180' : ''}`}
+                                        style={{ color: appearance.primary_color }}
+                                        fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                            )}
                             {creator.links.length === 0 && (
-                                <div className={`text-center text-sm ${textSecondaryColor} py-4 opacity-50`}>
+                                <div className={`col-span-full text-center text-sm ${textSecondaryColor} py-4 opacity-50`}>
                                     No links available.
                                 </div>
                             )}
@@ -266,10 +343,10 @@ export const PublicProfile = ({ creator }: Props) => {
 
                         {/* Featured Video */}
                         {creator.featured_video && (
-                            <div className="space-y-4 pt-8 w-full">
+                            <div className="space-y-3 pt-6 w-full">
                                 <h2 className={`text-xs font-bold ${textSecondaryColor} uppercase tracking-widest text-center opacity-70`}>Featured Verification</h2>
                                 <div
-                                    className="bg-surface border rounded-xl overflow-hidden transition-all hover:shadow-2xl hover:shadow-primary/20 backdrop-blur-sm group"
+                                    className={`bg-surface border ${currentShape.link} overflow-hidden transition-all hover:shadow-2xl hover:shadow-primary/20 backdrop-blur-sm group`}
                                     style={{ borderColor: `${appearance.primary_color}40` }}
                                 >
                                     <div className="aspect-video relative bg-black group-hover:opacity-90 transition-opacity">
@@ -297,15 +374,109 @@ export const PublicProfile = ({ creator }: Props) => {
                             </div>
                         )}
 
+                        {/* Verified Videos Section */}
+                        {creator.verified_videos && creator.verified_videos.length > 0 && (
+                            <div className="space-y-2 pt-4 w-full">
+                                <h2 className={`text-xs font-bold ${textSecondaryColor} uppercase tracking-widest text-center opacity-70`}>Verified Videos</h2>
+
+                                {/* Edge Case: 1 Video (Center, no scroll) */}
+                                {creator.verified_videos.length === 1 ? (
+                                    <div className="px-2">
+                                        <div
+                                            className={`aspect-video bg-black/20 overflow-hidden ${currentShape.link} border relative group transition-all hover:shadow-lg cursor-pointer`}
+                                            style={{ borderColor: `${appearance.primary_color}20` }}
+                                            onClick={() => track('video_click', {
+                                                video_id: creator.verified_videos[0].id,
+                                                video_title: creator.verified_videos[0].title,
+                                                source: 'verified_list_single'
+                                            })}
+                                        >
+                                            <img src={creator.verified_videos[0].thumbnail_url} alt={creator.verified_videos[0].title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                                                </div>
+                                            </div>
+                                            <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded flex items-center gap-1">
+                                                <svg className="w-3 h-3" style={{ color: appearance.primary_color }} fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
+                                                <span className="text-xs font-bold text-white uppercase tracking-wider">Verified</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    /* Vertical List (Full Width - Scrollable) */
+                                    <div className="relative group/list">
+                                        <div
+                                            className="flex flex-col space-y-4 pb-4 overflow-y-auto pr-1"
+                                            style={{
+                                                maxHeight: '300px',
+                                                scrollbarWidth: 'thin',
+                                                scrollbarColor: `${appearance.primary_color}40 transparent`
+                                            }}
+                                        >
+                                            {creator.verified_videos.map((video: any, i: number) => (
+                                                <a
+                                                    key={video.id || i}
+                                                    href={`https://youtube.com/watch?v=${video.youtube_video_id}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className={`block w-full aspect-video bg-black/20 overflow-hidden ${currentShape.link} border relative group transition-all hover:shadow-lg cursor-pointer shrink-0`}
+                                                    style={{ borderColor: `${appearance.primary_color}20` }}
+                                                    onClick={() => track('video_click', {
+                                                        video_id: video.id,
+                                                        video_title: video.title,
+                                                        source: 'verified_list_vertical'
+                                                    })}
+                                                >
+                                                    <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300" loading="lazy" />
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                                                        </div>
+                                                    </div>
+                                                    <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded flex items-center gap-1">
+                                                        <svg className="w-3 h-3" style={{ color: appearance.primary_color }} fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
+                                                    </div>
+                                                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <p className="text-white text-sm font-medium line-clamp-1">{video.title}</p>
+                                                    </div>
+                                                </a>
+                                            ))}
+                                        </div>
+                                        {/* Bottom Scroll Cue Gradient */}
+                                        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/10 to-transparent pointer-events-none opacity-0 group-hover/list:opacity-100 transition-opacity" />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+
                         {/* Footer */}
-                        <div className="pt-8 text-center mt-auto">
-                            <Link href="/" className={`inline-flex items-center gap-2 ${textSecondaryColor} hover:opacity-100 transition-opacity opacity-70`}>
+                        <div className="text-center mt-auto pb-2">
+                            <Link href="/" className={`inline-flex items-center gap-2 ${textSecondaryColor} hover:opacity-100 transition-opacity opacity-50`}>
                                 <span className="text-xs font-medium">Verified by</span>
                                 <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">AntiAI</span>
                             </Link>
                         </div>
-
                     </div>
+                </div>
+
+                {/* External Extension CTA */}
+                <div className="w-full max-w-md mt-8 px-4 text-center animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
+                    <a
+                        href="https://antiai.me/extension"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex flex-col items-center group"
+                    >
+                        <div className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-6 py-3 rounded-full font-bold transition-all transform group-hover:scale-105 group-hover:shadow-lg shadow-primary/10">
+                            Download AntiAI Extension
+                        </div>
+                        <p className="mt-3 text-xs font-medium opacity-60 group-hover:opacity-100 transition-opacity text-white flex items-center gap-1.5">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
+                            Used by creators to prove authenticity
+                        </p>
+                    </a>
                 </div>
             </div>
         </div>

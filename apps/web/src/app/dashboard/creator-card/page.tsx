@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -29,6 +29,7 @@ interface Profile {
         logo_count?: number;
         scatter_style?: 'random' | 'grid' | 'circle';
         background_image?: string;
+        card_style?: 'classic' | 'modern' | 'sharp' | 'pill';
         // Public Page Background
         public_background_type?: 'color' | 'gradient' | 'image';
         public_background_color?: string;
@@ -36,7 +37,23 @@ interface Profile {
         public_background_image?: string;
         public_background_overlay?: number;
         public_background_blur?: number;
+        link_style?: 'list' | 'grid' | 'row';
     };
+    featured_video?: {
+        id: string;
+        youtube_video_id: string;
+        title: string;
+        thumbnail_url: string;
+        has_active_proof: boolean;
+    } | null;
+    verified_videos?: {
+        id: string;
+        youtube_video_id: string;
+        title: string;
+        thumbnail_url: string;
+        proof_id: string;
+        published_at: string;
+    }[];
 }
 
 export default function CreatorCardPage() {
@@ -62,6 +79,8 @@ export default function CreatorCardPage() {
         logo_count: 12,
         scatter_style: 'random' as 'random' | 'grid' | 'circle',
         background_image: '',
+        card_style: 'modern' as 'classic' | 'modern' | 'sharp' | 'pill',
+        link_style: 'list' as 'list' | 'grid' | 'row',
         // Public Page Defaults
         public_background_type: 'color' as 'color' | 'gradient' | 'image',
         public_background_color: '#000000',
@@ -212,7 +231,7 @@ export default function CreatorCardPage() {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/profile`, {
-                method: 'PATCH',
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
@@ -293,8 +312,18 @@ export default function CreatorCardPage() {
         }));
     };
 
+    // Card Shape Logic for Preview
+    const cardStyle = appearance.card_style || 'modern';
+    const shapeClasses = {
+        classic: { card: 'rounded-xl', link: 'rounded-lg' },
+        modern: { card: 'rounded-[2.5rem]', link: 'rounded-2xl' },
+        sharp: { card: 'rounded-none', link: 'rounded-none' },
+        pill: { card: 'rounded-[3rem]', link: 'rounded-full' }
+    };
+    const currentShape = shapeClasses[cardStyle as keyof typeof shapeClasses] || shapeClasses.modern;
+
     return (
-        <div className="max-w-6xl mx-auto h-[calc(100vh-100px)] flex gap-8">
+        <div className="max-w-[2000px] mx-auto h-[calc(100vh-100px)] flex gap-8 px-6">
             {/* Left: Editor */}
             <div className="flex-1 flex flex-col gap-6 overflow-y-auto pr-4">
                 <div className="flex items-center justify-between">
@@ -442,20 +471,13 @@ export default function CreatorCardPage() {
                         </div>
                     </div>
                 ) : (
-                    <div className="space-y-6">
+                    <div className="space-y-6 w-full max-w-4xl">
                         <div className="bg-surface border border-border rounded-xl p-6 space-y-6">
                             {/* Card Appearance Header */}
-                            <div className="flex items-center justify-between">
+                            {/* Card Appearance Header */}
+                            <div className="flex items-center justify-between pb-2">
                                 <h2 className="text-lg font-bold text-text-primary">Card Appearance</h2>
-                                <button
-                                    onClick={handleRandomize}
-                                    className="text-sm px-3 py-1.5 bg-surface-light border border-border text-text-primary rounded-lg hover:border-primary transition-all flex items-center gap-2"
-                                >
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                    </svg>
-                                    <span>Randomize</span>
-                                </button>
+                                {/* Moved Randomize to bottom or make subtle if kept here, user suggested reducing weight */}
                             </div>
 
                             {/* Background Type Tabs */}
@@ -533,7 +555,7 @@ export default function CreatorCardPage() {
                                                     onClick={() => setAppearance(prev => ({ ...prev, public_background_image: '' }))}
                                                     className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity"
                                                 >
-                                                    ×
+                                                    Ã—
                                                 </button>
                                             </div>
                                         ) : null}
@@ -550,51 +572,69 @@ export default function CreatorCardPage() {
                             )}
 
                             {/* Effects (Overlay, Blur, Vignette, Grain) */}
-                            <div className="space-y-4 pt-2 border-t border-border/50">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
+                            <div className="space-y-6 pt-6 border-t border-border/50">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-sm font-bold text-text-primary">Background Effects</h3>
+                                    <button
+                                        onClick={handleRandomize}
+                                        className="text-xs px-2 py-1 text-text-secondary hover:text-primary transition-colors flex items-center gap-1.5 opacity-70 hover:opacity-100"
+                                        title="Randomize Appearance"
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                        Randomize
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-8">
+                                    <div className="space-y-2">
                                         <div className="flex justify-between text-xs">
                                             <span className="text-text-secondary">Dark Overlay</span>
                                             <span className="font-mono text-text-primary">{appearance.public_background_overlay}%</span>
                                         </div>
-                                        <input type="range" min="0" max="90" value={appearance.public_background_overlay} onChange={(e) => setAppearance(prev => ({ ...prev, public_background_overlay: parseInt(e.target.value) }))} className="w-full accent-primary h-1.5 bg-surface-dark rounded-lg appearance-none cursor-pointer" />
+                                        <div className="flex items-center">
+                                            <input type="range" min="0" max="90" value={appearance.public_background_overlay} onChange={(e) => setAppearance(prev => ({ ...prev, public_background_overlay: parseInt(e.target.value) }))} className="w-full max-w-[85%] accent-primary h-1.5 bg-surface-dark rounded-lg appearance-none cursor-pointer" />
+                                        </div>
                                     </div>
-                                    <div className="space-y-1">
+                                    <div className="space-y-2">
                                         <div className="flex justify-between text-xs">
                                             <span className="text-text-secondary">Blur Amount</span>
                                             <span className="font-mono text-text-primary">{appearance.public_background_blur}px</span>
                                         </div>
-                                        <input type="range" min="0" max="50" value={appearance.public_background_blur} onChange={(e) => setAppearance(prev => ({ ...prev, public_background_blur: parseInt(e.target.value) }))} className="w-full accent-primary h-1.5 bg-surface-dark rounded-lg appearance-none cursor-pointer" />
+                                        <div className="flex items-center">
+                                            <input type="range" min="0" max="50" value={appearance.public_background_blur} onChange={(e) => setAppearance(prev => ({ ...prev, public_background_blur: parseInt(e.target.value) }))} className="w-full max-w-[85%] accent-primary h-1.5 bg-surface-dark rounded-lg appearance-none cursor-pointer" />
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
+                                    <div className="space-y-2">
                                         <div className="flex justify-between text-xs">
                                             <span className="text-text-secondary">Vignette</span>
                                             <span className="font-mono text-text-primary">{appearance.public_background_vignette || 0}%</span>
                                         </div>
-                                        <input type="range" min="0" max="100" value={appearance.public_background_vignette || 0} onChange={(e) => setAppearance(prev => ({ ...prev, public_background_vignette: parseInt(e.target.value) }))} className="w-full accent-primary h-1.5 bg-surface-dark rounded-lg appearance-none cursor-pointer" />
+                                        <div className="flex items-center">
+                                            <input type="range" min="0" max="100" value={appearance.public_background_vignette || 0} onChange={(e) => setAppearance(prev => ({ ...prev, public_background_vignette: parseInt(e.target.value) }))} className="w-full max-w-[85%] accent-primary h-1.5 bg-surface-dark rounded-lg appearance-none cursor-pointer" />
+                                        </div>
                                     </div>
-                                    <div className="space-y-1">
+                                    <div className="space-y-2">
                                         <div className="flex justify-between text-xs">
                                             <span className="text-text-secondary">Grain</span>
                                             <span className="font-mono text-text-primary">{appearance.public_background_grain || 0}%</span>
                                         </div>
-                                        <input type="range" min="0" max="100" value={appearance.public_background_grain || 0} onChange={(e) => setAppearance(prev => ({ ...prev, public_background_grain: parseInt(e.target.value) }))} className="w-full accent-primary h-1.5 bg-surface-dark rounded-lg appearance-none cursor-pointer" />
+                                        <div className="flex items-center">
+                                            <input type="range" min="0" max="100" value={appearance.public_background_grain || 0} onChange={(e) => setAppearance(prev => ({ ...prev, public_background_grain: parseInt(e.target.value) }))} className="w-full max-w-[85%] accent-primary h-1.5 bg-surface-dark rounded-lg appearance-none cursor-pointer" />
+                                        </div>
                                     </div>
-                                </div>
-                                {/* Card Style Extras */}
-                                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border/50">
-                                    <div className="space-y-1">
+                                    <div className="space-y-2">
                                         <div className="flex justify-between text-xs">
                                             <span className="text-text-secondary">Soft Glow</span>
                                             <span className="font-mono text-text-primary">{appearance.public_card_glow || 0}</span>
                                         </div>
-                                        <input type="range" min="0" max="2" step="0.1" value={appearance.public_card_glow || 0} onChange={(e) => setAppearance(prev => ({ ...prev, public_card_glow: parseFloat(e.target.value) }))} className="w-full accent-primary h-1.5 bg-surface-dark rounded-lg appearance-none cursor-pointer" />
+                                        <div className="flex items-center">
+                                            <input type="range" min="0" max="2" step="0.1" value={appearance.public_card_glow || 0} onChange={(e) => setAppearance(prev => ({ ...prev, public_card_glow: parseFloat(e.target.value) }))} className="w-full max-w-[85%] accent-primary h-1.5 bg-surface-dark rounded-lg appearance-none cursor-pointer" />
+                                        </div>
                                     </div>
-                                    <div className="space-y-1">
+                                    <div className="space-y-2">
                                         <label className="text-xs text-text-secondary block mb-1">Card Theme</label>
-                                        <div className="flex bg-surface-dark p-0.5 rounded-lg border border-border">
+                                        <div className="flex bg-surface-dark p-0.5 rounded-lg border border-border w-full max-w-[200px]">
                                             <button
                                                 onClick={() => setAppearance(prev => ({ ...prev, public_card_theme: 'dark' }))}
                                                 className={`flex-1 text-xs py-1 rounded-md transition-all ${appearance.public_card_theme !== 'light' ? 'bg-surface text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
@@ -612,8 +652,60 @@ export default function CreatorCardPage() {
                                 </div>
                             </div>
 
+
+                            {/* Card Shape */}
+                            <div className="space-y-4 pt-6 border-t border-border/50">
+                                <h3 className="font-bold text-text-primary">Card Shape</h3>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {[
+                                        { id: 'classic', label: 'Classic', radius: 'rounded-xl' },
+                                        { id: 'modern', label: 'Modern', radius: 'rounded-[2.5rem]' },
+                                        { id: 'sharp', label: 'Sharp', radius: 'rounded-none' },
+                                        { id: 'pill', label: 'Pill', radius: 'rounded-[3rem]' }
+                                    ].map((style) => (
+                                        <button
+                                            key={style.id}
+                                            onClick={() => setAppearance(prev => ({ ...prev, card_style: style.id as any }))}
+                                            className={`group relative p-3 border rounded-lg transition-all ${appearance.card_style === style.id
+                                                ? 'border-primary bg-primary/5'
+                                                : 'border-border hover:border-primary/50'
+                                                }`}
+                                        >
+                                            <div className={`w-full aspect-square bg-text-primary/10 mb-2 border border-text-primary/20 ${style.radius}`} />
+                                            <span className={`text-xs font-medium ${appearance.card_style === style.id ? 'text-primary' : 'text-text-secondary'
+                                                }`}>
+                                                {style.label}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Link Layout */}
+                            <div className="space-y-4 pt-6 border-t border-border/50">
+                                <h3 className="font-bold text-text-primary">Link Layout</h3>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {[
+                                        { id: 'list', label: 'List' },
+                                        { id: 'grid', label: 'Grid' },
+                                        { id: 'row', label: 'Row' }
+                                    ].map((style) => (
+                                        <button
+                                            key={style.id}
+                                            onClick={() => setAppearance(prev => ({ ...prev, link_style: style.id as any }))}
+                                            className={`p-3 border rounded-lg transition-all text-sm font-medium ${appearance.link_style === style.id
+                                                ? 'border-primary bg-primary/5 text-primary'
+                                                : 'border-border hover:border-primary/50 text-text-secondary'
+                                                }`}
+                                        >
+                                            {style.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             {/* Theme Selector */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-6 border-t border-border/50">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-text-secondary">Theme</label>
                                     <select
@@ -646,7 +738,7 @@ export default function CreatorCardPage() {
                             </div>
 
                             {/* Colors */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4 border-t border-border">
                                 {/* Primary Color */}
                                 <div className="space-y-3">
                                     <label className="text-sm font-medium text-text-secondary">Primary Color</label>
@@ -720,150 +812,155 @@ export default function CreatorCardPage() {
                             </div>
 
                             {/* Logo Settings */}
-                            <div className="space-y-4 pt-4 border-t border-border">
+                            <div className="space-y-6 pt-4 border-t border-border">
                                 <h3 className="font-bold text-text-primary">Logo Settings</h3>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-text-secondary">Logo URL</label>
-                                    <div className="relative">
-                                        <input
-                                            type="url"
-                                            value={appearance.logo_url || ''}
-                                            onChange={(e) => {
-                                                const url = e.target.value;
-                                                setAppearance(prev => ({ ...prev, logo_url: url }));
-                                                setLogoUrlError(null);
-                                                if (url) {
-                                                    setIsVerifyingLogo(true);
-                                                    const img = new Image();
-                                                    img.onload = () => {
-                                                        if (img.naturalWidth > 512 || img.naturalHeight > 512) {
-                                                            setIsVerifyingLogo(false);
-                                                            setLogoUrlError(`Image resolution too high (${img.naturalWidth}x${img.naturalHeight}px). Max allowed is 512x512px.`);
-                                                        } else {
-                                                            setIsVerifyingLogo(false);
-                                                            setLogoUrlError(null);
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-text-secondary">Logo URL</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="url"
+                                                    value={appearance.logo_url || ''}
+                                                    onChange={(e) => {
+                                                        const url = e.target.value;
+                                                        setAppearance(prev => ({ ...prev, logo_url: url }));
+                                                        setLogoUrlError(null);
+                                                        if (url) {
+                                                            setIsVerifyingLogo(true);
+                                                            const img = new Image();
+                                                            img.onload = () => {
+                                                                if (img.naturalWidth > 512 || img.naturalHeight > 512) {
+                                                                    setIsVerifyingLogo(false);
+                                                                    setLogoUrlError(`Image resolution too high (${img.naturalWidth}x${img.naturalHeight}px). Max allowed is 512x512px.`);
+                                                                } else {
+                                                                    setIsVerifyingLogo(false);
+                                                                    setLogoUrlError(null);
+                                                                }
+                                                            };
+                                                            img.onerror = () => {
+                                                                setIsVerifyingLogo(false);
+                                                                setLogoUrlError('Unable to load image. Ensure URL points directly to an image file (png/jpg).');
+                                                            };
+                                                            img.src = url;
                                                         }
-                                                    };
-                                                    img.onerror = () => {
-                                                        setIsVerifyingLogo(false);
-                                                        setLogoUrlError('Unable to load image. Ensure URL points directly to an image file (png/jpg).');
-                                                    };
-                                                    img.src = url;
-                                                }
-                                            }}
-                                            className={`w-full bg-background border ${logoUrlError ? 'border-red-500' : 'border-border'} rounded-lg px-4 py-2 text-text-primary focus:outline-none focus:border-primary placeholder:text-text-muted/50`}
-                                            placeholder="https://example.com/logo.png"
-                                        />
-                                        {isVerifyingLogo && (
-                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-primary animate-pulse">Verifying...</div>
-                                        )}
-                                    </div>
-                                    {logoUrlError && <p className="text-xs text-red-500 mt-1">{logoUrlError}</p>}
-                                    <p className="text-xs text-text-secondary mt-1">Enter a direct link to your logo image (PNG/JPG/SVG).</p>
-                                    <div className="flex gap-2 pt-2">
-                                        <ImageUpload
-                                            onUpload={(url) => {
-                                                setAppearance(prev => ({ ...prev, logo_url: url }));
-                                                setLogoUrlError(null);
-                                            }}
-                                            className="inline-block"
-                                        >
-                                            <button className="flex items-center gap-2 px-4 py-2 bg-surface border border-dashed border-border rounded-lg text-sm text-text-secondary hover:text-primary hover:border-primary transition-colors">
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                                                Upload Image
-                                            </button>
-                                        </ImageUpload>
-                                        <button
-                                            onClick={() => {
-                                                setAppearance(prev => ({ ...prev, logo_url: '/logo.svg', logo_position: 'scatter' }));
-                                                setLogoUrlError(null);
-                                            }}
-                                            className="flex items-center gap-2 px-4 py-2 bg-surface border border-border rounded-lg text-sm text-text-secondary hover:text-primary hover:border-primary transition-colors"
-                                        >
-                                            Use Official Logo
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-text-secondary">Logo Position</label>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {[
-                                            { id: 'top_left', label: 'Top Left' },
-                                            { id: 'center_top', label: 'Top Center' },
-                                            { id: 'top_right', label: 'Top Right' },
-                                            { id: 'center', label: 'Center (Hero)' },
-                                            { id: 'scatter', label: 'Scatter Pattern' },
-                                            { id: 'bottom_left', label: 'Btm Left' },
-                                            { id: 'bottom_right', label: 'Btm Right' },
-                                        ].map(pos => (
-                                            <button
-                                                key={pos.id}
-                                                onClick={() => {
-                                                    setAppearance(prev => ({ ...prev, logo_position: pos.id as any }));
-                                                    if (pos.id === 'scatter') {
-                                                        generateScatterPositions(appearance.logo_count || 12, appearance.scatter_style || 'random');
-                                                    }
-                                                }}
-                                                className={`py-2 px-2 text-xs rounded-lg border transition-all ${appearance.logo_position === pos.id
-                                                    ? 'border-primary bg-primary/10 text-primary font-medium'
-                                                    : 'border-border bg-background text-text-secondary hover:border-primary/50'
-                                                    }`}
-                                            >
-                                                {pos.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {appearance.logo_position === 'scatter' && (
-                                    <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-1">
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <label className="text-sm font-medium text-text-secondary">Pattern Opacity</label>
-                                                <span className="text-xs text-text-secondary">{Math.round((appearance.logo_opacity || 0.2) * 100)}%</span>
+                                                    }}
+                                                    className={`w-full bg-background border ${logoUrlError ? 'border-red-500' : 'border-border'} rounded-lg px-4 py-2 text-text-primary focus:outline-none focus:border-primary placeholder:text-text-muted/50`}
+                                                    placeholder="https://example.com/logo.png"
+                                                />
+                                                {isVerifyingLogo && (
+                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-primary animate-pulse">Verifying...</div>
+                                                )}
                                             </div>
-                                            <input type="range" min="0.05" max="1" step="0.05" value={appearance.logo_opacity || 0.2} onChange={(e) => setAppearance(prev => ({ ...prev, logo_opacity: parseFloat(e.target.value) }))} className="w-full accent-primary h-2 bg-surface-light rounded-lg appearance-none cursor-pointer" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <label className="text-sm font-medium text-text-secondary">Item Count</label>
-                                                <span className="text-xs text-text-secondary">{appearance.logo_count || 12} items</span>
+                                            {logoUrlError && <p className="text-xs text-red-500 mt-1">{logoUrlError}</p>}
+                                            <p className="text-xs text-text-secondary mt-1">Enter a direct link to your logo image (PNG/JPG/SVG).</p>
+                                            <div className="flex gap-2 pt-2">
+                                                <ImageUpload
+                                                    onUpload={(url) => {
+                                                        setAppearance(prev => ({ ...prev, logo_url: url }));
+                                                        setLogoUrlError(null);
+                                                    }}
+                                                    className="inline-block"
+                                                >
+                                                    <button className="flex items-center gap-2 px-4 py-2 bg-surface border border-dashed border-border rounded-lg text-sm text-text-secondary hover:text-primary hover:border-primary transition-colors">
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                                        Upload Image
+                                                    </button>
+                                                </ImageUpload>
+                                                <button
+                                                    onClick={() => {
+                                                        setAppearance(prev => ({ ...prev, logo_url: '/logo.svg', logo_position: 'scatter' }));
+                                                        setLogoUrlError(null);
+                                                    }}
+                                                    className="flex items-center gap-2 px-4 py-2 bg-surface border border-border rounded-lg text-sm text-text-secondary hover:text-primary hover:border-primary transition-colors"
+                                                >
+                                                    Use Official Logo
+                                                </button>
                                             </div>
-                                            <input type="range" min="4" max="30" step="1" value={appearance.logo_count || 12} onChange={(e) => setAppearance(prev => ({ ...prev, logo_count: parseInt(e.target.value) }))} className="w-full accent-primary h-2 bg-surface-light rounded-lg appearance-none cursor-pointer" />
                                         </div>
+
                                         <div className="space-y-2">
-                                            <label className="text-sm font-medium text-text-secondary">Pattern Style</label>
-                                            <div className="flex gap-2">
-                                                {['random', 'grid', 'circle'].map(style => (
+                                            <label className="text-sm font-medium text-text-secondary">Logo Position</label>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {[
+                                                    { id: 'top_left', label: 'Top Left' },
+                                                    { id: 'center_top', label: 'Top Center' },
+                                                    { id: 'top_right', label: 'Top Right' },
+                                                    { id: 'center', label: 'Center (Hero)' },
+                                                    { id: 'scatter', label: 'Scatter Pattern' },
+                                                    { id: 'bottom_left', label: 'Btm Left' },
+                                                    { id: 'bottom_right', label: 'Btm Right' },
+                                                ].map(pos => (
                                                     <button
-                                                        key={style}
+                                                        key={pos.id}
                                                         onClick={() => {
-                                                            setAppearance(prev => ({ ...prev, scatter_style: style as any }));
-                                                            if (style === 'random') {
-                                                                generateScatterPositions(appearance.logo_count || 12, 'random');
+                                                            setAppearance(prev => ({ ...prev, logo_position: pos.id as any }));
+                                                            if (pos.id === 'scatter') {
+                                                                generateScatterPositions(appearance.logo_count || 12, appearance.scatter_style || 'random');
                                                             }
                                                         }}
-                                                        className={`flex-1 py-1.5 px-2 text-xs rounded-lg border capitalize transition-all ${(appearance.scatter_style || 'random') === style
+                                                        className={`py-2 px-2 text-xs rounded-lg border transition-all ${appearance.logo_position === pos.id
                                                             ? 'border-primary bg-primary/10 text-primary font-medium'
                                                             : 'border-border bg-background text-text-secondary hover:border-primary/50'
                                                             }`}
                                                     >
-                                                        {style}
+                                                        {pos.label}
                                                     </button>
                                                 ))}
                                             </div>
                                         </div>
-                                        {appearance.scatter_style === 'random' && (
-                                            <button
-                                                onClick={() => generateScatterPositions(appearance.logo_count || 12, 'random')}
-                                                className="w-full py-2 text-xs text-primary border border-primary/20 bg-primary/5 rounded-lg hover:bg-primary/10 transition-colors"
-                                            >
-                                                Reshuffle Random Pattern 🎲
-                                            </button>
-                                        )}
                                     </div>
-                                )}
+
+                                    {appearance.logo_position === 'scatter' && (
+                                        <div className="space-y-6 pt-2 h-full justify-center flex flex-col animate-in fade-in slide-in-from-top-1 bg-surface-light/30 p-4 rounded-xl border border-border/50">
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <label className="text-sm font-medium text-text-secondary">Pattern Opacity</label>
+                                                    <span className="text-xs text-text-secondary">{Math.round((appearance.logo_opacity || 0.2) * 100)}%</span>
+                                                </div>
+                                                <input type="range" min="0.05" max="1" step="0.05" value={appearance.logo_opacity || 0.2} onChange={(e) => setAppearance(prev => ({ ...prev, logo_opacity: parseFloat(e.target.value) }))} className="w-full accent-primary h-2 bg-surface-light rounded-lg appearance-none cursor-pointer" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <label className="text-sm font-medium text-text-secondary">Item Count</label>
+                                                    <span className="text-xs text-text-secondary">{appearance.logo_count || 12} items</span>
+                                                </div>
+                                                <input type="range" min="4" max="30" step="1" value={appearance.logo_count || 12} onChange={(e) => setAppearance(prev => ({ ...prev, logo_count: parseInt(e.target.value) }))} className="w-full accent-primary h-2 bg-surface-light rounded-lg appearance-none cursor-pointer" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-text-secondary">Pattern Style</label>
+                                                <div className="flex gap-2">
+                                                    {['random', 'grid', 'circle'].map(style => (
+                                                        <button
+                                                            key={style}
+                                                            onClick={() => {
+                                                                setAppearance(prev => ({ ...prev, scatter_style: style as any }));
+                                                                if (style === 'random') {
+                                                                    generateScatterPositions(appearance.logo_count || 12, 'random');
+                                                                }
+                                                            }}
+                                                            className={`flex-1 py-1.5 px-2 text-xs rounded-lg border capitalize transition-all ${(appearance.scatter_style || 'random') === style
+                                                                ? 'border-primary bg-primary/10 text-primary font-medium'
+                                                                : 'border-border bg-background text-text-secondary hover:border-primary/50'
+                                                                }`}
+                                                        >
+                                                            {style}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            {appearance.scatter_style === 'random' && (
+                                                <button
+                                                    onClick={() => generateScatterPositions(appearance.logo_count || 12, 'random')}
+                                                    className="w-full py-2 text-xs text-primary border border-primary/20 bg-primary/5 rounded-lg hover:bg-primary/10 transition-colors"
+                                                >
+                                                    Reshuffle Random Pattern ðŸŽ²
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -881,7 +978,7 @@ export default function CreatorCardPage() {
             {/* Right: Mobile Preview */}
             <div className="hidden xl:block w-[400px] flex-shrink-0">
                 <div className="sticky top-8">
-                    <div className="bg-black rounded-[3rem] border-[8px] border-surface-light p-2 shadow-2xl h-[700px] relative overflow-hidden">
+                    <div className="bg-black rounded-[3rem] border-4 border-surface-light p-2 shadow-2xl h-[700px] relative overflow-hidden">
                         {/* Phone Notch */}
                         <div className="absolute top-0 inset-x-0 h-6 bg-surface-light rounded-b-xl w-40 mx-auto z-20"></div>
 
@@ -911,9 +1008,8 @@ export default function CreatorCardPage() {
                                 }}
                             />
 
-                            {/* Card Content Container */}
                             <div
-                                className="relative z-10 w-full min-h-full flex flex-col transition-all duration-300"
+                                className={`relative z-10 w-[calc(100%-1.5rem)] my-6 flex flex-col transition-all duration-300 ${currentShape.card} overflow-hidden shadow-2xl`}
                                 style={{
                                     backgroundColor: appearance.background_color === '#000000' && !appearance.background_image ? 'transparent' : appearance.background_color,
                                     color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff',
@@ -921,7 +1017,6 @@ export default function CreatorCardPage() {
                                     backgroundImage: appearance.background_image ? `url(${appearance.background_image})` : undefined,
                                     backgroundSize: 'cover',
                                     backgroundPosition: 'center',
-                                    maxWidth: '100%',
                                 }}
                             >
                                 {/* Inner Card Overlay */}
@@ -977,7 +1072,13 @@ export default function CreatorCardPage() {
                                         style={{ background: `linear-gradient(to bottom right, ${appearance.primary_color}40, ${appearance.primary_color}10)` }}
                                     >
                                         {profile?.avatar_url && (
-                                            <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 rounded-full p-1" style={{ backgroundColor: appearance.background_color }}>
+                                            <div
+                                                className="absolute -bottom-10 left-1/2 -translate-x-1/2 rounded-full p-1 animate-pulse-glow"
+                                                style={{
+                                                    backgroundColor: appearance.background_color,
+                                                    '--pulse-color': `${appearance.primary_color}60`
+                                                } as React.CSSProperties}
+                                            >
                                                 <div className="w-20 h-20 rounded-full overflow-hidden border-2" style={{ borderColor: appearance.primary_color }}>
                                                     <img src={profile.avatar_url} className="w-full h-full object-cover" />
                                                 </div>
@@ -992,7 +1093,7 @@ export default function CreatorCardPage() {
                                         )}
                                     </div>
 
-                                    <div className="mt-12 text-center px-6" style={{ position: 'relative', zIndex: 10 }}>
+                                    <div className="mt-14 text-center px-3" style={{ position: 'relative', zIndex: 10 }}>
                                         <h3 className="text-xl font-bold flex items-center justify-center gap-2">
                                             {profile?.display_name || 'Your Name'}
                                             <svg className="w-4 h-4" style={{ color: appearance.primary_color }} fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
@@ -1000,26 +1101,94 @@ export default function CreatorCardPage() {
                                         <p className="text-sm opacity-60">@{profile?.handle || 'handle'}</p>
                                     </div>
 
-                                    <div className="mt-8 px-6 space-y-3 relative z-10">
-                                        {links.map(link => (
-                                            <div
-                                                key={link.id}
-                                                className="w-full p-4 rounded-xl flex items-center gap-4 transition-all cursor-pointer group"
-                                                style={{
-                                                    backgroundColor: appearance.background_color === '#000000' ? '#181818' : 'rgba(255,255,255,0.1)',
-                                                    border: `1px solid ${appearance.primary_color}40`
-                                                }}
-                                            >
-                                                <div className="transition-colors">
-                                                    <SocialIcon type={link.icon} url={link.url} variant={appearance.icon_style} className="w-5 h-5" />
+                                    <div className="mt-4 px-3 space-y-2 relative z-10">
+                                        <div className={
+                                            appearance.link_style === 'grid' ? "grid grid-cols-2 gap-2" :
+                                                appearance.link_style === 'row' ? "flex flex-wrap justify-center gap-3" :
+                                                    "space-y-2"
+                                        }>
+                                            {links.map(link => (
+                                                <div
+                                                    key={link.id}
+                                                    className={`
+                                                        ${currentShape.link} transition-all cursor-pointer group shadow-sm hover:shadow-md active:scale-90
+                                                        ${appearance.link_style === 'row'
+                                                            ? 'p-3 w-12 h-12 flex items-center justify-center'
+                                                            : appearance.link_style === 'grid'
+                                                                ? 'w-full p-4 flex flex-col justify-center text-center aspect-square gap-4'
+                                                                : 'w-full p-4 flex items-center gap-4'
+                                                        }
+                                                    `}
+                                                    style={{
+                                                        backgroundColor: appearance.background_color === '#000000' ? '#181818' : 'rgba(255,255,255,0.1)',
+                                                        border: `1px solid ${appearance.primary_color}50`,
+                                                        minWidth: appearance.link_style === 'row' ? '44px' : undefined,
+                                                        minHeight: appearance.link_style === 'row' ? '44px' : undefined
+                                                    }}
+                                                    title={appearance.link_style === 'row' ? link.label : undefined}
+                                                >
+                                                    <div className="transition-colors">
+                                                        <SocialIcon
+                                                            type={link.icon}
+                                                            url={link.url}
+                                                            variant={appearance.icon_style}
+                                                            className={appearance.link_style === 'grid' ? "w-8 h-8 mx-auto mb-2" : "w-5 h-5"}
+                                                        />
+                                                    </div>
+                                                    {appearance.link_style !== 'row' && (
+                                                        <span className={`font-medium ${appearance.link_style === 'grid' ? 'text-xs' : 'flex-1 text-center pr-6'}`}>{link.label}</span>
+                                                    )}
                                                 </div>
-                                                <span className="font-medium flex-1 text-center pr-6">{link.label}</span>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                         {links.length === 0 && (
                                             <div className="text-center text-xs opacity-50 py-4">Add links to see them here</div>
                                         )}
                                     </div>
+
+                                    {/* Verified Videos Section */}
+                                    {profile?.verified_videos && profile.verified_videos.length > 0 && (
+                                        <div className="mt-4 space-y-2">
+                                            <h4 className="px-3 text-xs font-bold uppercase tracking-widest text-center opacity-70">Verified Videos</h4>
+
+                                            {/* Edge Case: 1 Video (Center, no scroll) */}
+                                            {profile.verified_videos.length === 1 ? (
+                                                <div className="px-3">
+                                                    <div className={`aspect-video bg-black/20 overflow-hidden ${currentShape.link} border border-white/10 relative group`}>
+                                                        <img src={profile.verified_videos[0].thumbnail_url} alt={profile.verified_videos[0].title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                                        <div className="absolute inset-0 flex items-center justify-center">
+                                                            <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                                                                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                                                            </div>
+                                                        </div>
+                                                        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded flex items-center gap-1">
+                                                            <svg className="w-3 h-3 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
+                                                            <span className="text-xs font-bold text-white uppercase tracking-wider">Verified</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                /* Edge Case: 2+ Videos (Horizontal Scroll) */
+                                                <div className="flex overflow-x-auto space-x-3 pb-4 px-3 -mx-6 md:mx-0 scrollbar-hide snap-x snap-mandatory">
+                                                    {profile.verified_videos.map(video => (
+                                                        <div key={video.id} className={`flex-shrink-0 w-[80%] aspect-video bg-black/20 overflow-hidden ${currentShape.link} border border-white/10 relative group snap-center`}>
+                                                            <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" loading="lazy" />
+                                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                                <div className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                                                                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                                                                </div>
+                                                            </div>
+                                                            <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded flex items-center gap-1">
+                                                                <svg className="w-3 h-3 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {/* Padding element for right-side peek */}
+                                                    <div className="w-2 flex-shrink-0" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
 
                                     <div className="mt-8 text-center pb-8">
                                         <span className="text-[10px] uppercase tracking-widest opacity-40">Verified by AntiAI</span>
@@ -1033,5 +1202,3 @@ export default function CreatorCardPage() {
         </div>
     );
 }
-
-

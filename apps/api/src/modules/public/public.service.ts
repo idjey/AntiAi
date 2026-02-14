@@ -230,11 +230,13 @@ export class PublicService {
                 thumbnail_url: profile.featuredVideo.thumbnailUrl,
                 verified: profile.featuredVideo.proofs.length > 0,
             } : null,
-            recent_videos: recentVideos.map(v => ({
+            verified_videos: recentVideos.map(v => ({
+                id: v.id,
                 youtube_video_id: v.youtubeVideoId,
                 title: v.title,
                 thumbnail_url: v.thumbnailUrl,
-                verified: v.proofs.length > 0,
+                proof_id: v.proofs?.[0]?.id,
+                published_at: v.publishedAt,
             })),
         };
     }

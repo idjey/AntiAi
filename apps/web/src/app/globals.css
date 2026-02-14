@@ -186,6 +186,19 @@ h6 {
   animation: float 6s ease-in-out infinite;
 }
 
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0px var(--pulse-color, rgba(34, 197, 94, 0.4));
+  }
+  50% {
+    box-shadow: 0 0 20px 2px var(--pulse-color, rgba(34, 197, 94, 0.2));
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 4s infinite ease-in-out;
+}
+
 /* ==================== SCROLLBAR ==================== */
 
 ::-webkit-scrollbar {
