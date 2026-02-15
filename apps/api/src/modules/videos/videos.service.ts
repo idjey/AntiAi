@@ -3,6 +3,7 @@ import {
     BadRequestException,
     ForbiddenException,
     ConflictException,
+    NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ChannelsService } from '../channels/channels.service';
@@ -96,19 +97,27 @@ export class VideosService {
             throw new ForbiddenException('Video belongs to a different channel');
         }
 
-        // TODO: Fetch video metadata from YouTube API
-        // For MVP, use placeholder data
+        // Fetch video metadata from YouTube API
+        const metadata = await this.fetchVideoMetadata(videoId);
+
+        // Security Check: Verify video belongs to the selected channel
+        if (metadata.channel_id && metadata.channel_id !== channel.youtubeChannelId) {
+            throw new ForbiddenException(
+                `Video does not belong to the selected channel. Expected: ${channel.youtubeChannelId}, Found: ${metadata.channel_id}`
+            );
+        }
+
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-        const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 
         // Create video
         const video = await this.prisma.video.create({
             data: {
                 channelId: channel.id,
                 youtubeVideoId: videoId,
-                title: dto.title || `Video ${videoId}`,
+                title: dto.title || metadata.title || `Video ${videoId}`,
                 videoUrl,
-                thumbnailUrl,
+                thumbnailUrl: metadata.thumbnail_url,
+                publishedAt: metadata.published_at ? new Date(metadata.published_at) : undefined,
             },
         });
 
@@ -178,12 +187,80 @@ export class VideosService {
         return null;
     }
 
+    async lookupVideo(url: string) {
+        const videoId = this.extractYouTubeVideoId(url);
+        if (!videoId) {
+            throw new BadRequestException('Invalid YouTube URL');
+        }
+
+        const metadata = await this.fetchVideoMetadata(videoId);
+        return metadata;
+    }
+
+    private async fetchVideoMetadata(videoId: string) {
+        const apiKey = process.env.YOUTUBE_API_KEY;
+        if (!apiKey) {
+            // Fallback for dev/testing if no key
+            console.warn('YOUTUBE_API_KEY not set. Using placeholder data.');
+            return {
+                title: `Video ${videoId}`,
+                thumbnail_url: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+                channel_title: 'Unknown Channel',
+                published_at: new Date().toISOString(),
+            };
+        }
+
+        try {
+            const response = await fetch(
+                `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${apiKey}`
+            );
+
+            if (!response.ok) {
+                if (response.status === 403) {
+                    // Quota exceeded or invalid key, fallback to basic info we can derive
+                    return {
+                        title: `Video ${videoId}`,
+                        thumbnail_url: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+                        channel_title: 'Unknown Channel',
+                        published_at: new Date().toISOString(),
+                    };
+                }
+                throw new BadRequestException('Failed to fetch video metadata from YouTube');
+            }
+
+            const data = await response.json();
+            if (!data.items || data.items.length === 0) {
+                throw new NotFoundException('Video not found on YouTube');
+            }
+
+            const snippet = data.items[0].snippet;
+            return {
+                title: snippet.title,
+                thumbnail_url: snippet.thumbnails?.maxres?.url || snippet.thumbnails?.high?.url || snippet.thumbnails?.default?.url,
+                channel_title: snippet.channelTitle,
+                published_at: snippet.publishedAt,
+                channel_id: snippet.channelId
+            };
+        } catch (error) {
+            console.error('YouTube API Error:', error);
+            // Fallback on error
+            return {
+                title: `Video ${videoId}`,
+                thumbnail_url: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+                channel_title: 'Unknown Channel',
+                published_at: new Date().toISOString(),
+            };
+        }
+    }
+
     private async checkUsageLimits(userId: string) {
         const subscription = await this.prisma.subscription.findUnique({
             where: { userId },
         });
 
         if (!subscription) {
+            // Allow free tier by default if no sub record exists? Or throw?
+            // Assuming strict limits for now
             throw new ForbiddenException('No subscription found');
         }
 

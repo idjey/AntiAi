@@ -24,7 +24,7 @@ import { HealthController } from './health.controller';
 
         // Serve Static Files (Uploads)
         ServeStaticModule.forRoot({
-            rootPath: join(__dirname, '..', 'uploads'),
+            rootPath: join(process.cwd(), 'uploads'),
             serveRoot: '/uploads',
         }),
 

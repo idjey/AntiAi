@@ -28,6 +28,12 @@ export class VideosController {
         return this.videosService.listUserVideos(user.id, channelId);
     }
 
+    @Get('lookup')
+    @HttpCode(HttpStatus.OK)
+    async lookup(@CurrentUser() user: any, @Query('url') url: string) {
+        return this.videosService.lookupVideo(url);
+    }
+
     @Post('import')
     @HttpCode(HttpStatus.OK)
     async import(@CurrentUser() user: any, @Body() dto: ImportVideoDto) {

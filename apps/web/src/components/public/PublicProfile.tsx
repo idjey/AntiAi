@@ -144,21 +144,20 @@ export const PublicProfile = ({ creator }: Props) => {
 
                 {/* 4. The "Card" (Content Container) */}
                 <div
-                    className={`w-full max-w-md relative overflow-hidden ${currentShape.card} shadow-2xl border border-white/10 transition-all duration-500 animate-in fade-in zoom-in-95 slide-in-from-bottom-8 duration-700`}
+                    className={`w-full max-w-[540px] relative overflow-hidden ${currentShape.card} shadow-2xl border border-white/10 transition-all duration-500 animate-in fade-in zoom-in-95 slide-in-from-bottom-8 duration-700`}
                     style={{
-                        backgroundColor: appearance.background_color, // Inner Card Color
+                        background: appearance.card_background_type === 'image' && appearance.background_image
+                            ? `url(${appearance.background_image}) center/cover no-repeat`
+                            : appearance.card_background_type === 'gradient' && appearance.card_background_gradient
+                                ? appearance.card_background_gradient
+                                : (appearance.background_color || '#000000'),
                         color: isLightMode ? '#000000' : '#ffffff',
                         boxShadow: `0 40px 80px -12px rgba(0, 0, 0, 0.6)${cardGlow > 0 ? `, 0 0 ${cardGlow * 40}px ${appearance.primary_color}50` : ''}`
                     }}
                 >
-                    {/* Inner Card Background Image (Legacy/Specific) */}
-                    {appearance.background_image && (
-                        <div
-                            className="absolute inset-0 bg-cover bg-center z-0 animate-in fade-in duration-1000"
-                            style={{ backgroundImage: `url(${appearance.background_image})` }}
-                        >
-                            <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-                        </div>
+                    {/* Inner Card Overlay for Image Backgrounds to ensure text readability */}
+                    {appearance.card_background_type === 'image' && (
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-0" />
                     )}
 
                     {/* Theme Effects (Holographic) */}
@@ -251,95 +250,139 @@ export const PublicProfile = ({ creator }: Props) => {
                         </div>
 
                         {/* Links */}
-                        <div className={
-                            appearance.link_style === 'grid' ? "grid grid-cols-2 gap-2 w-full" :
-                                appearance.link_style === 'row' ? "flex flex-wrap justify-center gap-3 w-full" :
-                                    "space-y-2 w-full"
-                        }>
-                            {(appearance.link_style === 'row' && !isSocialExpanded && creator.links.length > 4
-                                ? creator.links.slice(0, 4)
-                                : creator.links
-                            ).map((link: any, i: number) => (
-                                <a
-                                    key={link.id || i}
-                                    href={link.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={`
-                                        block border ${currentShape.link} transition-all hover:scale-105 active:scale-90 group backdrop-blur-sm relative overflow-hidden shadow-sm hover:shadow-md
-                                        ${appearance.link_style === 'row'
-                                            ? 'p-3 w-12 h-12 flex items-center justify-center'
-                                            : appearance.link_style === 'grid'
-                                                ? 'w-full p-4 flex flex-col justify-center text-center aspect-square gap-4'
-                                                : 'w-full p-4 flex items-center gap-4'
-                                        }
-                                    `}
-                                    style={{
-                                        backgroundColor: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.08)',
-                                        borderColor: `${appearance.primary_color}30`,
-                                        animationDelay: `${i * 100}ms`,
-                                        minWidth: appearance.link_style === 'row' ? '44px' : undefined,
-                                        minHeight: appearance.link_style === 'row' ? '44px' : undefined
-                                    }}
-                                    aria-label={link.label}
-                                    title={appearance.link_style === 'row' ? link.label : undefined}
-                                    onClick={() => track('link_click', {
-                                        link_id: link.id,
-                                        link_type: link.icon,
-                                        link_style: appearance.link_style
-                                    })}
-                                >
-                                    <div className={`absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity ${isLightMode ? 'bg-black/5' : 'bg-white/10'}`} />
-                                    <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="w-full relative">
+                            {/* Scrollable wrapper for list/grid when >4 links */}
+                            <div
+                                className={`${creator.links.length > 4 && appearance.link_style !== 'row' ? 'overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent' : ''}`}
+                                style={{
+                                    maxHeight: creator.links.length > 4 && appearance.link_style !== 'row'
+                                        ? (appearance.link_style === 'grid' ? '320px' : '280px')
+                                        : undefined
+                                }}
+                            >
+                                <div className={
+                                    appearance.link_style === 'grid' ? "grid grid-cols-2 gap-2 w-full" :
+                                        appearance.link_style === 'row' ? "flex flex-wrap justify-center gap-3 w-full" :
+                                            "space-y-2 w-full"
+                                }>
+                                    {(appearance.link_style === 'row' && !isSocialExpanded && creator.links.length > 4
+                                        ? creator.links.slice(0, 4)
+                                        : creator.links
+                                    ).map((link: any, i: number) => (
+                                        <a
+                                            key={link.id || i}
+                                            href={link.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={`
+                                                block border ${currentShape.link} transition-all hover:scale-[1.03] active:scale-[0.96] group backdrop-blur-sm relative overflow-hidden shadow-sm hover:shadow-md
+                                                ${appearance.link_style === 'row'
+                                                    ? 'p-3 w-12 h-12 flex items-center justify-center'
+                                                    : appearance.link_style === 'grid'
+                                                        ? 'w-full p-4 flex flex-col justify-center text-center aspect-square gap-4'
+                                                        : 'w-full p-4 flex items-center gap-4'
+                                                }
+                                                animate-in fade-in slide-in-from-bottom-2
+                                            `}
+                                            style={{
+                                                backgroundColor: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.08)',
+                                                borderColor: `${appearance.primary_color}30`,
+                                                animationDelay: `${i * 60}ms`,
+                                                animationFillMode: 'backwards',
+                                                minWidth: appearance.link_style === 'row' ? '44px' : undefined,
+                                                minHeight: appearance.link_style === 'row' ? '44px' : undefined
+                                            }}
+                                            aria-label={link.label}
+                                            title={appearance.link_style === 'row' ? link.label : undefined}
+                                            onClick={() => track('link_click', {
+                                                link_id: link.id,
+                                                link_type: link.icon,
+                                                link_style: appearance.link_style
+                                            })}
+                                        >
+                                            {/* Grid mode: faint platform logo background */}
+                                            {appearance.link_style === 'grid' && link.url && (() => {
+                                                try {
+                                                    const domain = new URL(link.url).hostname;
+                                                    return (
+                                                        <img
+                                                            src={`https://logo.clearbit.com/${domain}`}
+                                                            alt=""
+                                                            className="absolute inset-0 w-full h-full object-contain p-6 opacity-[0.08] pointer-events-none blur-[1px] group-hover:opacity-[0.15] transition-opacity duration-500"
+                                                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                        />
+                                                    );
+                                                } catch { return null; }
+                                            })()}
 
-                                    <div className="relative z-10 transition-transform duration-300">
-                                        <div className={appearance.link_style === 'grid' ? "w-8 h-8 mx-auto mb-2 flex items-center justify-center" : "w-6 h-6 flex items-center justify-center"}>
-                                            <SocialIcon
-                                                type={link.icon}
-                                                url={link.url}
-                                                variant={appearance.icon_style}
-                                                className={isLightMode && appearance.icon_style === 'monochrome' ? 'text-black' : ''}
+                                            <div className={`absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity ${isLightMode ? 'bg-black/5' : 'bg-white/10'}`} />
+                                            {/* Hover glow */}
+                                            <div
+                                                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                                                style={{ background: `radial-gradient(circle at center, ${appearance.primary_color}15, transparent 70%)` }}
                                             />
-                                        </div>
-                                    </div>
-                                    {appearance.link_style !== 'row' && (
-                                        <span className={`font-medium ${appearance.link_style === 'grid' ? 'text-xs' : 'text-center flex-1 pr-10'} relative z-10`}>{link.label}</span>
-                                    )}
-                                </a>
-                            ))}
 
-                            {/* Expand Toggle for Social Row */}
-                            {appearance.link_style === 'row' && creator.links.length > 4 && (
-                                <button
-                                    onClick={() => setIsSocialExpanded(!isSocialExpanded)}
-                                    className={`
-                                        border ${currentShape.link} transition-all hover:scale-105 active:scale-90 group backdrop-blur-sm relative overflow-hidden shadow-sm hover:shadow-md
-                                        p-3 w-12 h-12 flex items-center justify-center
-                                    `}
-                                    style={{
-                                        backgroundColor: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.08)',
-                                        borderColor: `${appearance.primary_color}30`,
-                                        minWidth: '44px',
-                                        minHeight: '44px'
-                                    }}
-                                    aria-label={isSocialExpanded ? "Collapse links" : "Show all links"}
-                                >
-                                    <div className={`absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity ${isLightMode ? 'bg-black/5' : 'bg-white/10'}`} />
-                                    <svg
-                                        className={`w-5 h-5 transition-transform duration-300 ${isSocialExpanded ? 'rotate-180' : ''}`}
-                                        style={{ color: appearance.primary_color }}
-                                        fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                    >
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </button>
-                            )}
-                            {creator.links.length === 0 && (
-                                <div className={`col-span-full text-center text-sm ${textSecondaryColor} py-4 opacity-50`}>
-                                    No links available.
+                                            <div className="relative z-10 transition-transform duration-300">
+                                                <div className={appearance.link_style === 'grid' ? "w-8 h-8 mx-auto mb-2 flex items-center justify-center" : "w-6 h-6 flex items-center justify-center"}>
+                                                    <SocialIcon
+                                                        type={link.icon}
+                                                        url={link.url}
+                                                        variant={appearance.icon_style}
+                                                        className={isLightMode && appearance.icon_style === 'monochrome' ? 'text-black' : ''}
+                                                    />
+                                                </div>
+                                            </div>
+                                            {appearance.link_style !== 'row' && (
+                                                <span className={`font-medium ${appearance.link_style === 'grid' ? 'text-xs' : 'text-center flex-1 pr-10'} relative z-10`}>{link.label}</span>
+                                            )}
+                                        </a>
+                                    ))}
+
+                                    {/* Expand Toggle for Social Row */}
+                                    {appearance.link_style === 'row' && creator.links.length > 4 && (
+                                        <button
+                                            onClick={() => setIsSocialExpanded(!isSocialExpanded)}
+                                            className={`
+                                                border ${currentShape.link} transition-all hover:scale-105 active:scale-90 group backdrop-blur-sm relative overflow-hidden shadow-sm hover:shadow-md
+                                                p-3 w-12 h-12 flex items-center justify-center
+                                            `}
+                                            style={{
+                                                backgroundColor: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.08)',
+                                                borderColor: `${appearance.primary_color}30`,
+                                                minWidth: '44px',
+                                                minHeight: '44px'
+                                            }}
+                                            aria-label={isSocialExpanded ? "Collapse links" : "Show all links"}
+                                        >
+                                            <div className={`absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity ${isLightMode ? 'bg-black/5' : 'bg-white/10'}`} />
+                                            <svg
+                                                className={`w-5 h-5 transition-transform duration-300 ${isSocialExpanded ? 'rotate-180' : ''}`}
+                                                style={{ color: appearance.primary_color }}
+                                                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                            >
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                    {creator.links.length === 0 && (
+                                        <div className={`col-span-full text-center text-sm ${textSecondaryColor} py-4 opacity-50`}>
+                                            No links available.
+                                        </div>
+                                    )}
                                 </div>
+                            </div>
+
+                            {/* Gradient fade hint when scrollable */}
+                            {creator.links.length > 4 && appearance.link_style !== 'row' && (
+                                <div
+                                    className="absolute bottom-0 left-0 right-0 h-14 pointer-events-none z-20"
+                                    style={{
+                                        background: `linear-gradient(to top, ${appearance.background_color || '#000'}, transparent)`
+                                    }}
+                                />
                             )}
                         </div>
+
 
                         {/* Featured Video */}
                         {creator.featured_video && (
