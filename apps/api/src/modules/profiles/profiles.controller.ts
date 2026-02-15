@@ -42,6 +42,7 @@ export class ProfilesController {
     @Put()
     @HttpCode(HttpStatus.OK)
     async updateProfile(@CurrentUser() user: any, @Body() dto: UpdateProfileDto) {
+        console.log('Update Profile DTO:', JSON.stringify(dto, null, 2));
         return this.profilesService.updateProfile(user.id, dto);
     }
 

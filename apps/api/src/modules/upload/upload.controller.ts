@@ -2,7 +2,7 @@
 import { Controller, Post, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { extname, join } from 'path';
 import * as fs from 'fs';
 import { Request } from 'express';
 
@@ -12,7 +12,7 @@ export class UploadController {
     @UseInterceptors(FileInterceptor('file', {
         storage: diskStorage({
             destination: (req: Request, file: any, cb: (error: Error | null, destination: string) => void) => {
-                const uploadPath = './uploads';
+                const uploadPath = join(process.cwd(), 'uploads');
                 if (!fs.existsSync(uploadPath)) {
                     fs.mkdirSync(uploadPath, { recursive: true });
                 }

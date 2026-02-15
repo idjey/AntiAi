@@ -18,6 +18,38 @@ export default function ImportVideoPage() {
     const [fetchingChannels, setFetchingChannels] = useState(true)
     const [error, setError] = useState('')
     const [status, setStatus] = useState<'idle' | 'importing' | 'protecting' | 'success'>('idle')
+    const [videoPreview, setVideoPreview] = useState<{ title: string, thumbnail_url: string, channel_title: string } | null>(null)
+
+    useEffect(() => {
+        const fetchMetadata = async () => {
+            if (!url || !url.includes('youtube.com') && !url.includes('youtu.be')) {
+                setVideoPreview(null)
+                return
+            }
+
+            const token = localStorage.getItem('token')
+            if (!token) return
+
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/videos/lookup?url=${encodeURIComponent(url)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+
+                if (res.ok) {
+                    const data = await res.json()
+                    setVideoPreview(data)
+                } else {
+                    setVideoPreview(null)
+                }
+            } catch (err) {
+                console.error('Failed to fetch video metadata', err)
+                setVideoPreview(null)
+            }
+        }
+
+        const timeoutId = setTimeout(fetchMetadata, 500)
+        return () => clearTimeout(timeoutId)
+    }, [url])
 
     useEffect(() => {
         const fetchChannels = async () => {
@@ -199,9 +231,27 @@ export default function ImportVideoPage() {
                         />
                     </div>
 
+                    {/* Video Preview */}
+                    {videoPreview && (
+                        <div className="bg-surface-light/50 border border-white/5 rounded-xl overflow-hidden animate-in fade-in slide-in-from-top-2">
+                            <div className="flex flex-col sm:flex-row gap-4 p-4">
+                                <div className="sm:w-40 aspect-video bg-black/50 rounded-lg overflow-hidden shrink-0">
+                                    <img src={videoPreview.thumbnail_url} alt={videoPreview.title} className="w-full h-full object-cover" />
+                                </div>
+                                <div className="flex-1 min-w-0 py-1">
+                                    <h3 className="font-bold text-text-primary line-clamp-2 mb-1">{videoPreview.title}</h3>
+                                    <p className="text-sm text-text-secondary">{videoPreview.channel_title}</p>
+                                    <p className="text-xs text-text-muted mt-2">
+                                        Importing as: <span className="text-primary">{selectedChannelId ? channels.find(c => c.id === selectedChannelId)?.channel_name : 'Select a channel'}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="bg-surface-light/30 rounded-lg p-4 text-xs text-text-secondary space-y-2">
                         <div className="flex items-start gap-2">
-                            <div className={`mt-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${status === 'idle' ? 'bg-white/10 text-white/50' : status !== 'idle' ? 'bg-green-500 text-white' : ''}`}>
+                            <div className={`mt-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${status === 'idle' ? 'bg-white/10 text-white/50' : 'bg-green-500 text-white'}`}>
                                 1
                             </div>
                             <span className={status === 'importing' ? 'text-primary font-medium' : ''}>
