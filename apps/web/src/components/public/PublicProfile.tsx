@@ -49,6 +49,48 @@ export const PublicProfile = ({ creator }: Props) => {
     const currentShape = shapeClasses[cardStyle as keyof typeof shapeClasses] || shapeClasses.modern;
 
     // Text Colors derived from Card Theme
+    const [activeTab, setActiveTab] = useState<'videos' | 'links'>('links');
+    const [isTokenRevealed, setIsTokenRevealed] = useState(false);
+
+    // Analytics Tracking
+    useEffect(() => {
+        // Track View
+        const trackView = async () => {
+            // Avoid tracking owner's own views if possible, but for now just track all
+            // De-bounce or check session storage to avoid duplicate views on reload could be added
+            try {
+                await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/analytics/track`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        creatorId: creator.id,
+                        type: 'view',
+                        entityId: creator.id
+                    })
+                });
+            } catch (e) {
+                console.error('Failed to track view', e);
+            }
+        };
+
+        trackView();
+    }, [creator.id]);
+
+    const trackClick = async (linkId: string, url: string) => {
+        try {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/analytics/track`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    creatorId: creator.id,
+                    type: 'click',
+                    entityId: linkId
+                })
+            });
+        } catch (e) {
+            console.error('Failed to track click', e);
+        }
+    };
     const textColor = isLightMode ? 'text-black' : 'text-white';
     const textSecondaryColor = isLightMode ? 'text-gray-600' : 'text-gray-400';
 
@@ -270,12 +312,13 @@ export const PublicProfile = ({ creator }: Props) => {
                                         : creator.links
                                     ).map((link: any, i: number) => (
                                         <a
-                                            key={link.id || i}
+                                            key={link.id}
                                             href={link.url}
                                             target="_blank"
                                             rel="noopener noreferrer"
+                                            onClick={() => trackClick(link.id, link.url)}
                                             className={`
-                                                block border ${currentShape.link} transition-all hover:scale-[1.03] active:scale-[0.96] group backdrop-blur-sm relative overflow-hidden shadow-sm hover:shadow-md
+                                                block border ${currentShape.link} group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${appearance.card_style === 'pill' ? 'rounded-[2rem]' : ''} backdrop-blur-sm shadow-sm hover:shadow-md
                                                 ${appearance.link_style === 'row'
                                                     ? 'p-3 w-12 h-12 flex items-center justify-center'
                                                     : appearance.link_style === 'grid'
@@ -294,11 +337,6 @@ export const PublicProfile = ({ creator }: Props) => {
                                             }}
                                             aria-label={link.label}
                                             title={appearance.link_style === 'row' ? link.label : undefined}
-                                            onClick={() => track('link_click', {
-                                                link_id: link.id,
-                                                link_type: link.icon,
-                                                link_style: appearance.link_style
-                                            })}
                                         >
                                             {/* Grid mode: faint platform logo background */}
                                             {appearance.link_style === 'grid' && link.url && (() => {
@@ -492,35 +530,59 @@ export const PublicProfile = ({ creator }: Props) => {
                                 )}
                             </div>
                         )}
+                    </div>
 
-
-                        {/* Footer */}
-                        <div className="text-center mt-auto pb-2">
-                            <Link href="/" className={`inline-flex items-center gap-2 ${textSecondaryColor} hover:opacity-100 transition-opacity opacity-50`}>
-                                <span className="text-xs font-medium">Verified by</span>
-                                <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">AntiAI</span>
-                            </Link>
+                    {/* Secure Badge */}
+                    <div className="mt-8 pt-6 border-t border-white/10 flex flex-col items-center gap-2 opacity-60 hover:opacity-100 transition-opacity group/badge cursor-help" title="This card is cryptographically signed and verified by AntiAI">
+                        <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-bold" style={{ color: appearance.primary_color }}>
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                            Securely Signed
+                        </div>
+                        <div
+                            className="flex items-center gap-2 font-mono text-[9px] text-white/50 cursor-pointer select-none"
+                            onMouseDown={() => setIsTokenRevealed(true)}
+                            onMouseUp={() => setIsTokenRevealed(false)}
+                            onMouseLeave={() => setIsTokenRevealed(false)}
+                            onTouchStart={() => setIsTokenRevealed(true)}
+                            onTouchEnd={() => setIsTokenRevealed(false)}
+                        >
+                            <span>hash:</span>
+                            <span className={`transition-colors ${isTokenRevealed ? 'text-white' : 'text-white/70 group-hover/badge:text-white'}`}>
+                                {isTokenRevealed
+                                    ? (creator.verification_token || creator.id)
+                                    : (creator.verification_token
+                                        ? `${creator.verification_token.substring(0, 12)}...${creator.verification_token.substring(creator.verification_token.length - 8)}`
+                                        : `0x${creator.id?.split('-')[0]}...${creator.id?.split('-').pop()}`)}
+                            </span>
                         </div>
                     </div>
-                </div>
 
-                {/* External Extension CTA */}
-                <div className="w-full max-w-md mt-8 px-4 text-center animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
-                    <a
-                        href="https://antiai.me/extension"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex flex-col items-center group"
-                    >
-                        <div className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-6 py-3 rounded-full font-bold transition-all transform group-hover:scale-105 group-hover:shadow-lg shadow-primary/10">
-                            Download AntiAI Extension
-                        </div>
-                        <p className="mt-3 text-xs font-medium opacity-60 group-hover:opacity-100 transition-opacity text-white flex items-center gap-1.5">
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
-                            Used by creators to prove authenticity
-                        </p>
-                    </a>
+                    {/* Footer */}
+                    <div className="text-center mt-auto pb-2">
+                        <Link href="/" className={`inline-flex items-center gap-2 ${textSecondaryColor} hover:opacity-100 transition-opacity opacity-50`}>
+                            <span className="text-xs font-medium">Verified by</span>
+                            <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">AntiAI</span>
+                        </Link>
+                    </div>
                 </div>
+            </div>
+
+            {/* External Extension CTA */}
+            <div className="w-full max-w-md mt-8 px-4 text-center animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
+                <a
+                    href="https://antiai.me/extension"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex flex-col items-center group"
+                >
+                    <div className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-6 py-3 rounded-full font-bold transition-all transform group-hover:scale-105 group-hover:shadow-lg shadow-primary/10">
+                        Download AntiAI Extension
+                    </div>
+                    <p className="mt-3 text-xs font-medium opacity-60 group-hover:opacity-100 transition-opacity text-white flex items-center gap-1.5">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
+                        Used by creators to prove authenticity
+                    </p>
+                </a>
             </div>
         </div>
     );

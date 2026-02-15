@@ -150,6 +150,12 @@ export class AuthService {
                 id: true,
                 email: true,
                 role: true,
+                subscription: {
+                    select: {
+                        plan: true,
+                        status: true
+                    }
+                }
             },
         });
 
@@ -167,6 +173,12 @@ export class AuthService {
                 id: true,
                 email: true,
                 role: true,
+                subscription: {
+                    select: {
+                        plan: true,
+                        status: true
+                    }
+                }
             },
         });
     }

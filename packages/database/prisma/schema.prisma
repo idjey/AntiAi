@@ -111,6 +111,7 @@ model CreatorProfile {
   // Relations
   user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   featuredVideo Video? @relation(fields: [featuredVideoId], references: [id], onDelete: SetNull)
+  analyticsEvents AnalyticsEvent[]
 
   @@index([handle])
   @@map("creator_profiles")
@@ -431,4 +432,32 @@ model Report {
 
   @@index([status, createdAt(sort: Desc)])
   @@map("reports")
+}
+
+// ==================== ANALYTICS ====================
+
+model AnalyticsEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  creatorId String   @map("creator_id") @db.Uuid // Owner of the profile/link
+  type      String   // 'view' | 'click'
+  entityId  String?  @map("entity_id") // Link ID (for clicks) or Profile ID (for views)
+  
+  // Visitor Info
+  ipHash    String?  @map("ip_hash") // Anonymized
+  country   String?
+  region    String?  // State/Province
+  city      String?
+  device    String?  // 'mobile', 'desktop', 'tablet'
+  os        String?
+  browser   String?
+  referer   String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  creator   CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId, createdAt])
+  @@index([type, createdAt])
+  @@map("analytics_events")
 }

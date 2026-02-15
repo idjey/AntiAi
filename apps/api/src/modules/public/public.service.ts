@@ -238,7 +238,23 @@ export class PublicService {
                 proof_id: v.proofs?.[0]?.id,
                 published_at: v.publishedAt,
             })),
+            id: profile.id,
+            verification_token: this.generateVerificationToken(profile),
         };
+    }
+
+    private generateVerificationToken(profile: any): string {
+        // Create a deterministic hash based on stable profile identity and modification time
+        // In a real scenario, this would use a secret key from environment variables
+        const secret = process.env.JWT_SECRET || 'antiai-verification-secret';
+        const data = `${profile.id}:${profile.handle}:${profile.updatedAt?.toISOString() || profile.createdAt.toISOString()}`;
+
+        // Use Node's crypto module
+        const crypto = require('crypto');
+        return crypto
+            .createHmac('sha256', secret)
+            .update(data)
+            .digest('hex');
     }
 
     private formatProof(proof: any) {

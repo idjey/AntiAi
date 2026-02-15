@@ -10,6 +10,7 @@ import { PublicModule } from './modules/public/public.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { HealthController } from './health.controller';
@@ -46,8 +47,8 @@ import { HealthController } from './health.controller';
         BillingModule,
         ProfilesModule,
         UploadModule,
+        AnalyticsModule,
     ],
     controllers: [HealthController],
 })
 export class AppModule { }
-

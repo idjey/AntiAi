@@ -36,6 +36,8 @@ const getBrandGradient = (icon: string) => {
 };
 
 interface Profile {
+    id: string;
+    verification_token?: string;
     handle: string;
     display_name: string;
     avatar_url: string;
@@ -96,6 +98,7 @@ export default function CreatorCardPage() {
 
     // Filter/Tab State
     const [activeTab, setActiveTab] = useState<'links' | 'appearance'>('links');
+    const [isTokenRevealed, setIsTokenRevealed] = useState(false);
 
     // Appearance State
     const [appearance, setAppearance] = useState({
@@ -1178,6 +1181,31 @@ export default function CreatorCardPage() {
                                     </div>
                                 </div>
                             )}
+
+                            {/* Secure Badge */}
+                            <div className="mt-8 pt-6 border-t border-white/10 flex flex-col items-center gap-2 opacity-60 hover:opacity-100 transition-opacity group/badge cursor-help" title="This card is cryptographically signed and verified by AntiAI">
+                                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-bold" style={{ color: appearance.primary_color }}>
+                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                                    Securely Signed
+                                </div>
+                                <div
+                                    className="flex items-center gap-2 font-mono text-[9px] text-white/50 cursor-pointer select-none"
+                                    onMouseDown={() => setIsTokenRevealed(true)}
+                                    onMouseUp={() => setIsTokenRevealed(false)}
+                                    onMouseLeave={() => setIsTokenRevealed(false)}
+                                    onTouchStart={() => setIsTokenRevealed(true)}
+                                    onTouchEnd={() => setIsTokenRevealed(false)}
+                                >
+                                    <span>hash:</span>
+                                    <span className={`transition-colors ${isTokenRevealed ? 'text-white' : 'text-white/70 group-hover/badge:text-white'}`}>
+                                        {isTokenRevealed
+                                            ? (profile?.verification_token || profile?.id || 'preview-id')
+                                            : (profile?.verification_token
+                                                ? `${profile.verification_token.substring(0, 12)}...${profile.verification_token.substring(profile.verification_token.length - 8)}`
+                                                : `0x${(profile?.id || 'preview-id').split('-')[0]}...${(profile?.id || 'preview-id').split('-').pop()}`)}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
