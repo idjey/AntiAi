@@ -40,3 +40,6 @@ apps/extension/dist/
 
 # Secrets
 apps/api/keys.txt
+
+# Uploads
+apps/api/uploads/
