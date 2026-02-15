@@ -202,8 +202,9 @@ export class ProfilesService {
                 label: dto.label,
                 url: dto.url,
                 icon: dto.icon || this.inferIcon(dto.url),
+                customImageUrl: dto.custom_image_url,
                 sortOrder: (maxOrder._max.sortOrder ?? -1) + 1,
-            },
+            } as any,
         });
 
         return { link: this.formatLink(link) };
@@ -224,8 +225,9 @@ export class ProfilesService {
                 label: dto.label,
                 url: dto.url,
                 icon: dto.icon,
+                customImageUrl: dto.custom_image_url,
                 isActive: dto.is_active,
-            },
+            } as any,
         });
 
         return { link: this.formatLink(updated) };
@@ -312,7 +314,8 @@ export class ProfilesService {
 
     private inferIcon(url: string): string {
         const domain = url.toLowerCase();
-        if (domain.includes('twitter.com') || domain.includes('x.com')) return 'twitter';
+        if (domain.includes('twitter.com')) return 'twitter';
+        if (domain.includes('x.com')) return 'x';
         if (domain.includes('instagram.com')) return 'instagram';
         if (domain.includes('tiktok.com')) return 'tiktok';
         if (domain.includes('linkedin.com')) return 'linkedin';
@@ -365,6 +368,7 @@ export class ProfilesService {
             label: link.label,
             url: link.url,
             icon: link.icon,
+            custom_image_url: link.customImageUrl,
             sort_order: link.sortOrder,
             is_active: link.isActive,
         };

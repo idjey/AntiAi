@@ -4,6 +4,7 @@ import CookieConsent from '@/components/CookieConsent'
 import { ThemeProvider } from '@/components/providers/ThemeProvider'
 
 export const metadata: Metadata = {
+    metadataBase: new URL('https://antiai.me'),
     title: 'AntiAI.me - The Authenticity Badge for Real Creators',
     description: 'Verify your videos with cryptographic proof. Protect your audience from deepfakes and impersonators. Get the authenticity badge that proves you are real.',
     keywords: ['video verification', 'deepfake protection', 'creator authenticity', 'YouTube verification', 'digital trust'],

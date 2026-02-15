@@ -103,6 +103,14 @@ export class AppearanceDto {
     @IsOptional()
     @IsNumber()
     public_card_glow?: number;
+
+    @IsOptional()
+    @IsString()
+    card_background_type?: 'color' | 'gradient' | 'image';
+
+    @IsOptional()
+    @IsString()
+    card_background_gradient?: string;
 }
 
 export class CreateProfileDto {
@@ -163,7 +171,7 @@ export class UpdateProfileDto {
     bio?: string;
 
     @IsOptional()
-    @IsUrl()
+    @IsString()
     avatar_url?: string;
 
     @IsOptional()
@@ -198,6 +206,10 @@ export class CreateLinkDto {
     @IsOptional()
     @IsString()
     icon?: string;
+
+    @IsOptional()
+    @IsString()
+    custom_image_url?: string;
 }
 
 export class UpdateLinkDto {
@@ -214,6 +226,10 @@ export class UpdateLinkDto {
     @IsOptional()
     @IsString()
     icon?: string;
+
+    @IsOptional()
+    @IsString()
+    custom_image_url?: string;
 
     @IsOptional()
     @IsBoolean()
