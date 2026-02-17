@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core'; // Import APP_GUARD if needed, but string injection works too. actually APP_GUARD is from @nestjs/core
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ChannelsModule } from './modules/channels/channels.module';
@@ -11,6 +12,7 @@ import { BillingModule } from './modules/billing/billing.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { HealthController } from './health.controller';
@@ -30,10 +32,10 @@ import { HealthController } from './health.controller';
         }),
 
         // Rate limiting
-        ThrottlerModule.forRoot([{
-            ttl: 60000, // 1 minute
-            limit: 100,  // 100 requests per minute
-        }]),
+        // ThrottlerModule.forRoot([{
+        //     ttl: 60000,
+        //     limit: 100,
+        // }]),
 
         // Database
         PrismaModule,
@@ -48,6 +50,13 @@ import { HealthController } from './health.controller';
         ProfilesModule,
         UploadModule,
         AnalyticsModule,
+        AdminModule,
+    ],
+    providers: [
+        // {
+        //     provide: 'APP_GUARD',
+        //     useClass: ThrottlerGuard,
+        // },
     ],
     controllers: [HealthController],
 })

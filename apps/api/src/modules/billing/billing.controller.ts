@@ -40,6 +40,13 @@ export class BillingController {
         return this.billingService.createPortalSession(user.id, body.return_url);
     }
 
+    @Post('cancel')
+    @UseGuards(AuthGuard('jwt'))
+    @HttpCode(HttpStatus.OK)
+    async cancel(@CurrentUser() user: any) {
+        return this.billingService.cancelSubscription(user.id);
+    }
+
     @Post('webhook')
     @HttpCode(HttpStatus.OK)
     async webhook(

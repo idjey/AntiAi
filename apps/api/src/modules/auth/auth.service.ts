@@ -254,4 +254,88 @@ export class AuthService {
 
         return { message: 'Password updated successfully' };
     }
+    async validateOAuthUser(profile: any) {
+        const { email, firstName, lastName, provider, providerId } = profile;
+
+        // 1. Check if OAuthAccount exists
+        const oauthAccount = await this.prisma.oAuthAccount.findUnique({
+            where: {
+                provider_providerUserId: {
+                    provider,
+                    providerUserId: providerId,
+                },
+            },
+            include: { user: true },
+        });
+
+        if (oauthAccount) {
+            // Login
+            const token = await this.generateToken(oauthAccount.userId);
+            return {
+                access_token: token,
+                token_type: 'Bearer',
+                expires_in: this.getExpiresIn(),
+            };
+        }
+
+        // 2. Check if User exists by email
+        let user = await this.prisma.user.findUnique({
+            where: { email: email.toLowerCase() },
+        });
+
+        if (user) {
+            // Link Account
+            await this.prisma.oAuthAccount.create({
+                data: {
+                    userId: user.id,
+                    provider,
+                    providerUserId: providerId,
+                },
+            });
+        } else {
+            // 3. Create New User
+            // Generate unique handle from name or email
+            let baseHandle = (firstName + lastName).toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (baseHandle.length < 3) baseHandle = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+
+            let handle = baseHandle;
+            let counter = 1;
+            while (await this.prisma.creatorProfile.findUnique({ where: { handle } })) {
+                handle = `${baseHandle}${counter++}`;
+            }
+
+            user = await this.prisma.user.create({
+                data: {
+                    email: email.toLowerCase(),
+                    isEmailVerified: true, // Google verified
+                    subscription: {
+                        create: {
+                            plan: 'free',
+                            status: 'active',
+                        },
+                    },
+                    profile: {
+                        create: {
+                            handle,
+                            displayName: `${firstName} ${lastName}`,
+                            avatarUrl: profile.picture,
+                        }
+                    },
+                    oauthAccounts: {
+                        create: {
+                            provider,
+                            providerUserId: providerId,
+                        }
+                    }
+                },
+            });
+        }
+
+        const token = await this.generateToken(user.id);
+        return {
+            access_token: token,
+            token_type: 'Bearer',
+            expires_in: this.getExpiresIn(),
+        };
+    }
 }

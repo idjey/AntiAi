@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Modal from '../../../components/Modal'
 
 interface BillingStatus {
     plan: 'free' | 'pro' | 'elite'
+    interval: 'month' | 'year'
     status: 'active' | 'past_due' | 'canceled' | 'unpaid' | 'trialing'
     current_period_end: string | null
     videos_used: number
@@ -40,6 +42,7 @@ export default function BillingPage() {
     const [isActionLoading, setIsActionLoading] = useState(false)
     const [error, setError] = useState('')
     const [billingInterval, setBillingInterval] = useState<'month' | 'year'>('month')
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false)
 
     useEffect(() => {
         fetchStatus()
@@ -140,6 +143,39 @@ export default function BillingPage() {
         }
     }
 
+    const handleCancelClick = () => {
+        setIsCancelModalOpen(true)
+    }
+
+    const confirmCancellation = async () => {
+        setIsActionLoading(true)
+        setError('')
+        const token = localStorage.getItem('token')
+
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/billing/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+
+            if (!res.ok) throw new Error('Failed to cancel subscription')
+
+            // Refresh status
+            await fetchStatus()
+            // Close modal only on success
+            setIsCancelModalOpen(false)
+            alert('Your subscription has been canceled and will end after the current billing period.')
+        } catch (err: any) {
+            setError(err.message || 'Failed to cancel subscription')
+            setIsCancelModalOpen(false)
+        } finally {
+            setIsActionLoading(false)
+        }
+    }
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -150,7 +186,7 @@ export default function BillingPage() {
 
     const currentPlan = status?.plan || 'free'
     const currentInterval = status?.interval || 'month'
-    const usagePercent = status ? Math.min((status.videos_used / status.videos_limit) * 100, 100) : 0
+    const usagePercent = status && status.videos_limit ? Math.min((status.videos_used / status.videos_limit) * 100, 100) : 0
 
     return (
         <div className="max-w-5xl mx-auto space-y-8">
@@ -289,7 +325,58 @@ export default function BillingPage() {
                     )
                 })}
             </div>
+
+            {/* Cancel Subscription (Paid Plans Only) */}
+            {currentPlan !== 'free' && (
+                <div className="flex justify-center mt-12">
+                    <button
+                        onClick={handleCancelClick}
+                        disabled={isActionLoading}
+                        className="text-sm text-red-400 hover:text-red-300 transition-colors underline decoration-red-400/30 hover:decoration-red-300"
+                    >
+                        Cancel my subscription
+                    </button>
+                </div>
+            )}
+
+            {/* Confirmation Modal */}
+            <Modal
+                isOpen={isCancelModalOpen}
+                onClose={() => setIsCancelModalOpen(false)}
+                title="Cancel Subscription?"
+                footer={
+                    <>
+                        <button
+                            onClick={() => setIsCancelModalOpen(false)}
+                            className="px-4 py-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors"
+                            disabled={isActionLoading}
+                        >
+                            Keep Subscription
+                        </button>
+                        <button
+                            onClick={confirmCancellation}
+                            className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors flex items-center gap-2"
+                            disabled={isActionLoading}
+                        >
+                            {isActionLoading && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                            Confirm Cancellation
+                        </button>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <p>
+                        Are you sure you want to cancel your subscription?
+                    </p>
+                    <div className="bg-surface-light/50 p-4 rounded-lg border border-red-500/20">
+                        <ul className="list-disc list-inside space-y-2 text-sm text-text-secondary">
+                            <li>You will lose access to premium features at the end of your billing period.</li>
+                            <li>Your protected videos will remain active until then.</li>
+                            <li>You can reactivate your subscription anytime before it expires.</li>
+                        </ul>
+                    </div>
+                </div>
+            </Modal>
         </div>
     )
 }
-

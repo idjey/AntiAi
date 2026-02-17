@@ -249,4 +249,36 @@ export class BillingService {
             throw error;
         }
     }
+
+    async cancelSubscription(userId: string) {
+        if (!this.stripe) {
+            throw new BadRequestException('Stripe not configured');
+        }
+
+        const subscription = await this.prisma.subscription.findUnique({
+            where: { userId },
+        });
+
+        if (!subscription || !subscription.stripeSubscriptionId) {
+            throw new BadRequestException('No active subscription found');
+        }
+
+        try {
+            // Cancel at period end
+            await this.stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+                cancel_at_period_end: true,
+            });
+
+            // Update local state immediately (though webhook will confirm)
+            await this.prisma.subscription.update({
+                where: { id: subscription.id },
+                data: { cancelAtPeriodEnd: true },
+            });
+
+            return { message: 'Subscription will be canceled at the end of the billing period.' };
+        } catch (error: any) {
+            console.error('[STRIPE] Error canceling subscription:', error);
+            throw new BadRequestException('Failed to cancel subscription');
+        }
+    }
 }

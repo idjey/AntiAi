@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import 'dotenv/config';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -17,10 +18,14 @@ async function bootstrap() {
         }),
     );
 
-    // CORS for frontend
+    // Security Headers
+    app.use(helmet());
+
     // CORS for frontend and extension
     app.enableCors({
-        origin: true, // Allow all origins (for extension development)
+        origin: process.env.NODE_ENV === 'production'
+            ? ['https://antiai.me', 'https://www.antiai.me']
+            : ['http://localhost:3000', 'chrome-extension://*'],
         credentials: true,
     });
 
