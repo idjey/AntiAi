@@ -37,7 +37,6 @@ export class AdminService {
         return this.prisma.user.count({ where });
     }
 
-    // Helper to get total counts for dashboard cards eventually
     async getDashboardStats(): Promise<any> {
         const totalUsers = await this.prisma.user.count();
         const totalCreators = await this.prisma.channel.count();
@@ -48,5 +47,42 @@ export class AdminService {
             totalCreators,
             totalVideos
         };
+    }
+
+    async suspendUser(userId: string): Promise<User> {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) throw new Error('User not found');
+
+        return this.prisma.user.update({
+            where: { id: userId },
+            data: { isSuspended: !user.isSuspended }
+        });
+    }
+
+    async updateUserPlan(userId: string, plan: 'free' | 'pro' | 'elite'): Promise<any> {
+        return this.prisma.subscription.upsert({
+            where: { userId },
+            create: {
+                userId,
+                plan,
+                status: 'active'
+            },
+            update: {
+                plan
+            }
+        });
+    }
+
+    async resetUserLimits(userId: string): Promise<any> {
+        return this.prisma.subscription.update({
+            where: { userId },
+            data: { videosThisMonth: 0 }
+        });
+    }
+
+    async impersonateUser(userId: string): Promise<User> {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) throw new Error('User not found');
+        return user;
     }
 }

@@ -2,6 +2,7 @@ import './globals.css'
 import type { Metadata } from 'next'
 import CookieConsent from '@/components/CookieConsent'
 import { ThemeProvider } from '@/components/providers/ThemeProvider'
+import { Toaster } from '@/components/ui/sonner'
 
 export const metadata: Metadata = {
     metadataBase: new URL('https://antiai.me'),
@@ -48,6 +49,7 @@ export default function RootLayout({
                 >
                     {children}
                     <CookieConsent />
+                    <Toaster />
                 </ThemeProvider>
             </body>
         </html>

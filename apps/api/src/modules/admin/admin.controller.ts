@@ -1,5 +1,5 @@
 
-import { Controller, Get, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { UserRole } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -55,5 +55,35 @@ export class AdminController {
     @Get('stats')
     async getStats(): Promise<any> {
         return this.adminService.getDashboardStats();
+    }
+
+    @UseGuards(AuthGuard('jwt'), RolesGuard)
+    @Roles(UserRole.admin)
+    @Post('users/:id/suspend')
+    async suspendUser(@Param('id') id: string) {
+        return this.adminService.suspendUser(id);
+    }
+
+    @UseGuards(AuthGuard('jwt'), RolesGuard)
+    @Roles(UserRole.admin)
+    @Post('users/:id/plan')
+    async updateUserPlan(@Param('id') id: string, @Body('plan') plan: 'free' | 'pro' | 'elite') {
+        return this.adminService.updateUserPlan(id, plan);
+    }
+
+    @UseGuards(AuthGuard('jwt'), RolesGuard)
+    @Roles(UserRole.admin)
+    @Post('users/:id/reset-limits')
+    async resetLimits(@Param('id') id: string) {
+        return this.adminService.resetUserLimits(id);
+    }
+
+    @UseGuards(AuthGuard('jwt'), RolesGuard)
+    @Roles(UserRole.admin)
+    @Post('users/:id/impersonate')
+    async impersonateUser(@Param('id') id: string) {
+        // In a real implementation, this would generate a token.
+        // For now, we'll just return the user to confirm permissions.
+        return this.adminService.impersonateUser(id);
     }
 }
