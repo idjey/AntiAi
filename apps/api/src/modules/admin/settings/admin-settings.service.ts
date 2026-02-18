@@ -15,11 +15,27 @@ export class AdminSettingsService {
     }
 
     async updateSetting(key: string, value: string) {
-        return this.prisma.systemSetting.upsert({
+        const result = await this.prisma.systemSetting.upsert({
             where: { key },
             update: { value },
             create: { key, value, description: 'Created via Admin Panel' }
         });
+
+        // Log to transparency log
+        await this.prisma.transparencyLog.create({
+            data: {
+                eventType: 'system_setting_updated',
+                entityType: 'system_setting',
+                entityId: key, // Using key as entityId (might need to be careful if entityId is UUID in schema... let's check schema)
+                data: {
+                    key,
+                    value,
+                    action: 'update'
+                }
+            }
+        });
+
+        return result;
     }
 
     async impersonateUser(userId: string) {

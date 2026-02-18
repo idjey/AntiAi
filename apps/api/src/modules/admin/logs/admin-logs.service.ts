@@ -32,7 +32,7 @@ export class AdminLogsService {
                 skip,
                 take,
                 where,
-                orderBy: { createdAt: 'desc' } // Ensure 'createdAt' field exists in schema
+                orderBy: { eventTime: 'desc' }
             }),
             this.prisma.transparencyLog.count({ where })
         ]);

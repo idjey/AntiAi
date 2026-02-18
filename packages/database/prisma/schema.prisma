@@ -283,20 +283,6 @@ model Proof {
   @@map("proofs")
 }
 
-// ==================== TRANSPARENCY LOG ====================
-
-model TransparencyLog {
-  id         BigInt   @id @default(autoincrement())
-  eventType  String   @map("event_type") // 'channel_verified','proof_issued','proof_superseded','proof_revoked','channel_revoked'
-  entityType String   @map("entity_type") // 'channel','proof'
-  entityId   String   @map("entity_id") @db.Uuid
-  eventTime  DateTime @default(now()) @map("event_time")
-  data       Json
-
-  @@index([entityType, entityId])
-  @@index([eventTime(sort: Desc)])
-  @@map("transparency_log")
-}
 
 // ==================== CHALLENGES (Optional Layer) ====================
 
@@ -433,6 +419,21 @@ model Report {
 
   @@index([status, createdAt(sort: Desc)])
   @@map("reports")
+}
+
+// ==================== TRANSPARENCY LOG ====================
+
+model TransparencyLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  eventType  String   @map("event_type")
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  data       Json
+  eventTime  DateTime @default(now()) @map("event_time")
+
+  @@index([entityType, entityId])
+  @@index([eventTime(sort: Desc)])
+  @@map("transparency_log")
 }
 
 // ==================== ANALYTICS ====================
