@@ -18,6 +18,14 @@ export class AuthService {
     ) { }
 
     async signup(dto: SignupDto) {
+        // Check for disable_signups setting
+        const setting = await this.prisma.systemSetting.findUnique({
+            where: { key: 'disable_signups' },
+        });
+        if (setting?.value === 'true') {
+            throw new BadRequestException('Signups are currently disabled.');
+        }
+
         // Check if user exists
         const existingUser = await this.prisma.user.findUnique({
             where: { email: dto.email.toLowerCase() },
