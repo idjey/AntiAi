@@ -14,11 +14,13 @@ import { AdminKeysController } from './keys/admin-keys.controller';
 import { AdminKeysService } from './keys/admin-keys.service';
 import { AdminBillingController } from './billing/admin-billing.controller';
 import { AdminBillingService } from './billing/admin-billing.service';
+import { AdminLogsController } from './logs/admin-logs.controller';
+import { AdminLogsService } from './logs/admin-logs.service';
 import { ProofsModule } from '../proofs/proofs.module';
 
 @Module({
     imports: [ProofsModule],
-    controllers: [AdminController, AdminChannelsController, AdminVideosController, AdminProofsController, AdminReportsController, AdminKeysController, AdminBillingController],
-    providers: [AdminService, AdminChannelsService, AdminVideosService, AdminProofsService, AdminReportsService, AdminKeysService, AdminBillingService],
+    controllers: [AdminController, AdminChannelsController, AdminVideosController, AdminProofsController, AdminReportsController, AdminKeysController, AdminBillingController, AdminLogsController],
+    providers: [AdminService, AdminChannelsService, AdminVideosService, AdminProofsService, AdminReportsService, AdminKeysService, AdminBillingService, AdminLogsService],
 })
 export class AdminModule { }
