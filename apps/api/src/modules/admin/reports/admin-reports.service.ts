@@ -24,8 +24,7 @@ export class AdminReportsService {
         if (search) {
             where.OR = [
                 { reason: { contains: search, mode: 'insensitive' } },
-                { details: { contains: search, mode: 'insensitive' } },
-                { id: { contains: search, mode: 'insensitive' } }
+                { details: { contains: search, mode: 'insensitive' } }
             ];
         }
 

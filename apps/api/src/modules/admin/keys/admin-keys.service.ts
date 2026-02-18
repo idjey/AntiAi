@@ -70,20 +70,14 @@ export class AdminKeysService {
             data: {
                 eventType: 'key_created',
                 entityType: 'signing_key',
-                entityId: kid, // TransparencyLog expects UUID usually but entityId is String, so safe?
-                // Wait, schema says entityId is UUID. SigningKey id is String (kid). 
-                // This might fail if entityId is strictly UUID in DB type.
-                // Let's check schema... `entityId String @map("entity_id") @db.Uuid`
-                // AH. The schema requires UUID for entityId. 
-                // SigningKey ID is NOT a UUID usually (it's a descriptive string).
-                // We cannot log this directly in TransparencyLog if it enforces UUID.
-                // Workaround: We won't log in TransparencyLog for Keys if it violates FK or Type constraints, 
-                // OR we generate a UUID for the log and store the kid in `data`.
-                // I'll store kid in data and use a nil UUID or the admin's ID as entityId if needed, 
-                // but checking schema again: `entityId` is UUID.
-                // I will bypass transparency log for Keys for now to avoid 500s, or use the User's ID (admin) as entityId.
+                entityId: kid,
+                data: {
+                    kid,
+                    publicKeyB64,
+                    alg: 'Ed25519'
+                }
             }
-        }).catch(err => console.warn("Could not log to transparency log due to UUID constraint", err));
+        });
 
         return {
             ...key,
