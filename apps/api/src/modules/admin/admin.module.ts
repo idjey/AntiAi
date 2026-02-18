@@ -10,11 +10,13 @@ import { AdminProofsController } from './proofs/admin-proofs.controller';
 import { AdminProofsService } from './proofs/admin-proofs.service';
 import { AdminReportsController } from './reports/admin-reports.controller';
 import { AdminReportsService } from './reports/admin-reports.service';
+import { AdminKeysController } from './keys/admin-keys.controller';
+import { AdminKeysService } from './keys/admin-keys.service';
 import { ProofsModule } from '../proofs/proofs.module';
 
 @Module({
     imports: [ProofsModule],
-    controllers: [AdminController, AdminChannelsController, AdminVideosController, AdminProofsController, AdminReportsController],
-    providers: [AdminService, AdminChannelsService, AdminVideosService, AdminProofsService, AdminReportsService],
+    controllers: [AdminController, AdminChannelsController, AdminVideosController, AdminProofsController, AdminReportsController, AdminKeysController],
+    providers: [AdminService, AdminChannelsService, AdminVideosService, AdminProofsService, AdminReportsService, AdminKeysService],
 })
 export class AdminModule { }
