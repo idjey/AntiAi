@@ -462,3 +462,12 @@ model AnalyticsEvent {
   @@index([type, createdAt])
   @@map("analytics_events")
 }
+
+model SystemSetting {
+  key         String   @id
+  value       String?
+  description String?
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}

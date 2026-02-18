@@ -48,6 +48,14 @@ export class ProofsService {
     }
 
     async issueProof(userId: string, dto: IssueProofDto) {
+        // Check for disable_proofs setting
+        const setting = await this.prisma.systemSetting.findUnique({
+            where: { key: 'disable_proofs' },
+        });
+        if (setting?.value === 'true') {
+            throw new BadRequestException('Proof issuance is currently disabled.');
+        }
+
         // Verify video ownership
         const video = await this.videosService.getVideoWithChannel(dto.video_id, userId);
         if (!video) {
