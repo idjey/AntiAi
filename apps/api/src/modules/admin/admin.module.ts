@@ -8,11 +8,13 @@ import { AdminVideosController } from './videos/admin-videos.controller';
 import { AdminVideosService } from './videos/admin-videos.service';
 import { AdminProofsController } from './proofs/admin-proofs.controller';
 import { AdminProofsService } from './proofs/admin-proofs.service';
+import { AdminReportsController } from './reports/admin-reports.controller';
+import { AdminReportsService } from './reports/admin-reports.service';
 import { ProofsModule } from '../proofs/proofs.module';
 
 @Module({
     imports: [ProofsModule],
-    controllers: [AdminController, AdminChannelsController, AdminVideosController, AdminProofsController],
-    providers: [AdminService, AdminChannelsService, AdminVideosService, AdminProofsService],
+    controllers: [AdminController, AdminChannelsController, AdminVideosController, AdminProofsController, AdminReportsController],
+    providers: [AdminService, AdminChannelsService, AdminVideosService, AdminProofsService, AdminReportsService],
 })
 export class AdminModule { }
