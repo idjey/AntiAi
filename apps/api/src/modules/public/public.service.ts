@@ -154,6 +154,11 @@ export class PublicService {
             include: {
                 user: {
                     include: {
+                        subscription: {
+                            select: {
+                                plan: true,
+                            },
+                        },
                         channels: {
                             where: { verificationStatus: 'verified' },
                             select: {
@@ -239,6 +244,7 @@ export class PublicService {
                 published_at: v.publishedAt,
             })),
             id: profile.id,
+            plan: profile.user.subscription?.plan || 'free',
             verification_token: this.generateVerificationToken(profile),
         };
     }
