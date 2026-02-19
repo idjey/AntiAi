@@ -36,9 +36,9 @@ export default function AdminProofsPage() {
                 query.set('skip', ((page - 1) * 20).toString())
                 query.set('take', '20')
 
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/proofs?${query.toString()}`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/admin/proofs?${query.toString()}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
                 })
 

@@ -56,6 +56,11 @@ export default function AdminLayout({
         checkAdmin()
     }, [router, pathname])
 
+    const handleLogout = () => {
+        localStorage.removeItem('token')
+        router.push('/admin/login')
+    }
+
     // Bypass auth check for login page
     if (pathname === '/admin/login') {
         return <>{children}</>
@@ -97,9 +102,6 @@ export default function AdminLayout({
                     <nav className="space-y-1">
                         {navItems.map((item) => {
                             const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/admin');
-                            if (item.name === 'Videos') { // Removing duplicate icon logic if needed or customizing 
-                                // Skipping redundant check
-                            }
 
                             return (
                                 <Link
@@ -129,6 +131,15 @@ export default function AdminLayout({
                             <p className="text-sm font-medium truncate">{user?.email}</p>
                             <p className="text-xs text-text-secondary">Administrator</p>
                         </div>
+                        <button
+                            onClick={handleLogout}
+                            className="p-2 hover:bg-white/5 rounded-lg text-text-secondary hover:text-red-500 transition-colors"
+                            title="Logout"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
             </aside>

@@ -19,7 +19,7 @@ export function ImpersonateUser() {
 
         setLoading(true)
         try {
-            const res = await fetch('/api/admin/settings/impersonate', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/admin/users/${userId}/impersonate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId })
@@ -33,13 +33,13 @@ export function ImpersonateUser() {
             const data = await res.json()
 
             // Store admin token to restore later
-            const adminToken = localStorage.getItem('accessToken')
+            const adminToken = localStorage.getItem('token')
             if (adminToken) {
                 localStorage.setItem('adminParams', JSON.stringify({ token: adminToken, returnUrl: window.location.href }))
             }
 
             // Set new token and reload/redirect
-            localStorage.setItem('accessToken', data.accessToken)
+            localStorage.setItem('token', data.token)
             toast.success("Ghost Mode Activated", {
                 description: `Impersonating user ${userId}`
             })
