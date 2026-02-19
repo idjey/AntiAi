@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { SocialIcon } from '@/components/SocialIcon';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { ShareDialog } from '@/components/share-dialog';
 
 interface Props {
     creator: any;
@@ -242,6 +243,17 @@ export const PublicProfile = ({ creator }: Props) => {
                             )}
                         </>
                     )}
+
+                    {/* Share Button (Absolute Top Right) */}
+                    <div className="absolute top-4 right-4 z-50">
+                        <ShareDialog
+                            url={typeof window !== 'undefined' ? window.location.href : `https://antiai.me/${creator.handle}`}
+                            handle={creator.handle}
+                            enableQr={creator.plan === 'pro' || creator.plan === 'elite'}
+                            buttonClassName={`p-2 rounded-full backdrop-blur-md border transition-all hover:scale-110 active:scale-95 shadow-lg ${isLightMode ? 'bg-white/50 border-black/10 text-black hover:bg-white/80' : 'bg-black/30 border-white/10 text-white hover:bg-black/50'}`}
+                            primaryColor={appearance.primary_color}
+                        />
+                    </div>
 
                     {/* Content Wrapper (Relative z-10 to stay above bg effects) */}
                     <div className="relative z-10 flex flex-col p-6 pb-8">
