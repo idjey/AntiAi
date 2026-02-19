@@ -36,9 +36,9 @@ export default function AdminChannelsPage() {
                 query.set('skip', ((page - 1) * 20).toString())
                 query.set('take', '20')
 
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/channels?${query.toString()}`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/admin/channels?${query.toString()}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
                 })
 

@@ -38,9 +38,9 @@ export default function AdminLogsPage() {
                 query.set('skip', ((page - 1) * 50).toString())
                 query.set('take', '50')
 
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/logs?${query.toString()}`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/admin/logs?${query.toString()}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
                 })
 

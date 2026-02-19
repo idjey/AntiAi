@@ -86,8 +86,9 @@ model User {
   channels        Channel[]
   subscription    Subscription?
   auditLogs       AuditLog[]
-  reviewedReports Report[]        @relation("ReviewedBy")
-  profile         CreatorProfile?
+  reviewedReports   Report[]          @relation("ReviewedBy")
+  moderationReviews ModerationQueue[] @relation("ModerationReviewedBy")
+  profile           CreatorProfile?
   links           CreatorLink[]
 
   @@map("users")
@@ -462,6 +463,26 @@ model AnalyticsEvent {
   @@index([creatorId, createdAt])
   @@index([type, createdAt])
   @@map("analytics_events")
+}
+
+// ==================== MODERATION ====================
+
+model ModerationQueue {
+  id         String   @id @default(uuid()) @db.Uuid
+  targetType String   @map("target_type") // 'profile', 'channel', 'video'
+  targetId   String   @map("target_id") @db.Uuid
+  payload    Json     // { old: {}, new: {} }
+  status     String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  reason     String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  reviewedAt DateTime? @map("reviewed_at")
+  reviewedById String? @map("reviewed_by") @db.Uuid
+
+  // Relations
+  reviewedBy User? @relation("ModerationReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt(sort: Desc)])
+  @@map("moderation_queue")
 }
 
 model SystemSetting {

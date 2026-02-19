@@ -21,9 +21,11 @@ import { AdminLogsService } from './logs/admin-logs.service';
 import { AdminSettingsController } from './settings/admin-settings.controller';
 import { AdminSettingsService } from './settings/admin-settings.service';
 import { ProofsModule } from '../proofs/proofs.module';
+import { AdminModerationModule } from './moderation/admin-moderation.module';
 
 @Module({
     imports: [
+        AdminModerationModule,
         ProofsModule,
         JwtModule.registerAsync({
             imports: [ConfigModule],

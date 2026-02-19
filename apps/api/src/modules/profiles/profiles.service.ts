@@ -140,6 +140,8 @@ export class ProfilesService {
             }
         }
 
+        const oldProfile = { ...existing };
+
         const profile = await this.prisma.creatorProfile.update({
             where: { userId },
             data: {
@@ -156,6 +158,29 @@ export class ProfilesService {
                 featuredVideo: true,
             },
         });
+
+        // Create Moderation entry if bio or avatar changed
+        if (oldProfile.bio !== profile.bio || oldProfile.avatarUrl !== profile.avatarUrl) {
+            await this.prisma.moderationQueue.create({
+                data: {
+                    targetType: 'profile',
+                    targetId: profile.id, // Using Profile ID
+                    payload: {
+                        old: {
+                            bio: oldProfile.bio,
+                            avatarUrl: oldProfile.avatarUrl,
+                            displayName: oldProfile.displayName
+                        },
+                        new: {
+                            bio: profile.bio,
+                            avatarUrl: profile.avatarUrl,
+                            displayName: profile.displayName
+                        }
+                    },
+                    status: 'PENDING'
+                }
+            });
+        }
 
         // Fetch verified videos (latest 6)
         const verifiedVideos = await this.prisma.video.findMany({

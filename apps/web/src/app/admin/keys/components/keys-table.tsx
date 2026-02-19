@@ -27,10 +27,10 @@ export function KeysTable({ keys }: KeysTableProps) {
     const handleAction = async (id: string, action: 'retire' | 'active') => {
         setLoadingId(id)
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/keys/${id}/${action}`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/admin/keys/${id}/${action}`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             })
 
