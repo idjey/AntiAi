@@ -11,14 +11,49 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
-import { ExternalLink, CreditCard } from 'lucide-react'
+import { ExternalLink, CreditCard, MoreHorizontal, Copy, Trash, Ban } from 'lucide-react'
 import Link from 'next/link'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 
 interface BillingTableProps {
     subscriptions: any[]
 }
 
 export function BillingTable({ subscriptions }: BillingTableProps) {
+    const router = useRouter()
+
+    const handleCancel = async (id: string) => {
+        if (!confirm('Are you sure you want to cancel this subscription? This action cannot be undone.')) return
+
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/admin/billing/${id}/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+
+            if (res.ok) {
+                toast.success('Subscription canceled successfully')
+                router.refresh()
+            } else {
+                toast.error('Failed to cancel subscription')
+            }
+        } catch (error) {
+            console.error(error)
+            toast.error('An error occurred')
+        }
+    }
+
     if (!subscriptions || subscriptions.length === 0) {
         return <div className="text-center p-8 text-muted-foreground">No subscriptions found</div>
     }
@@ -85,18 +120,50 @@ export function BillingTable({ subscriptions }: BillingTableProps) {
                                 {sub.videosThisMonth}
                             </TableCell>
                             <TableCell className="text-right">
-                                {sub.stripeCustomerId && (
-                                    <Button asChild variant="ghost" size="sm">
-                                        <Link
-                                            href={`https://dashboard.stripe.com/customers/${sub.stripeCustomerId}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                            <span className="sr-only">Open menu</span>
+                                            <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                        <DropdownMenuItem onClick={() => {
+                                            navigator.clipboard.writeText(sub.userId)
+                                            toast.success('User ID copied')
+                                        }}>
+                                            <Copy className="mr-2 h-4 w-4" />
+                                            Copy User ID
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild={!!sub.stripeCustomerId} disabled={!sub.stripeCustomerId}>
+                                            {sub.stripeCustomerId ? (
+                                                <Link
+                                                    href={`https://dashboard.stripe.com/customers/${sub.stripeCustomerId}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                >
+                                                    <ExternalLink className="mr-2 h-4 w-4" />
+                                                    View on Stripe
+                                                </Link>
+                                            ) : (
+                                                <span className="flex items-center cursor-not-allowed opacity-50">
+                                                    <ExternalLink className="mr-2 h-4 w-4" />
+                                                    View on Stripe (Not Linked)
+                                                </span>
+                                            )}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20"
+                                            onClick={() => handleCancel(sub.id)}
+                                            disabled={sub.status === 'canceled'}
                                         >
-                                            <ExternalLink className="w-4 h-4 mr-2" />
-                                            Stripe
-                                        </Link>
-                                    </Button>
-                                )}
+                                            <Ban className="mr-2 h-4 w-4" />
+                                            Cancel Subscription
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </TableCell>
                         </TableRow>
                     ))}
