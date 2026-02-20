@@ -2,6 +2,6 @@
 module.exports = {
     mode: "jit",
     darkMode: "class",
-    content: ["./**/*.{ts,tsx}"],
+    content: ["./**/*.{ts,tsx}", "!./node_modules/**", "!./build/**", "!./.plasmo/**"],
     plugins: []
 }
