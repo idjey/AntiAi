@@ -24,22 +24,18 @@ const checkContent = async (videoId: string) => {
     console.log(`[AntiAI] Checking video: ${videoId}`)
 
     try {
-        // Call the API
-        // GET /public/verify?youtube_video_id=...
-        const res = await fetch(`http://localhost:4000/public/verify?youtube_video_id=${videoId}`)
-        const data = await res.json()
+        // Delegate API call to Background Script to avoid CORS/Mixed Content issues
+        const data = await chrome.runtime.sendMessage({
+            action: "checkUrl",
+            videoId: videoId
+        });
 
-        // PublicService.verifyVideo returns { status: 'verified' | 'unverified' | ... }
-        // We verify against that.
         const isVerified = data && data.status === 'verified'
 
         console.log(`[AntiAI] Verified: ${isVerified}`, data)
 
-        // Notify background to change icon
-        chrome.runtime.sendMessage({
-            action: "updateIcon",
-            verified: isVerified
-        })
+        // Background handles icon update now.
+        // We just handle the badge.
 
         if (isVerified) {
             injectBadge(data)
@@ -52,48 +48,30 @@ const checkContent = async (videoId: string) => {
 
     } catch (err) {
         console.error(`[AntiAI] Verification failed`, err)
-        // On error, assume unverified or keep default? 
-        // User said: "If channel/video is not verified, logo will turn red".
-        // Error == Unverified usually.
-        chrome.runtime.sendMessage({
-            action: "updateIcon",
-            verified: false
-        })
         removeBadge()
     }
 }
 
 function injectBadge(data: any) {
-    removeBadge(); // Clear existing
+    // avoid duplicates
+    if (document.querySelector('.antiai-badge')) return;
 
-    // Retry finding the title element (SPA dynamic loading)
-    let attempts = 0;
-    const maxAttempts = 20; // Increased attempts
+    // Use a simpler, more robust search or observer
+    // YouTube title: ytd-watch-metadata h1
 
-    const findAndInject = () => {
-        // Try multiple selectors
-        const selectors = [
-            'h1.style-scope.ytd-watch-metadata',
-            '#title h1',
-            '#above-the-fold #title h1',
-            '.ytd-watch-metadata #title h1',
-            'ytd-watch-metadata h1'
-        ];
+    const tryInject = () => {
+        const titleH1 = document.querySelector('ytd-watch-metadata h1') ||
+            document.querySelector('#title > h1');
 
-        let titleElement: Element | null = null;
-        for (const sel of selectors) {
-            titleElement = document.querySelector(sel);
-            if (titleElement) break;
-        }
+        if (titleH1) {
+            if (titleH1.querySelector('.antiai-badge')) return; // already there
 
-        if (titleElement) {
+            console.log('[AntiAI] Found title element:', titleH1);
+
             const badge = document.createElement('a');
             badge.className = 'antiai-badge';
-            // Use local verify link or similar
             badge.href = `http://localhost:3000/verify/${data.youtube_video_id}`;
             badge.target = '_blank';
-
-            // Inline SVG to avoid checking asset paths for now
             badge.innerHTML = `
                 <svg viewBox="0 0 24 24" class="antiai-icon">
                     <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
@@ -106,24 +84,32 @@ function injectBadge(data: any) {
                 </div>
             `;
 
-            // Insert after title
-            titleElement.parentElement?.insertBefore(badge, titleElement.nextSibling);
-            // Or use appendChild if parent is flex container? 
-            // Legacy used: titleElement.parentNode.insertBefore(badge, titleElement.nextSibling);
-
-            console.log('[AntiAI] Badge injected successfully');
-        } else {
-            attempts++;
-            if (attempts < maxAttempts) {
-                // console.log(`[AntiAI] Title not found, retrying (${attempts}/${maxAttempts})...`);
-                setTimeout(findAndInject, 500); // Retry every 500ms
-            } else {
-                console.error('[AntiAI] Could not find video title element after retries');
-            }
+            // Append to the H1 itself so it stays with the title
+            titleH1.appendChild(badge);
+            console.log('[AntiAI] Badge injected into H1.');
+            return true;
         }
+        return false;
     };
 
-    findAndInject();
+    if (!tryInject()) {
+        // If not found yet, observe the DOM
+        console.log('[AntiAI] Title not found, observing DOM...');
+        const observer = new MutationObserver((mutations, obs) => {
+            if (tryInject()) {
+                obs.disconnect(); // Stop observing once found
+            }
+        });
+
+        const target = document.querySelector('ytd-app') || document.body;
+        observer.observe(target, {
+            childList: true,
+            subtree: true
+        });
+
+        // Timeout to stop observing eventually
+        setTimeout(() => observer.disconnect(), 10000);
+    }
 }
 
 function removeBadge() {
