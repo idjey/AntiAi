@@ -1,5 +1,5 @@
 
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, Param, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
@@ -40,5 +40,10 @@ export class AdminBillingController {
             plan: subPlan,
             search
         });
+    }
+
+    @Post(':id/cancel')
+    async cancel(@Param('id') id: string) {
+        return this.adminBillingService.cancelSubscription(id);
     }
 }

@@ -58,4 +58,16 @@ export class AdminBillingService {
             }
         };
     }
+
+    async cancelSubscription(id: string) {
+        return this.prisma.subscription.update({
+            where: { id },
+            data: {
+                status: SubscriptionStatus.canceled,
+                // Optionally set currentPeriodEnd to now if you want immediate cutoff
+                // For now, we just mark status as canceled. Stripe webhook usually handles the rest.
+                currentPeriodEnd: new Date(),
+            },
+        });
+    }
 }
