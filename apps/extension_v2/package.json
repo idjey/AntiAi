@@ -1,0 +1,42 @@
+{
+    "name": "antiai-extension",
+    "displayName": "AntiAI",
+    "version": "0.0.1",
+    "description": "AntiAI Browser Extension",
+    "author": "AntiAI",
+    "scripts": {
+        "dev": "plasmo dev",
+        "build": "plasmo build",
+        "package": "plasmo package"
+    },
+    "dependencies": {
+        "clsx": "^2.0.0",
+        "framer-motion": "^10.12.16",
+        "lucide-react": "^0.263.1",
+        "plasmo": "latest",
+        "react": "18.2.0",
+        "react-dom": "18.2.0",
+        "tailwind-merge": "^1.14.0"
+    },
+    "devDependencies": {
+        "@types/chrome": "^0.1.36",
+        "@types/node": "^20.19.33",
+        "@types/react": "18.2.0",
+        "@types/react-dom": "18.2.0",
+        "autoprefixer": "^10.4.14",
+        "postcss": "^8.4.27",
+        "tailwindcss": "^3.3.3",
+        "typescript": "5.2.2"
+    },
+    "manifest": {
+        "host_permissions": [
+            "https://*.youtube.com/*",
+            "http://localhost:4000/*"
+        ],
+        "permissions": [
+            "tabs",
+            "storage",
+            "activeTab"
+        ]
+    }
+}
