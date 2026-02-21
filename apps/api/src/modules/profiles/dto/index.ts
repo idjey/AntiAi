@@ -53,6 +53,10 @@ export class AppearanceDto {
     logo_count?: number;
 
     @IsOptional()
+    @IsNumber()
+    logo_size?: number;
+
+    @IsOptional()
     @IsString()
     scatter_style?: string;
 
@@ -127,6 +131,10 @@ export class AppearanceDto {
     @IsOptional()
     @IsString()
     card_background_gradient?: string;
+
+    @IsOptional()
+    @IsArray()
+    sponsored_products?: any[];
 }
 
 export class CreateProfileDto {
