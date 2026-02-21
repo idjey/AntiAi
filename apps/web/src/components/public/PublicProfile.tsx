@@ -152,9 +152,108 @@ export const PublicProfile = ({ creator }: Props) => {
                         ? `url(${pageBgImage}) center/cover no-repeat`
                         : pageBgType === 'gradient' && pageBgGradient
                             ? pageBgGradient
-                            : pageBgColor
+                            : pageBgType === 'emoji'
+                                ? pageBgColor
+                                : pageBgColor
                 }}
             >
+                {/* Emoji Background for Public Page */}
+                {pageBgType === 'emoji' && Boolean(appearance.public_background_emojis) && (
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40 z-0">
+                        {(() => {
+                            const pattern = appearance.public_background_emoji_pattern || 'scatter';
+                            const emojisString = (appearance.public_background_emojis || '') as string;
+                            const emojisArr = Array.from(emojisString) as string[];
+                            if (emojisArr.length === 0) return null;
+
+                            if (pattern === 'grid') {
+                                return (
+                                    <div className="w-full h-full flex flex-wrap justify-center content-start py-8 gap-x-12 gap-y-12" style={{ transform: 'scale(1.2)' }}>
+                                        {Array.from({ length: 48 }).map((_, i) => (
+                                            <div key={`emoji-${i}`} className="text-4xl filter blur-[1px]">
+                                                {emojisArr[i % emojisArr.length]}
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            } else if (pattern === 'floating') {
+                                const direction = appearance.public_background_emoji_direction || 'up';
+                                return (
+                                    <div className="relative w-full h-full">
+                                        {Array.from({ length: 24 }).map((_, i) => {
+                                            let style: any = {
+                                                animationDelay: `-${Math.random() * 10}s`,
+                                                animationDuration: `${10 + Math.random() * 10}s`,
+                                            };
+
+                                            if (direction === 'up' || direction === 'down') {
+                                                style.left = `${Math.random() * 100}%`;
+                                                style['--float-x-start'] = `${(Math.random() - 0.5) * 50}px`;
+                                                style['--float-x-end'] = `${(Math.random() - 0.5) * 100}px`;
+                                                if (direction === 'up') {
+                                                    style.bottom = '-10%';
+                                                    style['--float-y-start'] = '10vh';
+                                                    style['--float-y-end'] = '-120vh';
+                                                } else {
+                                                    style.top = '-10%';
+                                                    style['--float-y-start'] = '-10vh';
+                                                    style['--float-y-end'] = '120vh';
+                                                }
+                                            } else {
+                                                style.top = `${Math.random() * 100}%`;
+                                                style['--float-y-start'] = `${(Math.random() - 0.5) * 50}px`;
+                                                style['--float-y-end'] = `${(Math.random() - 0.5) * 100}px`;
+                                                if (direction === 'left') {
+                                                    style.right = '-10%';
+                                                    style['--float-x-start'] = '10vw';
+                                                    style['--float-x-end'] = '-120vw';
+                                                } else {
+                                                    style.left = '-10%';
+                                                    style['--float-x-start'] = '-10vw';
+                                                    style['--float-x-end'] = '120vw';
+                                                }
+                                            }
+
+                                            return (
+                                                <div
+                                                    key={`floating-emoji-${i}`}
+                                                    className="absolute text-5xl filter blur-[1px] animate-[float_10s_linear_infinite]"
+                                                    style={style}
+                                                >
+                                                    {emojisArr[i % emojisArr.length]}
+                                                </div>
+                                            );
+                                        })}
+                                        <style>{`
+                                            @keyframes float {
+                                                0% { transform: translate(var(--float-x-start), var(--float-y-start)) rotate(0deg); opacity: 0; }
+                                                10% { opacity: 1; }
+                                                90% { opacity: 1; }
+                                                100% { transform: translate(var(--float-x-end), var(--float-y-end)) rotate(360deg); opacity: 0; }
+                                            }
+                                        `}</style>
+                                    </div>
+                                );
+                            } else {
+                                // Default: scatter
+                                return (
+                                    <div className="w-full h-full flex flex-wrap justify-center content-start py-8 gap-x-14 gap-y-16" style={{ transform: 'scale(1.2)' }}>
+                                        {Array.from({ length: 42 }).map((_, i) => {
+                                            const rotation = (i * 47) % 360;
+                                            const offset = (i % 3 === 0) ? 'translate-y-8' : (i % 2 === 0) ? '-translate-x-6' : 'translate-x-4';
+                                            return (
+                                                <div key={`emoji-${i}`} className={`text-4xl filter blur-[1px] ${offset}`} style={{ transform: `rotate(${rotation}deg)` }}>
+                                                    {emojisArr[i % emojisArr.length]}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            }
+                        })()}
+                    </div>
+                )}
+
                 {/* 2. Page Overlay & Blur */}
                 <div
                     className="absolute inset-0 z-10 pointer-events-none transition-all duration-500"
@@ -261,20 +360,13 @@ export const PublicProfile = ({ creator }: Props) => {
                         {/* Avatar & Info */}
                         <div className="text-center space-y-4 mb-6">
                             {/* Avatar */}
-                            {/* Avatar */}
-                            <div
-                                className="mx-auto w-28 h-28 rounded-full p-1 animate-pulse-glow"
-                                style={{
-                                    background: `linear-gradient(to bottom right, ${appearance.primary_color}, ${appearance.primary_color}40)`,
-                                    '--pulse-color': `${appearance.primary_color}60`
-                                } as React.CSSProperties}
-                            >
-                                <div className="w-full h-full rounded-full overflow-hidden bg-surface border-4" style={{ borderColor: appearance.background_color }}>
+                            <div className="relative mx-auto w-28 h-28 mt-4 mb-6 group">
+                                <div className="w-full h-full rounded-full overflow-hidden border-2 border-white/20 shadow-xl relative z-10 transition-transform duration-300 group-hover:scale-105" style={{ backgroundColor: appearance.background_color }}>
                                     {creator.avatar_url ? (
-                                        <img src={creator.avatar_url} alt={creator.display_name} className="w-full h-full object-cover transition-transform hover:scale-110 duration-500" />
+                                        <img src={creator.avatar_url} alt={creator.display_name} className="w-full h-full object-cover relative z-10" />
                                     ) : (
                                         <div
-                                            className="w-full h-full flex items-center justify-center text-3xl font-bold"
+                                            className="w-full h-full flex items-center justify-center text-3xl font-bold relative z-10"
                                             style={{
                                                 backgroundColor: isLightMode ? '#f3f4f6' : '#202020',
                                                 color: appearance.primary_color
@@ -284,6 +376,20 @@ export const PublicProfile = ({ creator }: Props) => {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Base Glow (Default) */}
+                                <div className="absolute inset-0 bg-primary/30 blur-xl rounded-full scale-110 -z-0 transition-colors duration-300 pointer-events-none" style={{ backgroundColor: appearance.primary_color }} />
+
+                                {/* Aura Effects on Hover */}
+                                {appearance.avatar_aura === 'solid' && (
+                                    <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md pointer-events-none" style={{ backgroundColor: appearance.primary_color, transform: 'scale(1.3)' }} />
+                                )}
+                                {appearance.avatar_aura === 'rainbow' && (
+                                    <div className="absolute -inset-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-lg pointer-events-none animate-spin-slow" style={{ background: 'conic-gradient(from 0deg, #ff0000, #ff8000, #ffff00, #00ff00, #0000ff, #4b0082, #ee82ee, #ff0000)' }} />
+                                )}
+                                {appearance.avatar_aura === 'pulse' && (
+                                    <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-500 blur-sm pointer-events-none" style={{ backgroundColor: appearance.primary_color }} />
+                                )}
                             </div>
 
                             {/* Name & Handle */}
