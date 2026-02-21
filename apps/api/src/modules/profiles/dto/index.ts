@@ -34,6 +34,10 @@ export class AppearanceDto {
 
     @IsOptional()
     @IsString()
+    avatar_aura?: string;
+
+    @IsOptional()
+    @IsString()
     logo_url?: string;
 
     @IsOptional()
@@ -59,7 +63,7 @@ export class AppearanceDto {
     // Public Page Background
     @IsOptional()
     @IsString()
-    public_background_type?: 'color' | 'gradient' | 'image';
+    public_background_type?: 'color' | 'gradient' | 'image' | 'emoji';
 
     @IsOptional()
     @IsString()
@@ -72,6 +76,18 @@ export class AppearanceDto {
     @IsOptional()
     @IsString()
     public_background_image?: string;
+
+    @IsOptional()
+    @IsString()
+    public_background_emojis?: string;
+
+    @IsOptional()
+    @IsString()
+    public_background_emoji_pattern?: string;
+
+    @IsOptional()
+    @IsString()
+    public_background_emoji_direction?: string;
 
     @IsOptional()
     @IsNumber()
