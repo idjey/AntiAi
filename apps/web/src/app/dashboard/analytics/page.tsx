@@ -75,27 +75,25 @@ export default function AnalyticsPage() {
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
     return (
-        <div className="p-6 space-y-6 relative min-h-screen">
+        <div className="p-6 space-y-6">
             <h1 className="text-2xl font-bold mb-6">Analytics</h1>
 
-            {/* Paywall Overlay */}
+            {/* Paywall Card — shown inline above blurred content, no full-screen overlay */}
             {isBlur && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                    <div className="bg-zinc-900 border border-white/10 p-8 rounded-2xl max-w-md text-center shadow-2xl">
-                        <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                            </svg>
-                        </div>
-                        <h2 className="text-2xl font-bold mb-2">Unlock Pro Analytics</h2>
-                        <p className="text-white/60 mb-6">Gain deep insights into your audience, traffic sources, and engagement with detailed analytics.</p>
-                        <button
-                            onClick={() => window.location.href = '/dashboard/billing'}
-                            className="bg-primary hover:bg-primary/90 text-black font-bold py-3 px-8 rounded-full transition-all transform hover:scale-105"
-                        >
-                            Upgrade to Pro
-                        </button>
+                <div className="bg-zinc-900 dark:bg-zinc-900 border border-white/10 p-8 rounded-2xl max-w-md mx-auto text-center shadow-2xl">
+                    <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
                     </div>
+                    <h2 className="text-2xl font-bold mb-2 text-white">Unlock Pro Analytics</h2>
+                    <p className="text-white/60 mb-6">Gain deep insights into your audience, traffic sources, and engagement with detailed analytics.</p>
+                    <button
+                        onClick={() => window.location.href = '/dashboard/billing'}
+                        className="bg-primary hover:bg-primary/90 text-black font-bold py-3 px-8 rounded-full transition-all transform hover:scale-105"
+                    >
+                        Upgrade to Pro
+                    </button>
                 </div>
             )}
 
@@ -194,6 +192,99 @@ export default function AnalyticsPage() {
                         </ResponsiveContainer>
                     </div>
                 </div>
+            </div>
+
+            {/* Product Clicks Section — Pro & Elite */}
+            <div className="relative">
+                {/* Section is visible but blurred for free users */}
+                <div className={`bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-xl shadow-sm space-y-6 ${isBlur ? 'blur-sm opacity-50 pointer-events-none select-none' : ''}`}>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                                🛍️ Product Clicks
+                                <span className="text-xs font-normal bg-primary/10 text-primary px-2 py-0.5 rounded-full">Last 30 days</span>
+                            </h3>
+                            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Clicks on your sponsored products from your public creator card.</p>
+                        </div>
+                    </div>
+
+                    {/* Mock product click data — in production this comes from stats.product_clicks */}
+                    {(() => {
+                        const productClicks = displayStats.product_clicks || [
+                            { name: 'Wireless Earbuds', clicks: 142, image: null },
+                            { name: 'Standing Desk Mat', clicks: 89, image: null },
+                            { name: 'Blue Light Glasses', clicks: 67, image: null },
+                            { name: 'USB-C Hub', clicks: 45, image: null },
+                            { name: 'Webcam Cover', clicks: 23, image: null },
+                        ];
+                        const topProduct = productClicks[0];
+                        return (
+                            <div className="space-y-4">
+                                {/* Top Product Highlight */}
+                                {topProduct && (
+                                    <div className="flex items-center gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20">
+                                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                            <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-wider">Top Product</p>
+                                            <p className="font-semibold text-zinc-900 dark:text-white">{topProduct.name}</p>
+                                        </div>
+                                        <div className="ml-auto text-right">
+                                            <p className="text-2xl font-bold text-primary">{topProduct.clicks}</p>
+                                            <p className="text-xs text-zinc-500 dark:text-zinc-400">clicks</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Bar Chart */}
+                                <div className="h-[200px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={productClicks} layout="vertical">
+                                            <XAxis type="number" stroke={chartColors.stroke} fontSize={12} hide />
+                                            <YAxis
+                                                dataKey="name"
+                                                type="category"
+                                                stroke={chartColors.text}
+                                                fontSize={11}
+                                                tickLine={false}
+                                                axisLine={false}
+                                                width={140}
+                                                tickFormatter={(v: string) => v.length > 18 ? v.substring(0, 18) + '…' : v}
+                                            />
+                                            <Tooltip
+                                                cursor={{ fill: 'rgba(16,185,129,0.06)' }}
+                                                contentStyle={{ backgroundColor: chartColors.tooltipBg, borderColor: chartColors.tooltipBorder, borderRadius: '8px' }}
+                                                itemStyle={{ color: chartColors.tooltipText }}
+                                                labelStyle={{ color: chartColors.text }}
+                                                formatter={(v: any) => [`${v} clicks`, 'Product Clicks']}
+                                            />
+                                            <Bar dataKey="clicks" fill="#10b981" radius={[0, 4, 4, 0]} barSize={18} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        );
+                    })()}
+                </div>
+
+                {/* Free plan overlay — upgrade prompt positioned over blurred content */}
+                {isBlur && (
+                    <div className="absolute inset-0 flex items-center justify-center rounded-xl">
+                        <div className="text-center px-6">
+                            <p className="text-zinc-900 dark:text-white font-bold mb-1">Product click analytics</p>
+                            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-3">Available on Pro and Elite plans</p>
+                            <button
+                                onClick={() => window.location.href = '/dashboard/billing'}
+                                className="bg-primary hover:bg-primary/90 text-black text-sm font-bold py-2 px-5 rounded-full transition-all hover:scale-105"
+                            >
+                                Upgrade to Pro →
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

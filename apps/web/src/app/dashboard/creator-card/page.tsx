@@ -64,6 +64,7 @@ interface Profile {
         logo_url?: string;
         logo_position?: 'center_top' | 'top_left' | 'top_right' | 'center' | 'bottom_left' | 'bottom_right' | 'scatter';
         logo_opacity?: number;
+        logo_size?: number;
         logo_count?: number;
         scatter_style?: 'random' | 'grid' | 'circle';
         background_image?: string;
@@ -115,10 +116,32 @@ export default function CreatorCardPage() {
     const [layoutOrientation, setLayoutOrientation] = useState<'vertical' | 'horizontal'>('horizontal');
 
     // Filter/Tab State
-    const [activeTab, setActiveTab] = useState<'links' | 'appearance'>('links');
+    const [activeTab, setActiveTab] = useState<'links' | 'appearance' | 'shop'>('links');
     const [isTokenRevealed, setIsTokenRevealed] = useState(false);
 
-    // Appearance State
+    // Sponsored Products State
+    interface SponsoredProduct {
+        id: string;
+        url: string;
+        title: string;
+        description: string | null;
+        image: string | null;
+        site_name: string | null;
+        added_at: string;
+    }
+    const [products, setProducts] = useState<SponsoredProduct[]>([]);
+    const [productUrl, setProductUrl] = useState('');
+    const [isFetchingMeta, setIsFetchingMeta] = useState(false);
+    const [isSavingProduct, setIsSavingProduct] = useState(false);
+    const [productMeta, setProductMeta] = useState<{
+        title: string;
+        description: string;
+        image: string;
+        site_name: string;
+    } | null>(null);
+    const [productLimitError, setProductLimitError] = useState<string | null>(null);
+    const [planInfo, setPlanInfo] = useState<{ plan: string; cap: number } | null>(null);
+
     const [appearance, setAppearance] = useState({
         theme: 'modern_dark',
         primary_color: '#10b981',
@@ -128,6 +151,7 @@ export default function CreatorCardPage() {
         logo_url: '',
         logo_position: 'center_top' as 'center_top' | 'top_left' | 'top_right' | 'center' | 'bottom_left' | 'bottom_right' | 'scatter',
         logo_opacity: 0.2,
+        logo_size: 32,
         logo_count: 12,
         scatter_style: 'random' as 'random' | 'grid' | 'circle',
         background_image: '',
@@ -224,6 +248,9 @@ export default function CreatorCardPage() {
                 if (data.profile.appearance) {
                     setAppearance(prev => ({ ...prev, ...data.profile.appearance }));
                 }
+                // Load sponsored products from appearance
+                const prods = data.profile.appearance?.sponsored_products || [];
+                setProducts(prods);
             }
 
             // Fetch Links
@@ -304,7 +331,7 @@ export default function CreatorCardPage() {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    appearance: appearance,
+                    appearance: { ...appearance, sponsored_products: products },
                     avatar_url: profile?.avatar_url
                 })
             });
@@ -436,6 +463,16 @@ export default function CreatorCardPage() {
                     >
                         Links
                         {activeTab === 'links' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full" />}
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('shop')}
+                        className={`pb-4 px-2 text-sm font-medium transition-colors relative ${activeTab === 'shop' ? 'text-primary' : 'text-text-secondary hover:text-text-primary'}`}
+                    >
+                        Shop
+                        {products.length > 0 && (
+                            <span className="ml-1.5 text-[10px] bg-primary/20 text-primary rounded-full px-1.5 py-0.5">{products.length}</span>
+                        )}
+                        {activeTab === 'shop' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full" />}
                     </button>
                     <button
                         onClick={() => setActiveTab('appearance')}
@@ -573,6 +610,204 @@ export default function CreatorCardPage() {
                                 </div>
                             )}
                         </div>
+                    </div>
+                ) : activeTab === 'shop' ? (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                        {/* Add Product Card */}
+                        <div className="bg-surface border border-border rounded-xl p-5 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider">🛍️ Add Sponsored Product</h2>
+                                <span className="text-xs text-text-muted">{products.length} / {planInfo?.cap ?? '?'} products</span>
+                            </div>
+
+                            {/* URL + Fetch */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-text-secondary">Product URL</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="url"
+                                        value={productUrl}
+                                        onChange={e => { setProductUrl(e.target.value); setProductMeta(null); setProductLimitError(null); }}
+                                        className="flex-1 bg-background border border-border rounded-lg px-4 py-2 text-text-primary focus:outline-none focus:border-primary placeholder:text-text-muted/50 text-sm"
+                                        placeholder="https://amazon.com/..."
+                                    />
+                                    <button
+                                        type="button"
+                                        disabled={!productUrl || isFetchingMeta}
+                                        onClick={async () => {
+                                            if (!productUrl) return;
+                                            setIsFetchingMeta(true);
+                                            setProductMeta(null);
+                                            try {
+                                                const token = localStorage.getItem('token');
+                                                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/profile/products/fetch-meta`, {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                    body: JSON.stringify({ url: productUrl })
+                                                });
+                                                if (res.ok) {
+                                                    const data = await res.json();
+                                                    setProductMeta({ title: data.title || '', description: data.description || '', image: data.image || '', site_name: data.site_name || '' });
+                                                }
+                                            } catch (e) {
+                                                setProductMeta({ title: '', description: '', image: '', site_name: '' });
+                                            } finally {
+                                                setIsFetchingMeta(false);
+                                            }
+                                        }}
+                                        className="px-4 py-2 bg-primary text-black text-sm font-semibold rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50 whitespace-nowrap"
+                                    >
+                                        {isFetchingMeta ? 'Fetching...' : 'Fetch Info'}
+                                    </button>
+                                </div>
+                                <p className="text-xs text-text-muted">Paste any product URL. We'll try to auto-fetch the title and image. Fill in manually if it doesn't work.</p>
+                            </div>
+
+                            {/* Manual / Preview Fields */}
+                            {productMeta !== null && (
+                                <div className="space-y-3 pt-3 border-t border-border animate-in fade-in slide-in-from-top-2">
+                                    <div className="flex gap-4">
+                                        {/* Image preview */}
+                                        <div className="w-24 h-24 rounded-lg border border-border overflow-hidden bg-surface-light flex-shrink-0">
+                                            {productMeta.image ? (
+                                                <img src={productMeta.image} alt="Preview" className="w-full h-full object-cover" onError={e => { e.currentTarget.src = ''; }} />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-text-muted text-xs text-center p-2">No image</div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 space-y-2">
+                                            <input
+                                                type="text"
+                                                value={productMeta.title}
+                                                onChange={e => setProductMeta(p => p ? { ...p, title: e.target.value } : p)}
+                                                className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-text-primary focus:outline-none focus:border-primary text-sm"
+                                                placeholder="Product title"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={productMeta.site_name}
+                                                onChange={e => setProductMeta(p => p ? { ...p, site_name: e.target.value } : p)}
+                                                className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-text-secondary focus:outline-none focus:border-primary text-xs"
+                                                placeholder="Site name (e.g. Amazon)"
+                                            />
+                                        </div>
+                                    </div>
+                                    <textarea
+                                        value={productMeta.description}
+                                        onChange={e => setProductMeta(p => p ? { ...p, description: e.target.value } : p)}
+                                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-text-secondary focus:outline-none focus:border-primary text-xs resize-none"
+                                        rows={2}
+                                        placeholder="Short description (optional)"
+                                    />
+                                    <input
+                                        type="url"
+                                        value={productMeta.image}
+                                        onChange={e => setProductMeta(p => p ? { ...p, image: e.target.value } : p)}
+                                        className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-text-muted focus:outline-none focus:border-primary text-xs"
+                                        placeholder="Image URL (override or paste manually)"
+                                    />
+
+                                    {/* Tier limit error */}
+                                    {productLimitError && (
+                                        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-sm text-amber-400">
+                                            {productLimitError}
+                                            <a href="/dashboard/billing" className="ml-2 underline font-semibold">Upgrade →</a>
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-end">
+                                        <button
+                                            disabled={!productMeta.title || isSavingProduct}
+                                            onClick={async () => {
+                                                if (!productMeta?.title) return;
+                                                setIsSavingProduct(true);
+                                                setProductLimitError(null);
+                                                try {
+                                                    const token = localStorage.getItem('token');
+                                                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/profile/products`, {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                        body: JSON.stringify({ url: productUrl, ...productMeta })
+                                                    });
+                                                    const data = await res.json();
+                                                    if (res.ok) {
+                                                        setProducts(prev => [...prev, data.product]);
+                                                        setPlanInfo({ plan: '', cap: data.cap });
+                                                        setProductMeta(null);
+                                                        setProductUrl('');
+                                                    } else if (data.upgrade_required) {
+                                                        setProductLimitError(data.message);
+                                                    } else {
+                                                        alert(data.message || 'Failed to save product');
+                                                    }
+                                                } catch (e) {
+                                                    alert('Failed to save product');
+                                                } finally {
+                                                    setIsSavingProduct(false);
+                                                }
+                                            }}
+                                            className="px-6 py-2 bg-primary text-black text-sm font-semibold rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
+                                        >
+                                            {isSavingProduct ? 'Saving...' : 'Save Product'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Saved Products List */}
+                        {products.length > 0 && (
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">Saved Products</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {products.map(product => (
+                                        <div key={product.id} className="bg-surface border border-border rounded-xl overflow-hidden flex gap-3 p-3 group">
+                                            <div className="w-14 h-14 rounded-lg overflow-hidden bg-surface-light flex-shrink-0">
+                                                {product.image ? (
+                                                    <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center">
+                                                        <svg className="w-5 h-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                                        </svg>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-text-primary truncate">{product.title}</p>
+                                                {product.site_name && <p className="text-xs text-text-muted">{product.site_name}</p>}
+                                                <a href={product.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate block max-w-full">{product.url}</a>
+                                            </div>
+                                            <button
+                                                onClick={async () => {
+                                                    if (!confirm('Remove this product?')) return;
+                                                    const token = localStorage.getItem('token');
+                                                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/profile/products/${product.id}`, {
+                                                        method: 'DELETE',
+                                                        headers: { 'Authorization': `Bearer ${token}` }
+                                                    });
+                                                    if (res.ok) setProducts(prev => prev.filter(p => p.id !== product.id));
+                                                }}
+                                                className="p-1.5 text-text-muted hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
+                                                title="Remove product"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {products.length === 0 && !productMeta && (
+                            <div className="text-center py-8 text-text-secondary">
+                                <div className="text-4xl mb-3">🛍️</div>
+                                <p className="text-sm">No sponsored products yet.</p>
+                                <p className="text-xs text-text-muted mt-1">Paste a product link above to get started.</p>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="space-y-6"> {/* Parent div for appearance tab content */}
@@ -738,35 +973,97 @@ export default function CreatorCardPage() {
                                                 </div>
                                             </div>
 
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium text-text-secondary">Logo Position</label>
-                                                <div className="grid grid-cols-3 gap-2">
-                                                    {[
-                                                        { id: 'top_left', label: 'Top Left' },
-                                                        { id: 'center_top', label: 'Top Center' },
-                                                        { id: 'top_right', label: 'Top Right' },
-                                                        { id: 'center', label: 'Center (Hero)' },
-                                                        { id: 'scatter', label: 'Scatter Pattern' },
-                                                        { id: 'bottom_left', label: 'Btm Left' },
-                                                        { id: 'bottom_right', label: 'Btm Right' },
-                                                    ].map(pos => (
-                                                        <button
-                                                            key={pos.id}
-                                                            onClick={() => {
-                                                                setAppearance(prev => ({ ...prev, logo_position: pos.id as any }));
-                                                                if (pos.id === 'scatter') {
-                                                                    generateScatterPositions(appearance.logo_count || 12, appearance.scatter_style || 'random');
-                                                                }
-                                                            }}
-                                                            className={`py-2 px-2 text-xs rounded-lg border transition-all ${appearance.logo_position === pos.id
-                                                                ? 'border-primary bg-primary/10 text-primary font-medium'
-                                                                : 'border-border bg-background text-text-secondary hover:border-primary/50'
-                                                                }`}
-                                                        >
-                                                            {pos.label}
-                                                        </button>
-                                                    ))}
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <label className="text-sm font-medium text-text-secondary">Logo Position</label>
+                                                    {appearance.logo_position && (
+                                                        <span className="text-xs text-primary capitalize">
+                                                            {[{ id: 'top_left', label: 'Top Left' }, { id: 'center_top', label: 'Top Center' }, { id: 'top_right', label: 'Top Right' }, { id: 'center', label: 'Center (Hero)' }, { id: 'bottom_left', label: 'Bottom Left' }, { id: 'bottom_right', label: 'Bottom Right' }, { id: 'scatter', label: 'Scatter' }].find(p => p.id === appearance.logo_position)?.label || appearance.logo_position}
+                                                        </span>
+                                                    )}
                                                 </div>
+
+                                                {/* Visual 3x3 card position picker */}
+                                                <div
+                                                    className="relative w-full rounded-xl border-2 border-border bg-surface-light/30 overflow-hidden"
+                                                    style={{ aspectRatio: '2/1' }}
+                                                >
+                                                    <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
+                                                        <div className="w-[40%] h-[60%] rounded-lg border border-white/30 flex flex-col items-center justify-center gap-1">
+                                                            <div className="w-6 h-6 rounded-full bg-white/40" />
+                                                            <div className="w-10 h-1 rounded bg-white/30" />
+                                                            <div className="w-8 h-0.5 rounded bg-white/20" />
+                                                        </div>
+                                                    </div>
+                                                    <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 p-2 gap-1">
+                                                        {[
+                                                            { id: 'top_left', row: 0, col: 0 },
+                                                            { id: 'center_top', row: 0, col: 1 },
+                                                            { id: 'top_right', row: 0, col: 2 },
+                                                            { id: null, row: 1, col: 0 },
+                                                            { id: 'center', row: 1, col: 1 },
+                                                            { id: null, row: 1, col: 2 },
+                                                            { id: 'bottom_left', row: 2, col: 0 },
+                                                            { id: null, row: 2, col: 1 },
+                                                            { id: 'bottom_right', row: 2, col: 2 },
+                                                        ].map((cell, i) => {
+                                                            const isActive = appearance.logo_position === cell.id;
+                                                            return cell.id ? (
+                                                                <button
+                                                                    key={cell.id}
+                                                                    onClick={() => setAppearance(prev => ({ ...prev, logo_position: cell.id as any }))}
+                                                                    className={`relative flex items-center justify-center rounded-lg transition-all duration-200 group ${isActive ? 'bg-primary/20' : 'hover:bg-white/5'}`}
+                                                                    title={cell.id.replace(/_/g, ' ')}
+                                                                >
+                                                                    <div className={`w-2.5 h-2.5 rounded-full transition-all duration-200 ${isActive ? 'bg-primary shadow-[0_0_8px_2px] shadow-primary/60 scale-125' : 'bg-white/30 group-hover:bg-white/60 group-hover:scale-110'}`} />
+                                                                    {isActive && <div className="absolute inset-0 rounded-lg ring-2 ring-primary/60 ring-inset" />}
+                                                                </button>
+                                                            ) : (
+                                                                <div key={`empty-${i}`} />
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+
+                                                {/* Scatter chip */}
+                                                <button
+                                                    onClick={() => {
+                                                        setAppearance(prev => ({ ...prev, logo_position: 'scatter' as any }));
+                                                        generateScatterPositions(appearance.logo_count || 12, appearance.scatter_style || 'random');
+                                                    }}
+                                                    className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border transition-all duration-200 ${appearance.logo_position === 'scatter' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-text-secondary hover:border-primary/40 hover:text-text-primary'}`}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="relative w-8 h-5">
+                                                            {[{ t: '20%', l: '10%' }, { t: '50%', l: '55%' }, { t: '10%', l: '70%' }, { t: '65%', l: '25%' }].map((p, i) => (
+                                                                <div key={i} className={`absolute w-1.5 h-1.5 rounded-full transition-colors ${appearance.logo_position === 'scatter' ? 'bg-primary' : 'bg-text-muted'}`} style={{ top: p.t, left: p.l }} />
+                                                            ))}
+                                                        </div>
+                                                        <span className="text-sm font-medium">Scatter Pattern</span>
+                                                    </div>
+                                                    <span className="text-xs opacity-60">Tiled across page</span>
+                                                </button>
+
+                                                {/* Logo Size Slider */}
+                                                {Boolean(appearance.logo_url) && appearance.logo_position !== 'scatter' && (
+                                                    <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1">
+                                                        <div className="flex items-center justify-between">
+                                                            <label className="text-sm font-medium text-text-secondary">Logo Size</label>
+                                                            <span className="text-xs font-mono text-primary">{appearance.logo_size || 32}px</span>
+                                                        </div>
+                                                        <input
+                                                            type="range" min="16" max="160" step="4"
+                                                            value={appearance.logo_size || 32}
+                                                            onChange={e => setAppearance(prev => ({ ...prev, logo_size: parseInt(e.target.value) }))}
+                                                            className="w-full accent-primary h-2 bg-surface-light rounded-lg appearance-none cursor-pointer"
+                                                        />
+                                                        <div className="flex justify-between text-[10px] text-text-muted">
+                                                            <span>Small</span>
+                                                            {appearance.logo_position === 'center' && <span className="text-primary">↑ Hero mode</span>}
+                                                            <span>Large</span>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
@@ -877,9 +1174,23 @@ export default function CreatorCardPage() {
                                         {appearance.public_background_type === 'emoji' && (
                                             <div className="space-y-3">
                                                 <div className="space-y-2">
-                                                    <label className="text-sm font-medium text-text-secondary">Emoji Pattern</label>
+                                                    <div className="flex items-center justify-between">
+                                                        <label className="text-sm font-medium text-text-secondary">Emoji Pattern</label>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const pool = ['✨', '🌟', '⭐', '💫', '🔥', '🌈', '🎉', '🎊', '💎', '🚀', '🌸', '🌺', '🍀', '🦋', '🐉', '🌙', '☀️', '⚡', '🎯', '🎮', '🎵', '🎶', '❤️', '💜', '💙', '🧡', '💚', '🌊', '🏔️', '🌴', '🦄', '🐬', '💥', '✴️', '🎆', '🦎', '🦊', '🦅', '🐙', '🎭', '🢐', '🌋', '🌀', '🦋', '🍁', '🌾', '🐾', '🎪', '🌻', '🦁'];
+                                                                const shuffled = [...pool].sort(() => Math.random() - 0.5);
+                                                                setAppearance(prev => ({ ...prev, public_background_emojis: shuffled.slice(0, 10).join('') }));
+                                                            }}
+                                                            className="flex items-center gap-1.5 px-2.5 py-1 bg-surface border border-border rounded-lg text-xs text-text-secondary hover:text-primary hover:border-primary transition-all group"
+                                                        >
+                                                            <svg className="w-3 h-3 group-hover:rotate-180 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                                            Random
+                                                        </button>
+                                                    </div>
                                                     <input type="text" value={appearance.public_background_emojis || ''} onChange={e => setAppearance(prev => ({ ...prev, public_background_emojis: e.target.value }))} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-primary focus:outline-none" placeholder="✨🚀💡" />
-                                                    <p className="text-xs text-text-secondary">Enter emojis to create a repeating pattern background.</p>
+                                                    <p className="text-xs text-text-secondary">Type your own or hit Random to pick 10 at once.</p>
                                                 </div>
 
                                                 <div className="space-y-2">
@@ -1341,8 +1652,31 @@ export default function CreatorCardPage() {
 
                         {/* Main Content */}
                         <div className="relative z-10 px-6 py-12 flex flex-col items-center gap-6 min-h-full">
+                            {/* Logo — top row positions */}
                             {(appearance.logo_position === 'center_top' || appearance.logo_position === 'top_left' || appearance.logo_position === 'top_right') && Boolean(appearance.logo_url) && (
-                                <img src={appearance.logo_url} className={`h-8 w-auto absolute top-6 transition-all duration-500 ${appearance.logo_position === 'top_left' ? 'left-6' : appearance.logo_position === 'top_right' ? 'right-6' : 'left-1/2 -translate-x-1/2'}`} />
+                                <img
+                                    src={appearance.logo_url}
+                                    style={{ height: `${appearance.logo_size || 32}px` }}
+                                    className={`w-auto absolute top-6 transition-all duration-500 ${appearance.logo_position === 'top_left' ? 'left-6' : appearance.logo_position === 'top_right' ? 'right-6' : 'left-1/2 -translate-x-1/2'}`}
+                                />
+                            )}
+
+                            {/* Logo — center hero (watermark) */}
+                            {appearance.logo_position === 'center' && Boolean(appearance.logo_url) && (
+                                <img
+                                    src={appearance.logo_url}
+                                    style={{ height: `${Math.max(appearance.logo_size || 32, 64)}px` }}
+                                    className="w-auto absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-500 z-0 opacity-20 pointer-events-none blur-[0.5px]"
+                                />
+                            )}
+
+                            {/* Logo — bottom corners */}
+                            {(appearance.logo_position === 'bottom_left' || appearance.logo_position === 'bottom_right') && Boolean(appearance.logo_url) && (
+                                <img
+                                    src={appearance.logo_url}
+                                    style={{ height: `${appearance.logo_size || 32}px` }}
+                                    className={`w-auto absolute bottom-6 transition-all duration-500 ${appearance.logo_position === 'bottom_left' ? 'left-6' : 'right-6'}`}
+                                />
                             )}
 
                             <div className="relative mt-8 group">

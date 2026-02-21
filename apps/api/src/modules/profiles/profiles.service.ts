@@ -286,6 +286,203 @@ export class ProfilesService {
         return this.getLinks(userId);
     }
 
+    // ==================== SPONSORED PRODUCTS ====================
+
+    /**
+     * Scrape Open Graph metadata from a URL (server-side, avoids CORS).
+     * Returns whatever we can find — callers must handle empty fields gracefully.
+     */
+    async fetchProductMeta(url: string): Promise<{
+        title: string | null;
+        description: string | null;
+        image: string | null;
+        site_name: string | null;
+    }> {
+        try {
+            const https = require('https');
+            const http = require('http');
+            const { URL } = require('url');
+
+            const parsedUrl = new URL(url);
+            const client = parsedUrl.protocol === 'https:' ? https : http;
+
+            const html = await new Promise<string>((resolve, reject) => {
+                const req = client.get(
+                    url,
+                    {
+                        headers: {
+                            'User-Agent':
+                                'Mozilla/5.0 (compatible; AntiAIBot/1.0; +https://antiai.me)',
+                            Accept: 'text/html,application/xhtml+xml',
+                            'Accept-Language': 'en-US,en;q=0.9',
+                        },
+                        timeout: 8000,
+                    },
+                    (res: any) => {
+                        // Follow one redirect
+                        if (
+                            res.statusCode >= 301 &&
+                            res.statusCode <= 302 &&
+                            res.headers.location
+                        ) {
+                            const redirectClient =
+                                res.headers.location.startsWith('https') ? https : http;
+                            redirectClient
+                                .get(
+                                    res.headers.location,
+                                    { headers: req.getHeaders() },
+                                    (r2: any) => {
+                                        let body = '';
+                                        r2.on('data', (c: any) => { body += c; });
+                                        r2.on('end', () => resolve(body));
+                                    },
+                                )
+                                .on('error', reject);
+                            return;
+                        }
+                        if (res.statusCode !== 200) {
+                            reject(new Error(`HTTP ${res.statusCode}`));
+                            return;
+                        }
+                        let body = '';
+                        res.on('data', (chunk: any) => {
+                            body += chunk;
+                            // Stop reading after first 100KB — we only need the <head>
+                            if (body.length > 100_000) {
+                                res.destroy();
+                                resolve(body);
+                            }
+                        });
+                        res.on('end', () => resolve(body));
+                    },
+                );
+                req.on('error', reject);
+                req.on('timeout', () => {
+                    req.destroy();
+                    reject(new Error('Request timed out'));
+                });
+            });
+
+            const extractMeta = (property: string): string | null => {
+                const match =
+                    html.match(
+                        new RegExp(
+                            `<meta[^>]+property=["']${property}["'][^>]+content=["']([^"']+)["']`,
+                            'i',
+                        ),
+                    ) ||
+                    html.match(
+                        new RegExp(
+                            `<meta[^>]+content=["']([^"']+)["'][^>]+property=["']${property}["']`,
+                            'i',
+                        ),
+                    );
+                return match ? match[1].trim() : null;
+            };
+
+            // Fallback: try <title> tag if og:title is missing
+            const titleFallback =
+                html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() || null;
+
+            return {
+                title: extractMeta('og:title') || titleFallback,
+                description: extractMeta('og:description'),
+                image: extractMeta('og:image'),
+                site_name: extractMeta('og:site_name'),
+            };
+        } catch {
+            // Scraping failed (bot protection, timeout, etc.) — return empty, let user fill manually
+            return { title: null, description: null, image: null, site_name: null };
+        }
+    }
+
+    /**
+     * Add a sponsored product to the creator's profile.
+     * Enforces tier-based caps: Free=5, Pro=20, Elite=200.
+     */
+    async addSponsoredProduct(
+        userId: string,
+        product: {
+            url: string;
+            title: string;
+            description?: string;
+            image?: string;
+            site_name?: string;
+        },
+    ) {
+        const profile = await this.prisma.creatorProfile.findUnique({
+            where: { userId },
+            include: { user: { include: { subscription: { select: { plan: true } } } } },
+        });
+
+        if (!profile) throw new NotFoundException('Profile not found');
+
+        const plan: string = profile.user.subscription?.plan || 'free';
+        const caps: Record<string, number> = { free: 5, pro: 20, elite: 200 };
+        const cap = caps[plan] ?? 5;
+        const nextPlan: Record<string, string> = { free: 'Pro', pro: 'Elite' };
+
+        const appearance = (profile.appearance as any) || {};
+        const current: any[] = appearance.sponsored_products || [];
+
+        if (current.length >= cap) {
+            const next = nextPlan[plan];
+            const message = next
+                ? `You've reached the ${cap}-product limit on your ${plan.charAt(0).toUpperCase() + plan.slice(1)} plan. Upgrade to ${next} to add more.`
+                : `You've reached the maximum ${cap} products allowed.`;
+            throw new BadRequestException({ message, upgrade_required: true, current_plan: plan });
+        }
+
+        const { randomUUID } = require('crypto');
+        const newProduct = {
+            id: randomUUID(),
+            url: product.url,
+            title: product.title,
+            description: product.description || null,
+            image: product.image || null,
+            site_name: product.site_name || null,
+            added_at: new Date().toISOString(),
+        };
+
+        const updated = await this.prisma.creatorProfile.update({
+            where: { userId },
+            data: {
+                appearance: {
+                    ...appearance,
+                    sponsored_products: [...current, newProduct],
+                } as any,
+            },
+        });
+
+        return { product: newProduct, total: current.length + 1, cap };
+    }
+
+    /**
+     * Delete a sponsored product by its ID.
+     */
+    async deleteSponsoredProduct(userId: string, productId: string) {
+        const profile = await this.prisma.creatorProfile.findUnique({ where: { userId } });
+
+        if (!profile) throw new NotFoundException('Profile not found');
+
+        const appearance = (profile.appearance as any) || {};
+        const current: any[] = appearance.sponsored_products || [];
+        const filtered = current.filter((p: any) => p.id !== productId);
+
+        if (filtered.length === current.length) {
+            throw new NotFoundException('Product not found');
+        }
+
+        await this.prisma.creatorProfile.update({
+            where: { userId },
+            data: {
+                appearance: { ...appearance, sponsored_products: filtered } as any,
+            },
+        });
+
+        return { deleted: true };
+    }
+
     // ==================== HANDLE VALIDATION ====================
 
     async checkHandleAvailability(handle: string) {

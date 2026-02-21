@@ -50,8 +50,10 @@ export const PublicProfile = ({ creator }: Props) => {
     const currentShape = shapeClasses[cardStyle as keyof typeof shapeClasses] || shapeClasses.modern;
 
     // Text Colors derived from Card Theme
-    const [activeTab, setActiveTab] = useState<'videos' | 'links'>('links');
+    const [activeTab, setActiveTab] = useState<'links' | 'shop'>('links');
     const [isTokenRevealed, setIsTokenRevealed] = useState(false);
+    const hasShop = creator.sponsored_products && creator.sponsored_products.length > 0;
+    const [shopTooltipVisible, setShopTooltipVisible] = useState(false);
 
     // Analytics Tracking
     useEffect(() => {
@@ -91,6 +93,22 @@ export const PublicProfile = ({ creator }: Props) => {
         } catch (e) {
             console.error('Failed to track click', e);
         }
+    };
+    const trackProductClick = async (productId: string, url: string) => {
+        try {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/analytics/track`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    creatorId: creator.id,
+                    type: 'click',
+                    entityId: productId
+                })
+            });
+        } catch (e) {
+            console.error('Failed to track product click', e);
+        }
+        window.open(url, '_blank', 'noopener,noreferrer');
     };
     const textColor = isLightMode ? 'text-black' : 'text-white';
     const textSecondaryColor = isLightMode ? 'text-gray-600' : 'text-gray-400';
@@ -409,139 +427,256 @@ export const PublicProfile = ({ creator }: Props) => {
                             )}
                         </div>
 
-                        {/* Links */}
-                        <div className="w-full relative">
-                            {/* Scrollable wrapper for list/grid when >4 links */}
-                            <div
-                                className={`${creator.links.length > 4 && appearance.link_style !== 'row' ? 'overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent' : ''}`}
-                                style={{
-                                    maxHeight: creator.links.length > 4 && appearance.link_style !== 'row'
-                                        ? (appearance.link_style === 'grid' ? '320px' : '280px')
-                                        : undefined
-                                }}
-                            >
-                                <div className={
-                                    appearance.link_style === 'grid' ? "grid grid-cols-2 gap-2 w-full" :
-                                        appearance.link_style === 'row' ? "flex flex-wrap justify-center gap-3 w-full" :
-                                            "space-y-2 w-full"
-                                }>
-                                    {(appearance.link_style === 'row' && !isSocialExpanded && creator.links.length > 4
-                                        ? creator.links.slice(0, 4)
-                                        : creator.links
-                                    ).map((link: any, i: number) => (
-                                        <a
-                                            key={link.id}
-                                            href={link.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            onClick={() => trackClick(link.id, link.url)}
-                                            className={`
+                        {/* Tab Bar: Links / Shop (only if creator has products) */}
+                        {hasShop && (
+                            <div className="flex gap-1 mb-4 p-1 rounded-full border border-white/10 bg-white/5">
+                                <button
+                                    onClick={() => setActiveTab('links')}
+                                    className={`flex-1 py-2 px-4 rounded-full text-sm font-semibold transition-all duration-200 ${activeTab === 'links'
+                                        ? 'text-black shadow-md'
+                                        : `${textSecondaryColor} hover:text-white`
+                                        }`}
+                                    style={activeTab === 'links' ? { backgroundColor: appearance.primary_color } : {}}
+                                >
+                                    Links
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('shop')}
+                                    className={`flex-1 py-2 px-4 rounded-full text-sm font-semibold transition-all duration-200 ${activeTab === 'shop'
+                                        ? 'text-black shadow-md'
+                                        : `${textSecondaryColor} hover:text-white`
+                                        }`}
+                                    style={activeTab === 'shop' ? { backgroundColor: appearance.primary_color } : {}}
+                                >
+                                    Shop
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Links Tab */}
+                        {activeTab === 'links' && (
+                            <div className="w-full relative">
+                                {/* Scrollable wrapper for list/grid when >4 links */}
+                                <div
+                                    className={`${creator.links.length > 4 && appearance.link_style !== 'row' ? 'overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent' : ''}`}
+                                    style={{
+                                        maxHeight: creator.links.length > 4 && appearance.link_style !== 'row'
+                                            ? (appearance.link_style === 'grid' ? '320px' : '280px')
+                                            : undefined
+                                    }}
+                                >
+                                    <div className={
+                                        appearance.link_style === 'grid' ? "grid grid-cols-2 gap-2 w-full" :
+                                            appearance.link_style === 'row' ? "flex flex-wrap justify-center gap-3 w-full" :
+                                                "space-y-2 w-full"
+                                    }>
+                                        {(appearance.link_style === 'row' && !isSocialExpanded && creator.links.length > 4
+                                            ? creator.links.slice(0, 4)
+                                            : creator.links
+                                        ).map((link: any, i: number) => (
+                                            <a
+                                                key={link.id}
+                                                href={link.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={() => trackClick(link.id, link.url)}
+                                                className={`
                                                 block border ${currentShape.link} group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${appearance.card_style === 'pill' ? 'rounded-[2rem]' : ''} backdrop-blur-sm shadow-sm hover:shadow-md
                                                 ${appearance.link_style === 'row'
-                                                    ? 'p-3 w-12 h-12 flex items-center justify-center'
-                                                    : appearance.link_style === 'grid'
-                                                        ? 'w-full p-4 flex flex-col justify-center text-center aspect-square gap-4'
-                                                        : 'w-full p-4 flex items-center gap-4'
-                                                }
+                                                        ? 'p-3 w-12 h-12 flex items-center justify-center'
+                                                        : appearance.link_style === 'grid'
+                                                            ? 'w-full p-4 flex flex-col justify-center text-center aspect-square gap-4'
+                                                            : 'w-full p-4 flex items-center gap-4'
+                                                    }
                                                 animate-in fade-in slide-in-from-bottom-2
                                             `}
-                                            style={{
-                                                backgroundColor: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.08)',
-                                                borderColor: `${appearance.primary_color}30`,
-                                                animationDelay: `${i * 60}ms`,
-                                                animationFillMode: 'backwards',
-                                                minWidth: appearance.link_style === 'row' ? '44px' : undefined,
-                                                minHeight: appearance.link_style === 'row' ? '44px' : undefined
-                                            }}
-                                            aria-label={link.label}
-                                            title={appearance.link_style === 'row' ? link.label : undefined}
-                                        >
-                                            {/* Grid mode: faint platform logo background */}
-                                            {appearance.link_style === 'grid' && link.url && (() => {
-                                                try {
-                                                    const domain = new URL(link.url).hostname;
-                                                    return (
-                                                        <img
-                                                            src={`https://logo.clearbit.com/${domain}`}
-                                                            alt=""
-                                                            className="absolute inset-0 w-full h-full object-contain p-6 opacity-[0.08] pointer-events-none blur-[1px] group-hover:opacity-[0.15] transition-opacity duration-500"
-                                                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                style={{
+                                                    backgroundColor: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.08)',
+                                                    borderColor: `${appearance.primary_color}30`,
+                                                    animationDelay: `${i * 60}ms`,
+                                                    animationFillMode: 'backwards',
+                                                    minWidth: appearance.link_style === 'row' ? '44px' : undefined,
+                                                    minHeight: appearance.link_style === 'row' ? '44px' : undefined
+                                                }}
+                                                aria-label={link.label}
+                                                title={appearance.link_style === 'row' ? link.label : undefined}
+                                            >
+                                                {/* Grid mode: faint platform logo background */}
+                                                {appearance.link_style === 'grid' && link.url && (() => {
+                                                    try {
+                                                        const domain = new URL(link.url).hostname;
+                                                        return (
+                                                            <img
+                                                                src={`https://logo.clearbit.com/${domain}`}
+                                                                alt=""
+                                                                className="absolute inset-0 w-full h-full object-contain p-6 opacity-[0.08] pointer-events-none blur-[1px] group-hover:opacity-[0.15] transition-opacity duration-500"
+                                                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                            />
+                                                        );
+                                                    } catch { return null; }
+                                                })()}
+
+                                                <div className={`absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity ${isLightMode ? 'bg-black/5' : 'bg-white/10'}`} />
+                                                {/* Hover glow */}
+                                                <div
+                                                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                                                    style={{ background: `radial-gradient(circle at center, ${appearance.primary_color}15, transparent 70%)` }}
+                                                />
+
+                                                <div className="relative z-10 transition-transform duration-300">
+                                                    <div className={appearance.link_style === 'grid' ? "w-8 h-8 mx-auto mb-2 flex items-center justify-center" : "w-6 h-6 flex items-center justify-center"}>
+                                                        <SocialIcon
+                                                            type={link.icon}
+                                                            url={link.url}
+                                                            variant={appearance.icon_style}
+                                                            className={isLightMode && appearance.icon_style === 'monochrome' ? 'text-black' : ''}
                                                         />
-                                                    );
-                                                } catch { return null; }
-                                            })()}
-
-                                            <div className={`absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity ${isLightMode ? 'bg-black/5' : 'bg-white/10'}`} />
-                                            {/* Hover glow */}
-                                            <div
-                                                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                                                style={{ background: `radial-gradient(circle at center, ${appearance.primary_color}15, transparent 70%)` }}
-                                            />
-
-                                            <div className="relative z-10 transition-transform duration-300">
-                                                <div className={appearance.link_style === 'grid' ? "w-8 h-8 mx-auto mb-2 flex items-center justify-center" : "w-6 h-6 flex items-center justify-center"}>
-                                                    <SocialIcon
-                                                        type={link.icon}
-                                                        url={link.url}
-                                                        variant={appearance.icon_style}
-                                                        className={isLightMode && appearance.icon_style === 'monochrome' ? 'text-black' : ''}
-                                                    />
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            {appearance.link_style !== 'row' && (
-                                                <span className={`font-medium ${appearance.link_style === 'grid' ? 'text-xs' : 'text-center flex-1 pr-10'} relative z-10`}>{link.label}</span>
-                                            )}
-                                        </a>
-                                    ))}
+                                                {appearance.link_style !== 'row' && (
+                                                    <span className={`font-medium ${appearance.link_style === 'grid' ? 'text-xs' : 'text-center flex-1 pr-10'} relative z-10`}>{link.label}</span>
+                                                )}
+                                            </a>
+                                        ))}
 
-                                    {/* Expand Toggle for Social Row */}
-                                    {appearance.link_style === 'row' && creator.links.length > 4 && (
-                                        <button
-                                            onClick={() => setIsSocialExpanded(!isSocialExpanded)}
-                                            className={`
+                                        {/* Expand Toggle for Social Row */}
+                                        {appearance.link_style === 'row' && creator.links.length > 4 && (
+                                            <button
+                                                onClick={() => setIsSocialExpanded(!isSocialExpanded)}
+                                                className={`
                                                 border ${currentShape.link} transition-all hover:scale-105 active:scale-90 group backdrop-blur-sm relative overflow-hidden shadow-sm hover:shadow-md
                                                 p-3 w-12 h-12 flex items-center justify-center
                                             `}
-                                            style={{
-                                                backgroundColor: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.08)',
-                                                borderColor: `${appearance.primary_color}30`,
-                                                minWidth: '44px',
-                                                minHeight: '44px'
-                                            }}
-                                            aria-label={isSocialExpanded ? "Collapse links" : "Show all links"}
-                                        >
-                                            <div className={`absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity ${isLightMode ? 'bg-black/5' : 'bg-white/10'}`} />
-                                            <svg
-                                                className={`w-5 h-5 transition-transform duration-300 ${isSocialExpanded ? 'rotate-180' : ''}`}
-                                                style={{ color: appearance.primary_color }}
-                                                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                                style={{
+                                                    backgroundColor: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.08)',
+                                                    borderColor: `${appearance.primary_color}30`,
+                                                    minWidth: '44px',
+                                                    minHeight: '44px'
+                                                }}
+                                                aria-label={isSocialExpanded ? "Collapse links" : "Show all links"}
                                             >
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
+                                                <div className={`absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity ${isLightMode ? 'bg-black/5' : 'bg-white/10'}`} />
+                                                <svg
+                                                    className={`w-5 h-5 transition-transform duration-300 ${isSocialExpanded ? 'rotate-180' : ''}`}
+                                                    style={{ color: appearance.primary_color }}
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                                >
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </button>
+                                        )}
+                                        {creator.links.length === 0 && (
+                                            <div className={`col-span-full text-center text-sm ${textSecondaryColor} py-4 opacity-50`}>
+                                                No links available.
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Gradient fade hint when scrollable */}
+                                {creator.links.length > 4 && appearance.link_style !== 'row' && (
+                                    <div
+                                        className="absolute bottom-0 left-0 right-0 h-14 pointer-events-none z-20"
+                                        style={{
+                                            background: `linear-gradient(to top, ${appearance.background_color || '#000'}, transparent)`
+                                        }}
+                                    />
+                                )}
+                            </div>
+                        )}
+
+                        {/* Shop Tab */}
+                        {activeTab === 'shop' && hasShop && (
+                            <div className="w-full space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                {/* Section header with disclaimer */}
+                                <div className="flex items-center justify-between mb-2">
+                                    <h2 className={`text-xs font-bold ${textSecondaryColor} uppercase tracking-widest opacity-70`}>Sponsored Products</h2>
+                                    <div className="relative">
+                                        <button
+                                            onMouseEnter={() => setShopTooltipVisible(true)}
+                                            onMouseLeave={() => setShopTooltipVisible(false)}
+                                            onClick={() => setShopTooltipVisible(!shopTooltipVisible)}
+                                            className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-bold transition-colors ${textSecondaryColor} border-current opacity-50 hover:opacity-100`}
+                                            aria-label="Affiliate disclaimer"
+                                        >
+                                            i
                                         </button>
-                                    )}
-                                    {creator.links.length === 0 && (
-                                        <div className={`col-span-full text-center text-sm ${textSecondaryColor} py-4 opacity-50`}>
-                                            No links available.
-                                        </div>
-                                    )}
+                                        {shopTooltipVisible && (
+                                            <div className="absolute bottom-full right-0 mb-2 w-60 p-3 bg-black/90 border border-white/10 rounded-xl text-xs text-white/70 shadow-2xl z-50 leading-relaxed">
+                                                Products promoted here are chosen by this creator. AntiAI is not affiliated with and bears no responsibility for third-party products, their accuracy, or their sellers.
+                                                <div className="absolute top-full right-3 border-[6px] border-transparent border-t-black/90" />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Compact Product List */}
+                                <div className="flex flex-col gap-3">
+                                    {creator.sponsored_products.map((product: any, i: number) => (
+                                        <button
+                                            key={product.id || i}
+                                            onClick={() => trackProductClick(product.id, product.url)}
+                                            className={`group flex items-stretch text-left rounded-2xl overflow-hidden border transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg animate-in fade-in slide-in-from-bottom-2 w-full`}
+                                            style={{
+                                                borderColor: `${appearance.primary_color}30`,
+                                                backgroundColor: isLightMode ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.04)',
+                                                animationDelay: `${i * 60}ms`,
+                                                animationFillMode: 'backwards'
+                                            }}
+                                            aria-label={`Shop: ${product.title}`}
+                                        >
+                                            {/* Product Image */}
+                                            <div className="w-28 h-28 sm:w-32 sm:h-32 shrink-0 relative overflow-hidden bg-white/5 border-r" style={{ borderColor: `${appearance.primary_color}20` }}>
+                                                {product.image ? (
+                                                    <img
+                                                        src={product.image}
+                                                        alt={product.title}
+                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                        loading="lazy"
+                                                        onError={(e) => {
+                                                            e.currentTarget.style.display = 'none';
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center">
+                                                        <svg className="w-8 h-8 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                                        </svg>
+                                                    </div>
+                                                )}
+                                                {/* Hover glow */}
+                                                <div
+                                                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                                                    style={{ background: `radial-gradient(circle at center, ${appearance.primary_color}20, transparent 70%)` }}
+                                                />
+                                            </div>
+
+                                            {/* Product Info */}
+                                            <div className="p-3 sm:p-4 flex-1 min-w-0 flex flex-col justify-center">
+                                                {product.site_name && (
+                                                    <span className="text-[9px] font-bold uppercase tracking-wider opacity-60 block mb-1.5" style={{ color: appearance.primary_color }}>
+                                                        {product.site_name}
+                                                    </span>
+                                                )}
+                                                <p className={`text-sm font-semibold ${textColor} line-clamp-2 leading-tight mb-3`}>
+                                                    {product.title}
+                                                </p>
+                                                <div
+                                                    className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-full w-fit transition-all group-hover:shadow-md mt-auto"
+                                                    style={{ backgroundColor: `${appearance.primary_color}25`, color: appearance.primary_color }}
+                                                >
+                                                    Shop Now
+                                                    <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 12h14M12 5l7 7-7 7" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
-
-                            {/* Gradient fade hint when scrollable */}
-                            {creator.links.length > 4 && appearance.link_style !== 'row' && (
-                                <div
-                                    className="absolute bottom-0 left-0 right-0 h-14 pointer-events-none z-20"
-                                    style={{
-                                        background: `linear-gradient(to top, ${appearance.background_color || '#000'}, transparent)`
-                                    }}
-                                />
-                            )}
-                        </div>
-
-
-                        {/* Featured Video */}
-                        {creator.featured_video && (
+                        )}
+                        {activeTab === 'links' && creator.featured_video && (
                             <div className="space-y-3 pt-6 w-full">
                                 <h2 className={`text-xs font-bold ${textSecondaryColor} uppercase tracking-widest text-center opacity-70`}>Featured Verification</h2>
                                 <div
@@ -574,7 +709,7 @@ export const PublicProfile = ({ creator }: Props) => {
                         )}
 
                         {/* Verified Videos Section */}
-                        {creator.verified_videos && creator.verified_videos.length > 0 && (
+                        {activeTab === 'links' && creator.verified_videos && creator.verified_videos.length > 0 && (
                             <div className="space-y-2 pt-4 w-full">
                                 <h2 className={`text-xs font-bold ${textSecondaryColor} uppercase tracking-widest text-center opacity-70`}>Verified Videos</h2>
 

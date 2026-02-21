@@ -81,6 +81,38 @@ export class ProfilesController {
         return this.profilesService.reorderLinks(user.id, dto);
     }
 
+    // ==================== SPONSORED PRODUCTS ====================
+
+    @Post('products/fetch-meta')
+    @HttpCode(HttpStatus.OK)
+    async fetchProductMeta(@Body() body: { url: string }) {
+        return this.profilesService.fetchProductMeta(body.url);
+    }
+
+    @Post('products')
+    @HttpCode(HttpStatus.OK)
+    async addSponsoredProduct(
+        @CurrentUser() user: any,
+        @Body() body: {
+            url: string;
+            title: string;
+            description?: string;
+            image?: string;
+            site_name?: string;
+        },
+    ) {
+        return this.profilesService.addSponsoredProduct(user.id, body);
+    }
+
+    @Delete('products/:id')
+    @HttpCode(HttpStatus.OK)
+    async deleteSponsoredProduct(
+        @CurrentUser() user: any,
+        @Param('id') productId: string,
+    ) {
+        return this.profilesService.deleteSponsoredProduct(user.id, productId);
+    }
+
     // ==================== HANDLE AVAILABILITY ====================
 
     @Get('check-handle/:handle')
@@ -88,3 +120,4 @@ export class ProfilesController {
         return this.profilesService.checkHandleAvailability(handle);
     }
 }
+

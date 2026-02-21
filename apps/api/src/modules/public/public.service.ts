@@ -218,6 +218,7 @@ export class PublicService {
             avatar_url: profile.avatarUrl,
             banner_url: profile.bannerUrl,
             appearance: profile.appearance,
+            sponsored_products: (profile.appearance as any)?.sponsored_products || [],
             channels: profile.user.channels.map(c => ({
                 youtube_channel_id: c.youtubeChannelId,
                 channel_name: c.channelName,
