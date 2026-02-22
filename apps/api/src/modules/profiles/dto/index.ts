@@ -135,6 +135,23 @@ export class AppearanceDto {
     @IsOptional()
     @IsArray()
     sponsored_products?: any[];
+
+    // Border Settings
+    @IsOptional()
+    @IsString()
+    card_border_style?: 'none' | 'solid' | 'dashed' | 'glow';
+
+    @IsOptional()
+    @IsString()
+    card_border_color?: string;
+
+    @IsOptional()
+    @IsNumber()
+    card_border_width?: number;
+
+    @IsOptional()
+    @IsBoolean()
+    card_border_glow?: boolean;
 }
 
 export class CreateProfileDto {
