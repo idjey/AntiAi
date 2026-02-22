@@ -86,6 +86,11 @@ interface Profile {
         link_style?: 'list' | 'grid' | 'row';
         card_background_type?: 'color' | 'gradient' | 'image';
         card_background_gradient?: string;
+        sponsored_products?: any[];
+        card_border_style?: 'none' | 'solid' | 'dashed' | 'glow';
+        card_border_color?: string;
+        card_border_width?: number;
+        card_border_glow?: boolean;
     };
     featured_video?: {
         id: string;
@@ -172,7 +177,11 @@ export default function CreatorCardPage() {
         public_card_theme: 'dark' as 'light' | 'dark',
         public_card_glow: 0,
         card_background_type: 'color' as 'color' | 'gradient' | 'image',
-        card_background_gradient: ''
+        card_background_gradient: '',
+        card_border_style: 'none' as 'none' | 'solid' | 'dashed' | 'glow',
+        card_border_color: '',
+        card_border_width: 1,
+        card_border_glow: false
     });
 
     // Scatter Pattern State
@@ -1484,6 +1493,84 @@ export default function CreatorCardPage() {
                                     <div className="space-y-2">
                                         <div className="flex justify-between text-xs text-text-secondary"><span>Card Glow</span><span>{appearance.public_card_glow}</span></div>
                                         <input type="range" min="0" max="100" step="5" value={appearance.public_card_glow} onChange={e => setAppearance(prev => ({ ...prev, public_card_glow: parseInt(e.target.value) }))} className="w-full accent-primary h-1.5 bg-surface-light rounded-lg appearance-none cursor-pointer" />
+                                    </div>
+                                </div>
+
+                                {/* ── Card Border ── */}
+                                <div className="bg-surface border border-border rounded-xl p-5 space-y-6">
+                                    <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider">
+                                        ✦ Card Border
+                                        <InfoTooltip content="Add a custom border and hover glow effect to your public card." />
+                                    </h2>
+
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-sm font-medium text-text-secondary">Border Style</label>
+                                            <div className="flex bg-surface-light rounded-lg p-1 border border-border">
+                                                {['none', 'solid', 'dashed', 'glow'].map(style => (
+                                                    <button
+                                                        key={style}
+                                                        onClick={() => setAppearance(prev => ({ ...prev, card_border_style: style as any }))}
+                                                        className={`px-3 py-1.5 rounded-md text-xs capitalize transition-all ${(appearance.card_border_style || 'none') === style ? 'bg-surface shadow text-primary font-medium' : 'text-text-secondary hover:text-text-primary'}`}
+                                                    >
+                                                        {style}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {appearance.card_border_style && appearance.card_border_style !== 'none' && (
+                                            <div className="p-4 bg-surface-light/30 rounded-lg border border-border/50 space-y-4 animate-in fade-in slide-in-from-top-2">
+                                                <div className="space-y-3">
+                                                    <label className="text-xs font-medium text-text-secondary">Border Color</label>
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            type="color"
+                                                            value={appearance.card_border_color || appearance.primary_color || '#10B981'}
+                                                            onChange={(e) => setAppearance(prev => ({ ...prev, card_border_color: e.target.value }))}
+                                                            className="w-10 h-10 rounded border border-border cursor-pointer bg-transparent p-0.5"
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            value={appearance.card_border_color || appearance.primary_color || '#10B981'}
+                                                            onChange={(e) => setAppearance(prev => ({ ...prev, card_border_color: e.target.value }))}
+                                                            className="flex-1 bg-surface border border-border rounded px-3 text-sm text-text-primary uppercase font-mono"
+                                                            placeholder={appearance.primary_color || '#10B981'}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between text-xs text-text-secondary">
+                                                        <span>Border Width</span>
+                                                        <span>{appearance.card_border_width || 1}px</span>
+                                                    </div>
+                                                    <input
+                                                        type="range"
+                                                        min="1"
+                                                        max="8"
+                                                        step="1"
+                                                        value={appearance.card_border_width || 1}
+                                                        onChange={e => setAppearance(prev => ({ ...prev, card_border_width: parseInt(e.target.value) }))}
+                                                        className="w-full accent-primary h-1.5 bg-surface-light rounded-lg appearance-none cursor-pointer"
+                                                    />
+                                                </div>
+
+                                                <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                                                    <div className="space-y-0.5">
+                                                        <label className="text-sm font-medium text-text-secondary block">Hover Glow Effect</label>
+                                                        <span className="text-xs text-text-muted">Card glows when visitor hovers</span>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setAppearance(prev => ({ ...prev, card_border_glow: !prev.card_border_glow }))}
+                                                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${appearance.card_border_glow ? 'bg-primary' : 'bg-surface-light border border-border'}`}
+                                                    >
+                                                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${appearance.card_border_glow ? 'translate-x-5' : 'translate-x-0'}`} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

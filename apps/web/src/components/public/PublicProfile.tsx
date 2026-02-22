@@ -49,7 +49,24 @@ export const PublicProfile = ({ creator }: Props) => {
 
     const currentShape = shapeClasses[cardStyle as keyof typeof shapeClasses] || shapeClasses.modern;
 
-    // Text Colors derived from Card Theme
+    // Helper: Determine stark black/white text depending on background brightness
+    const getContrastYIQ = (hexcolor: string) => {
+        if (!hexcolor) return '#ffffff'; // Default to white if no color
+        hexcolor = hexcolor.replace('#', '');
+        if (hexcolor.length === 3) {
+            hexcolor = hexcolor.split('').map(char => char + char).join('');
+        }
+        if (hexcolor.length !== 6) return '#ffffff';
+        const r = parseInt(hexcolor.substr(0, 2), 16);
+        const g = parseInt(hexcolor.substr(2, 2), 16);
+        const b = parseInt(hexcolor.substr(4, 2), 16);
+        const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+        return (yiq >= 140) ? '#000000' : '#ffffff'; // 140 is a good threshold
+    };
+
+    // Text Colors
+    const cardBgColor = appearance.background_color || '#000000';
+    const dynamicTextColor = appearance.card_background_type === 'color' ? getContrastYIQ(cardBgColor) : isLightMode ? '#000000' : '#ffffff';
     const [activeTab, setActiveTab] = useState<'links' | 'shop'>('links');
     const [isTokenRevealed, setIsTokenRevealed] = useState(false);
     const hasShop = creator.sponsored_products && creator.sponsored_products.length > 0;
@@ -110,8 +127,8 @@ export const PublicProfile = ({ creator }: Props) => {
         }
         window.open(url, '_blank', 'noopener,noreferrer');
     };
-    const textColor = isLightMode ? 'text-black' : 'text-white';
-    const textSecondaryColor = isLightMode ? 'text-gray-600' : 'text-gray-400';
+    const textColor = dynamicTextColor === '#000000' ? 'text-black' : 'text-white';
+    const textSecondaryColor = dynamicTextColor === '#000000' ? 'text-gray-600' : 'text-gray-400';
 
 
 
@@ -304,16 +321,20 @@ export const PublicProfile = ({ creator }: Props) => {
 
                 {/* 4. The "Card" (Content Container) */}
                 <div
-                    className={`w-full max-w-[540px] relative overflow-hidden ${currentShape.card} shadow-2xl border border-white/10 transition-all duration-500 animate-in fade-in zoom-in-95 slide-in-from-bottom-8 duration-700`}
+                    className={`w-full max-w-[540px] relative overflow-hidden ${currentShape.card} shadow-2xl shadow-black/50 transition-all duration-500 animate-in fade-in zoom-in-95 slide-in-from-bottom-8 duration-700 ${appearance.card_border_glow ? 'hover:shadow-[0_0_40px_var(--border-color),0_25px_50px_-12px_rgba(0,0,0,0.5)]' : ''}`}
                     style={{
                         background: appearance.card_background_type === 'image' && appearance.background_image
                             ? `url(${appearance.background_image}) center/cover no-repeat`
                             : appearance.card_background_type === 'gradient' && appearance.card_background_gradient
                                 ? appearance.card_background_gradient
                                 : (appearance.background_color || '#000000'),
-                        color: isLightMode ? '#000000' : '#ffffff',
-                        boxShadow: `0 40px 80px -12px rgba(0, 0, 0, 0.6)${cardGlow > 0 ? `, 0 0 ${cardGlow * 40}px ${appearance.primary_color}50` : ''}`
-                    }}
+                        color: dynamicTextColor,
+                        boxShadow: `0 40px 80px -12px rgba(0, 0, 0, 0.6)${cardGlow > 0 ? `, 0 0 ${cardGlow * 40}px ${appearance.primary_color}50` : ''}`,
+                        borderStyle: appearance.card_border_style && appearance.card_border_style !== 'none' && appearance.card_border_style !== 'glow' ? appearance.card_border_style : appearance.card_border_style === 'glow' ? 'solid' : 'solid',
+                        borderWidth: appearance.card_border_style && appearance.card_border_style !== 'none' ? `${appearance.card_border_width || 1}px` : '1px',
+                        borderColor: appearance.card_border_style && appearance.card_border_style !== 'none' ? (appearance.card_border_color || appearance.primary_color || '#10b981') : 'rgba(255,255,255,0.1)',
+                        '--border-color': appearance.card_border_color || appearance.primary_color || '#10b981'
+                    } as React.CSSProperties}
                 >
                     {/* Inner Card Overlay for Image Backgrounds to ensure text readability */}
                     {appearance.card_background_type === 'image' && (
