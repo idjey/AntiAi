@@ -104,6 +104,23 @@ export class ProfilesController {
         return this.profilesService.addSponsoredProduct(user.id, body);
     }
 
+    @Put('products/:id')
+    @HttpCode(HttpStatus.OK)
+    async editSponsoredProduct(
+        @CurrentUser() user: any,
+        @Param('id') productId: string,
+        @Body() body: {
+            url?: string;
+            title?: string;
+            description?: string;
+            image?: string;
+            site_name?: string;
+            is_active?: boolean;
+        },
+    ) {
+        return this.profilesService.editSponsoredProduct(user.id, productId, body);
+    }
+
     @Delete('products/:id')
     @HttpCode(HttpStatus.OK)
     async deleteSponsoredProduct(
