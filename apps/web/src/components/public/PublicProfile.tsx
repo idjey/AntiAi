@@ -635,69 +635,86 @@ export const PublicProfile = ({ creator }: Props) => {
                                     </div>
                                 </div>
 
-                                {/* Compact Product List */}
-                                <div className="flex flex-col gap-3">
-                                    {activeShopProducts.map((product: any, i: number) => (
-                                        <button
-                                            key={product.id || i}
-                                            onClick={() => trackProductClick(product.id, product.url)}
-                                            className={`group flex items-stretch text-left rounded-2xl overflow-hidden border transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg animate-in fade-in slide-in-from-bottom-2 w-full`}
-                                            style={{
-                                                borderColor: `${appearance.primary_color}30`,
-                                                backgroundColor: isLightMode ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.04)',
-                                                animationDelay: `${i * 60}ms`,
-                                                animationFillMode: 'backwards'
-                                            }}
-                                            aria-label={`Shop: ${product.title}`}
-                                        >
-                                            {/* Product Image */}
-                                            <div className="w-28 h-28 sm:w-32 sm:h-32 shrink-0 relative overflow-hidden bg-white/5 border-r" style={{ borderColor: `${appearance.primary_color}20` }}>
-                                                {product.image ? (
-                                                    <img
-                                                        src={product.image}
-                                                        alt={product.title}
-                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                        loading="lazy"
-                                                        onError={(e) => {
-                                                            e.currentTarget.style.display = 'none';
-                                                        }}
+                                {/* Shop Layout Container */}
+                                <div className={`gap-3 ${activeShopProducts.length > 4 ? 'max-h-[480px] overflow-y-auto pr-1 pb-1 -mr-1 scrollbars-hidden' : ''} ${appearance.shop_layout === 'grid' || appearance.shop_layout === 'bento' ? 'grid grid-cols-2' : 'flex flex-col'}`}>
+                                    {activeShopProducts.map((product: any, i: number) => {
+                                        const isGrid = appearance.shop_layout === 'grid';
+                                        const isBentoHero = appearance.shop_layout === 'bento' && i === 0;
+                                        const isBentoThumb = appearance.shop_layout === 'bento' && i !== 0;
+
+                                        const isHorizontal = !isGrid && !isBentoThumb; // List or Bento Hero
+                                        const isVertical = isGrid || isBentoThumb;
+
+                                        return (
+                                            <button
+                                                key={product.id || i}
+                                                onClick={() => trackProductClick(product.id, product.url)}
+                                                className={`group flex text-left rounded-2xl overflow-hidden border transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg animate-in fade-in slide-in-from-bottom-2 w-full
+                                                    ${isHorizontal ? 'flex-row items-stretch' : 'flex-col'}
+                                                    ${isBentoHero ? 'col-span-2' : ''}
+                                                `}
+                                                style={{
+                                                    borderColor: `${appearance.primary_color}30`,
+                                                    backgroundColor: isLightMode ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.04)',
+                                                    animationDelay: `${i * 60}ms`,
+                                                    animationFillMode: 'backwards'
+                                                }}
+                                                aria-label={`Shop: ${product.title}`}
+                                            >
+                                                {/* Product Image */}
+                                                <div
+                                                    className={`shrink-0 relative overflow-hidden bg-white/5 
+                                                        ${isHorizontal ? 'w-28 sm:w-36 min-h-[112px] border-r' : 'w-full aspect-[4/3] border-b'}
+                                                    `}
+                                                    style={{ borderColor: `${appearance.primary_color}20` }}
+                                                >
+                                                    {product.image ? (
+                                                        <img
+                                                            src={product.image}
+                                                            alt={product.title}
+                                                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                            loading="lazy"
+                                                            onError={(e) => {
+                                                                e.currentTarget.style.display = 'none';
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div className="absolute inset-0 flex items-center justify-center">
+                                                            <svg className="w-8 h-8 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                                            </svg>
+                                                        </div>
+                                                    )}
+                                                    {/* Hover glow */}
+                                                    <div
+                                                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                                                        style={{ background: `radial-gradient(circle at center, ${appearance.primary_color}20, transparent 70%)` }}
                                                     />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center">
-                                                        <svg className="w-8 h-8 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                                </div>
+
+                                                {/* Product Info */}
+                                                <div className={`p-3 sm:p-4 flex-1 min-w-0 flex flex-col justify-center ${isVertical ? 'pb-4' : ''}`}>
+                                                    {product.site_name && (
+                                                        <span className="text-[9px] font-bold uppercase tracking-wider opacity-60 block mb-1.5 line-clamp-1" style={{ color: appearance.primary_color }}>
+                                                            {product.site_name}
+                                                        </span>
+                                                    )}
+                                                    <p className={`text-sm font-semibold ${textColor} ${isVertical ? 'line-clamp-2' : 'line-clamp-2'} leading-tight mb-3`}>
+                                                        {product.title}
+                                                    </p>
+                                                    <div
+                                                        className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-full w-fit transition-all group-hover:shadow-md mt-auto"
+                                                        style={{ backgroundColor: `${appearance.primary_color}25`, color: appearance.primary_color }}
+                                                    >
+                                                        Shop Now
+                                                        <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 12h14M12 5l7 7-7 7" />
                                                         </svg>
                                                     </div>
-                                                )}
-                                                {/* Hover glow */}
-                                                <div
-                                                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                                                    style={{ background: `radial-gradient(circle at center, ${appearance.primary_color}20, transparent 70%)` }}
-                                                />
-                                            </div>
-
-                                            {/* Product Info */}
-                                            <div className="p-3 sm:p-4 flex-1 min-w-0 flex flex-col justify-center">
-                                                {product.site_name && (
-                                                    <span className="text-[9px] font-bold uppercase tracking-wider opacity-60 block mb-1.5" style={{ color: appearance.primary_color }}>
-                                                        {product.site_name}
-                                                    </span>
-                                                )}
-                                                <p className={`text-sm font-semibold ${textColor} line-clamp-2 leading-tight mb-3`}>
-                                                    {product.title}
-                                                </p>
-                                                <div
-                                                    className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-full w-fit transition-all group-hover:shadow-md mt-auto"
-                                                    style={{ backgroundColor: `${appearance.primary_color}25`, color: appearance.primary_color }}
-                                                >
-                                                    Shop Now
-                                                    <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 12h14M12 5l7 7-7 7" />
-                                                    </svg>
                                                 </div>
-                                            </div>
-                                        </button>
-                                    ))}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
