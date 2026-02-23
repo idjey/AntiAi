@@ -138,18 +138,23 @@ export default function CreatorCardPage() {
         title: string;
         description: string | null;
         image: string | null;
+        description: string | null;
+        image: string | null;
         site_name: string | null;
         added_at: string;
+        is_active?: boolean;
     }
     const [products, setProducts] = useState<SponsoredProduct[]>([]);
     const [productUrl, setProductUrl] = useState('');
     const [isFetchingMeta, setIsFetchingMeta] = useState(false);
     const [isSavingProduct, setIsSavingProduct] = useState(false);
+    const [editingProductId, setEditingProductId] = useState<string | null>(null);
     const [productMeta, setProductMeta] = useState<{
         title: string;
         description: string;
         image: string;
         site_name: string;
+        is_active?: boolean;
     } | null>(null);
     const [productLimitError, setProductLimitError] = useState<string | null>(null);
     const [planInfo, setPlanInfo] = useState<{ plan: string; cap: number } | null>(null);
@@ -660,6 +665,7 @@ export default function CreatorCardPage() {
                                             if (!productUrl) return;
                                             setIsFetchingMeta(true);
                                             setProductMeta(null);
+                                            setEditingProductId(null);
                                             try {
                                                 const token = localStorage.getItem('token');
                                                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/profile/products/fetch-meta`, {
@@ -757,17 +763,26 @@ export default function CreatorCardPage() {
                                                 setProductLimitError(null);
                                                 try {
                                                     const token = localStorage.getItem('token');
-                                                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/profile/products`, {
-                                                        method: 'POST',
+                                                    const url = editingProductId
+                                                        ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/profile/products/${editingProductId}`
+                                                        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/profile/products`;
+
+                                                    const res = await fetch(url, {
+                                                        method: editingProductId ? 'PUT' : 'POST',
                                                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                                                         body: JSON.stringify({ url: productUrl, ...productMeta })
                                                     });
                                                     const data = await res.json();
                                                     if (res.ok) {
-                                                        setProducts(prev => [...prev, data.product]);
-                                                        setPlanInfo({ plan: '', cap: data.cap });
+                                                        if (editingProductId) {
+                                                            setProducts(prev => prev.map(p => p.id === editingProductId ? data.product : p));
+                                                        } else {
+                                                            setProducts(prev => [...prev, data.product]);
+                                                            setPlanInfo({ plan: '', cap: data.cap });
+                                                        }
                                                         setProductMeta(null);
                                                         setProductUrl('');
+                                                        setEditingProductId(null);
                                                     } else if (data.upgrade_required) {
                                                         setProductLimitError(data.message);
                                                     } else {
@@ -794,7 +809,7 @@ export default function CreatorCardPage() {
                                 <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">Saved Products</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     {products.map(product => (
-                                        <div key={product.id} className="bg-surface border border-border rounded-xl overflow-hidden flex gap-3 p-3 group">
+                                        <div key={product.id} className={`bg-surface border border-border rounded-xl overflow-hidden flex gap-3 p-3 group transition-opacity ${product.is_active === false ? 'opacity-50 hover:opacity-75 grayscale-[0.5]' : ''}`}>
                                             <div className="w-14 h-14 rounded-lg overflow-hidden bg-surface-light flex-shrink-0">
                                                 {product.image ? (
                                                     <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
@@ -806,28 +821,76 @@ export default function CreatorCardPage() {
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-text-primary truncate">{product.title}</p>
+                                            <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                <div className="flex items-center gap-2">
+                                                    <p className={`text-sm font-medium truncate ${product.is_active === false ? 'text-text-secondary line-through' : 'text-text-primary'}`}>{product.title}</p>
+                                                    {product.is_active === false && <span className="text-[10px] bg-surface-light text-text-muted px-1.5 py-0.5 rounded border border-border">Hidden</span>}
+                                                </div>
                                                 {product.site_name && <p className="text-xs text-text-muted">{product.site_name}</p>}
                                                 <a href={product.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate block max-w-full">{product.url}</a>
                                             </div>
-                                            <button
-                                                onClick={async () => {
-                                                    if (!confirm('Remove this product?')) return;
-                                                    const token = localStorage.getItem('token');
-                                                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/profile/products/${product.id}`, {
-                                                        method: 'DELETE',
-                                                        headers: { 'Authorization': `Bearer ${token}` }
-                                                    });
-                                                    if (res.ok) setProducts(prev => prev.filter(p => p.id !== product.id));
-                                                }}
-                                                className="p-1.5 text-text-muted hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
-                                                title="Remove product"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            </button>
+                                            <div className="flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex-shrink-0 items-center justify-center">
+                                                <div className="flex gap-1">
+                                                    <button
+                                                        onClick={async () => {
+                                                            const token = localStorage.getItem('token');
+                                                            const newIsActive = product.is_active === false ? true : false;
+                                                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/profile/products/${product.id}`, {
+                                                                method: 'PUT',
+                                                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                                body: JSON.stringify({ is_active: newIsActive })
+                                                            });
+                                                            if (res.ok) {
+                                                                const data = await res.json();
+                                                                setProducts(prev => prev.map(p => p.id === product.id ? data.product : p));
+                                                            }
+                                                        }}
+                                                        className={`p-1.5 transition-colors rounded ${product.is_active !== false ? 'text-text-muted hover:text-amber-500 hover:bg-amber-500/10' : 'text-text-muted hover:text-green-500 hover:bg-green-500/10'}`}
+                                                        title={product.is_active !== false ? "Hide on profile" : "Show on profile"}
+                                                    >
+                                                        {product.is_active !== false ? (
+                                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                        ) : (
+                                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                                                        )}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditingProductId(product.id);
+                                                            setProductUrl(product.url);
+                                                            setProductMeta({
+                                                                title: product.title,
+                                                                description: product.description || '',
+                                                                image: product.image || '',
+                                                                site_name: product.site_name || '',
+                                                                is_active: product.is_active
+                                                            });
+                                                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                        }}
+                                                        className="p-1.5 text-text-muted hover:text-primary transition-colors rounded hover:bg-primary/10"
+                                                        title="Edit product"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                                    </button>
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (!confirm('Remove this product?')) return;
+                                                            const token = localStorage.getItem('token');
+                                                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/profile/products/${product.id}`, {
+                                                                method: 'DELETE',
+                                                                headers: { 'Authorization': `Bearer ${token}` }
+                                                            });
+                                                            if (res.ok) setProducts(prev => prev.filter(p => p.id !== product.id));
+                                                        }}
+                                                        className="p-1.5 text-text-muted hover:text-red-500 transition-colors rounded hover:bg-red-500/10"
+                                                        title="Remove product"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>

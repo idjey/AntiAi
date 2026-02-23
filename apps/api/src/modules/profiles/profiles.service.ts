@@ -463,6 +463,7 @@ export class ProfilesService {
             image: product.image || null,
             site_name: product.site_name || null,
             added_at: new Date().toISOString(),
+            is_active: true,
         };
 
         const updated = await this.prisma.creatorProfile.update({
@@ -476,6 +477,48 @@ export class ProfilesService {
         });
 
         return { product: newProduct, total: current.length + 1, cap };
+    }
+
+    /**
+     * Edit a sponsored product by its ID.
+     */
+    async editSponsoredProduct(
+        userId: string,
+        productId: string,
+        updates: {
+            url?: string;
+            title?: string;
+            description?: string;
+            image?: string;
+            site_name?: string;
+            is_active?: boolean;
+        },
+    ) {
+        const profile = await this.prisma.creatorProfile.findUnique({ where: { userId } });
+        if (!profile) throw new NotFoundException('Profile not found');
+
+        const appearance = (profile.appearance as any) || {};
+        const current: any[] = appearance.sponsored_products || [];
+        const index = current.findIndex((p: any) => p.id === productId);
+
+        if (index === -1) {
+            throw new NotFoundException('Product not found');
+        }
+
+        // Merge updates
+        current[index] = {
+            ...current[index],
+            ...updates,
+        };
+
+        await this.prisma.creatorProfile.update({
+            where: { userId },
+            data: {
+                appearance: { ...appearance, sponsored_products: current } as any,
+            },
+        });
+
+        return { product: current[index] };
     }
 
     /**

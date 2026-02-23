@@ -69,7 +69,11 @@ export const PublicProfile = ({ creator }: Props) => {
     const dynamicTextColor = appearance.card_background_type === 'color' ? getContrastYIQ(cardBgColor) : isLightMode ? '#000000' : '#ffffff';
     const [activeTab, setActiveTab] = useState<'links' | 'shop'>('links');
     const [isTokenRevealed, setIsTokenRevealed] = useState(false);
-    const hasShop = creator.sponsored_products && creator.sponsored_products.length > 0;
+
+    // Only show active products on public profile
+    const activeShopProducts = (creator.sponsored_products || []).filter((p: any) => p.is_active !== false);
+    const hasShop = activeShopProducts.length > 0;
+
     const [shopTooltipVisible, setShopTooltipVisible] = useState(false);
 
     // Analytics Tracking
@@ -633,7 +637,7 @@ export const PublicProfile = ({ creator }: Props) => {
 
                                 {/* Compact Product List */}
                                 <div className="flex flex-col gap-3">
-                                    {creator.sponsored_products.map((product: any, i: number) => (
+                                    {activeShopProducts.map((product: any, i: number) => (
                                         <button
                                             key={product.id || i}
                                             onClick={() => trackProductClick(product.id, product.url)}
