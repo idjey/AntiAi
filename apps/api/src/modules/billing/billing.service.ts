@@ -281,4 +281,41 @@ export class BillingService {
             throw new BadRequestException('Failed to cancel subscription');
         }
     }
+
+    async verifyCheckoutSession(userId: string, sessionId: string) {
+        if (!this.stripe) {
+            throw new BadRequestException('Stripe not configured');
+        }
+
+        try {
+            const session = await this.stripe.checkout.sessions.retrieve(sessionId);
+
+            // Ensure the session belongs to the user and payment was successful
+            if (session.metadata?.userId !== userId) {
+                return { success: false, message: 'Session does not belong to user' };
+            }
+
+            if (session.payment_status === 'paid') {
+                // Manually trigger the checkout complete logic
+                await this.handleCheckoutComplete(session);
+
+                // If a subscription ID is present, sync it manually
+                if (session.subscription) {
+                    const subscriptionId = typeof session.subscription === 'string'
+                        ? session.subscription
+                        : session.subscription.id;
+
+                    const subscription = await this.stripe.subscriptions.retrieve(subscriptionId);
+                    await this.syncSubscription(subscription);
+                }
+
+                return { success: true };
+            }
+
+            return { success: false, status: session.payment_status };
+        } catch (error) {
+            console.error('[STRIPE] Error verifying checkout session:', error);
+            throw new BadRequestException('Failed to verify session');
+        }
+    }
 }

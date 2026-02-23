@@ -17,19 +17,19 @@ const PLANS = {
     free: {
         name: 'Free',
         prices: { month: '$0', year: '$0' },
-        features: ['10 videos/month', 'Basic support', 'Standard verification'],
+        features: ['10 videos/month', '1 Creator Shop Product', 'Standard Verification', 'Standard Theme Styles'],
         limit: 10
     },
     pro: {
         name: 'Pro',
         prices: { month: '$29.99', year: '$329.89' },
-        features: ['100 videos/month', 'Priority support', 'Advanced verification'],
+        features: ['100 videos/month', 'Unlimited Shop Products', 'Custom Borders & Effects', 'Advanced Verification', 'Full Analytics Access'],
         limit: 100
     },
     elite: {
         name: 'Elite',
         prices: { month: '$99.99', year: '$1,099.89' },
-        features: ['Unlimited videos', '24/7 Support', 'Custom verification'],
+        features: ['Unlimited Videos & Products', 'White-label (Hide Logo)', 'Custom Domain Support (Soon)', '24/7 Priority Support', 'Export Analytics Data'],
         limit: Infinity
     }
 }
@@ -47,21 +47,59 @@ export default function BillingPage() {
     useEffect(() => {
         fetchStatus()
 
-        if (searchParams.get('success')) {
-            // Poll for status update for 15 seconds
-            const startTime = Date.now()
-            const pollId = setInterval(() => {
-                if (Date.now() - startTime > 15000) {
-                    clearInterval(pollId)
-                    router.replace('/dashboard/billing')
-                } else {
-                    fetchStatus()
-                }
-            }, 2000)
+        const isSuccess = searchParams.get('success')
+        const sessionId = searchParams.get('session_id')
 
-            return () => clearInterval(pollId)
+        if (isSuccess) {
+            if (sessionId) {
+                // Verify checkout session manually since webhooks might not work locally
+                verifyCheckout(sessionId)
+            } else {
+                startPollingStatus()
+            }
         }
     }, [searchParams])
+
+    const startPollingStatus = () => {
+        const startTime = Date.now()
+        const pollId = setInterval(() => {
+            if (Date.now() - startTime > 15000) {
+                clearInterval(pollId)
+                router.replace('/dashboard/billing')
+            } else {
+                fetchStatus()
+            }
+        }, 2000)
+
+        return () => clearInterval(pollId)
+    }
+
+    const verifyCheckout = async (sessionId: string) => {
+        const token = localStorage.getItem('token')
+        if (!token) return
+
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/billing/verify`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ session_id: sessionId })
+            })
+
+            if (res.ok) {
+                await fetchStatus()
+                router.replace('/dashboard/billing')
+            } else {
+                // Fallback to polling
+                startPollingStatus()
+            }
+        } catch (err) {
+            console.error('Failed to verify checkout:', err)
+            startPollingStatus()
+        }
+    }
 
     const fetchStatus = async () => {
         const token = localStorage.getItem('token')
@@ -97,7 +135,7 @@ export default function BillingPage() {
                 body: JSON.stringify({
                     plan,
                     interval: billingInterval,
-                    success_url: `${window.location.origin}/dashboard/billing?success=true`,
+                    success_url: `${window.location.origin}/dashboard/billing?success=true&session_id={CHECKOUT_SESSION_ID}`,
                     cancel_url: `${window.location.origin}/dashboard/billing?canceled=true`,
                 })
             })

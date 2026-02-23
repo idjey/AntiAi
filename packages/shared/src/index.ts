@@ -151,4 +151,10 @@ export const PLAN_LIMITS = {
     elite: Infinity,
 } as const;
 
+export const PRODUCT_LIMITS = {
+    free: 1,
+    pro: Infinity,
+    elite: Infinity,
+} as const;
+
 export const PROOF_DEFAULT_EXPIRY_DAYS = 90;

@@ -26,7 +26,7 @@ export function ReportActions({ report }: ReportActionsProps) {
         let reason = ''
         if (action !== 'dismiss') {
             reason = prompt('Please enter a reason/note for this action:') || ''
-            if (!reason && action !== 'dismiss') return // Require reason for harsh actions
+            if (!reason) return // Require reason for harsh actions
         }
 
         setIsLoading(true)

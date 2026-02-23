@@ -47,6 +47,13 @@ export class BillingController {
         return this.billingService.cancelSubscription(user.id);
     }
 
+    @Post('verify')
+    @UseGuards(AuthGuard('jwt'))
+    @HttpCode(HttpStatus.OK)
+    async verify(@CurrentUser() user: any, @Body() body: { session_id: string }) {
+        return this.billingService.verifyCheckoutSession(user.id, body.session_id);
+    }
+
     @Post('webhook')
     @HttpCode(HttpStatus.OK)
     async webhook(

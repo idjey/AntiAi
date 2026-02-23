@@ -104,7 +104,7 @@ export default function CreatorsPage() {
             // Refresh list
             await fetchCreators()
             setSelectedCreator(null) // Close drawer if open
-        } catch (err) {
+        } catch (err: any) {
             console.error(err)
             alert(`Action failed: ${err.message}`)
         } finally {
@@ -201,10 +201,10 @@ export default function CreatorsPage() {
                                         <td className="p-4">
                                             {creator.subscription ? (
                                                 <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide border ${creator.subscription.plan === 'elite'
-                                                        ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
-                                                        : creator.subscription.plan === 'pro'
-                                                            ? 'bg-primary/10 text-primary border-primary/20'
-                                                            : 'bg-surface-light text-text-secondary border-white/5'
+                                                    ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+                                                    : creator.subscription.plan === 'pro'
+                                                        ? 'bg-primary/10 text-primary border-primary/20'
+                                                        : 'bg-surface-light text-text-secondary border-white/5'
                                                     }`}>
                                                     {creator.subscription.plan}
                                                 </span>
@@ -335,8 +335,8 @@ export default function CreatorsPage() {
                                     onClick={() => handleAction('suspend', selectedCreator.id)}
                                     disabled={isActionLoading}
                                     className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${selectedCreator.isSuspended
-                                            ? 'bg-green-500/10 border-green-500/20 text-green-400 hover:bg-green-500/20'
-                                            : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
+                                        ? 'bg-green-500/10 border-green-500/20 text-green-400 hover:bg-green-500/20'
+                                        : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
                                         }`}
                                 >
                                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
