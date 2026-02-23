@@ -35,36 +35,70 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, className, c
             return;
         }
 
-        // Validate resolution
-        const checkResolution = (): Promise<boolean> => {
-            return new Promise((resolve) => {
+        // Process and scale image using canvas
+        const processImage = (file: File, limit: number): Promise<File> => {
+            return new Promise((resolve, reject) => {
                 const img = new Image();
+                const objectUrl = URL.createObjectURL(file);
+
                 img.onload = () => {
-                    URL.revokeObjectURL(img.src);
-                    const limit = maxDimension || 512;
-                    if (img.width > limit || img.height > limit) {
-                        alert(`Image resolution too high (${img.width}x${img.height}px). Max allowed is ${limit}x${limit}px.`);
-                        resolve(false);
+                    URL.revokeObjectURL(objectUrl);
+
+                    let width = img.width;
+                    let height = img.height;
+
+                    // Only scale down if image is larger than limit
+                    if (width > limit || height > limit) {
+                        const ratio = Math.min(limit / width, limit / height);
+                        width = Math.round(width * ratio);
+                        height = Math.round(height * ratio);
                     } else {
-                        resolve(true);
+                        // Original is small enough, no resizing needed
+                        resolve(file);
+                        return;
                     }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        resolve(file); // Fallback to original if context fails
+                        return;
+                    }
+
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Convert back to blob
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            const newFile = new File([blob], file.name, {
+                                type: file.type,
+                                lastModified: Date.now()
+                            });
+                            resolve(newFile);
+                        } else {
+                            resolve(file); // Fallback
+                        }
+                    }, file.type, 0.9); // Quality = 0.9
                 };
+
                 img.onerror = () => {
-                    URL.revokeObjectURL(img.src);
-                    alert('Failed to load image for validation');
-                    resolve(false);
+                    URL.revokeObjectURL(objectUrl);
+                    reject(new Error('Failed to load image for processing'));
                 };
-                img.src = URL.createObjectURL(file);
+
+                img.src = objectUrl;
             });
         };
 
-        const isValidResolution = await checkResolution();
-        if (!isValidResolution) return;
-
         setIsUploading(true);
         try {
+            const processedFile = await processImage(file, maxDimension || 512);
+
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('file', processedFile);
 
             const token = localStorage.getItem('token');
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/upload`, {

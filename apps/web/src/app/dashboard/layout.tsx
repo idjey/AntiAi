@@ -16,6 +16,23 @@ export default function DashboardLayout({
 
     const [isLoading, setIsLoading] = useState(true)
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+    const [isCollapsed, setIsCollapsed] = useState(false)
+
+    // Load initial collapse state
+    useEffect(() => {
+        const saved = localStorage.getItem('sidebar_collapsed')
+        if (saved) {
+            setIsCollapsed(saved === 'true')
+        }
+    }, [])
+
+    const toggleCollapse = () => {
+        setIsCollapsed(prev => {
+            const next = !prev
+            localStorage.setItem('sidebar_collapsed', String(next))
+            return next
+        })
+    }
 
     // Close mobile menu when path changes
     useEffect(() => {
@@ -140,17 +157,19 @@ export default function DashboardLayout({
     return (
         <div className="min-h-screen bg-background flex">
             {/* Sidebar (Desktop) */}
-            <aside className="w-64 bg-surface border-r border-border flex-shrink-0 hidden md:flex flex-col">
-                <div className="p-6">
+            <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-surface border-r border-border flex-shrink-0 hidden md:flex flex-col transition-all duration-300 relative group`}>
+                <div className={`p-6 ${isCollapsed ? 'px-4' : ''}`}>
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                             <svg className="w-5 h-5 text-background" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
                             </svg>
                         </div>
-                        <span className="text-xl font-bold tracking-tight">
-                            antiai<span className="text-primary">.me</span>
-                        </span>
+                        {!isCollapsed && (
+                            <span className="text-xl font-bold tracking-tight">
+                                antiai<span className="text-primary">.me</span>
+                            </span>
+                        )}
                     </div>
                 </div>
 
@@ -161,19 +180,31 @@ export default function DashboardLayout({
                             <Link
                                 key={item.name}
                                 href={item.href}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${isActive
+                                className={`flex items-center gap-3 py-3 rounded-lg transition-colors font-medium relative group/link ${isCollapsed ? 'justify-center px-0' : 'px-4'} ${isActive
                                     ? 'bg-primary/10 text-primary border border-primary/20'
                                     : 'text-text-secondary hover:text-text-primary hover:bg-surface-light'
                                     }`}
                             >
-                                <span className={isActive ? 'text-primary' : 'text-text-secondary group-hover:text-text-primary'}>
+                                <span className={isActive ? 'text-primary' : 'text-text-secondary group-hover/link:text-text-primary'}>
                                     {item.icon}
                                 </span>
-                                {item.name}
-                                {item.name === 'Analytics' && (
-                                    <span className="ml-auto text-[10px] font-bold bg-gradient-to-r from-yellow-400 to-orange-500 text-black px-1.5 py-0.5 rounded uppercase tracking-wider">
-                                        Pro
-                                    </span>
+
+                                {!isCollapsed && (
+                                    <>
+                                        {item.name}
+                                        {item.name === 'Analytics' && (
+                                            <span className="ml-auto text-[10px] font-bold bg-gradient-to-r from-yellow-400 to-orange-500 text-black px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                                Pro
+                                            </span>
+                                        )}
+                                    </>
+                                )}
+
+                                {/* Tooltip for collapsed state */}
+                                {isCollapsed && (
+                                    <div className="absolute left-full ml-4 px-2 py-1 bg-surface border border-border text-text-primary text-xs rounded opacity-0 invisible group-hover/link:opacity-100 group-hover/link:visible transition-all whitespace-nowrap z-50">
+                                        {item.name}
+                                    </div>
                                 )}
                             </Link>
                         )
@@ -181,22 +212,35 @@ export default function DashboardLayout({
                 </nav>
 
                 <div className="p-4 border-t border-border">
-                    <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-surface-light/30">
-                        <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-background font-bold uppercase">
+                    {/* Toggle Collapse Button */}
+                    <button
+                        onClick={toggleCollapse}
+                        className={`w-full flex items-center mb-3 text-text-secondary hover:text-text-primary transition-colors ${isCollapsed ? 'justify-center' : 'justify-end pr-2'}`}
+                        title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                    >
+                        <svg className={`w-5 h-5 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                        </svg>
+                    </button>
+
+                    <div className={`flex items-center justify-between gap-3 p-3 rounded-lg bg-surface-light/30 ${isCollapsed ? 'flex-col justify-center' : ''}`}>
+                        <div className={`flex items-center gap-3 min-w-0 ${isCollapsed ? 'justify-center' : ''}`}>
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-background font-bold uppercase shrink-0">
                                 {user?.email?.substring(0, 2) || '??'}
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-text-primary truncate max-w-[100px]" title={user?.email}>
-                                    {user?.email?.split('@')[0]}
-                                </p>
-                                <p className="text-xs text-text-secondary truncate capitalize">
-                                    {user?.role || 'Creator'}
-                                </p>
-                            </div>
+                            {!isCollapsed && (
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-text-primary truncate max-w-[100px]" title={user?.email}>
+                                        {user?.email?.split('@')[0]}
+                                    </p>
+                                    <p className="text-xs text-text-secondary truncate capitalize">
+                                        {user?.role || 'Creator'}
+                                    </p>
+                                </div>
+                            )}
                         </div>
-                        <div className="flex items-center gap-1">
-                            <ThemeToggle />
+                        <div className={`flex items-center gap-1 ${isCollapsed ? 'flex-col gap-2 mt-2' : ''}`}>
+                            {!isCollapsed && <ThemeToggle />}
                             <button
                                 onClick={handleLogout}
                                 className="text-text-secondary hover:text-red-400 transition-colors p-2 rounded-lg hover:bg-surface-light"

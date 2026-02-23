@@ -56,6 +56,9 @@ export class ProfilesService {
                         },
                     },
                 },
+                user: {
+                    include: { subscription: true }
+                }
             },
         });
 
@@ -116,10 +119,27 @@ export class ProfilesService {
     async updateProfile(userId: string, dto: UpdateProfileDto) {
         const existing = await this.prisma.creatorProfile.findUnique({
             where: { userId },
+            include: { user: { include: { subscription: true } } }
         });
 
         if (!existing) {
             throw new NotFoundException('Profile not found');
+        }
+
+        // Validate plan features for appearance
+        if (dto.appearance) {
+            const isPro = ['pro', 'elite'].includes(existing.user?.subscription?.plan || 'free');
+            const appearance = dto.appearance as any;
+
+            if (!isPro) {
+                // Strip Pro features if Free
+                if (appearance.public_background_type && appearance.public_background_type !== 'color') {
+                    appearance.public_background_type = 'color';
+                }
+                if (appearance.card_background_type && appearance.card_background_type !== 'color') {
+                    appearance.card_background_type = 'color';
+                }
+            }
         }
 
         // If handle is being changed, validate it
@@ -415,11 +435,12 @@ export class ProfilesService {
             include: { user: { include: { subscription: { select: { plan: true } } } } },
         });
 
+
         if (!profile) throw new NotFoundException('Profile not found');
 
-        const plan: string = profile.user.subscription?.plan || 'free';
-        const caps: Record<string, number> = { free: 5, pro: 20, elite: 200 };
-        const cap = caps[plan] ?? 5;
+        const plan: string = profile.user?.subscription?.plan || 'free';
+        const { PRODUCT_LIMITS } = require('@antiai/shared');
+        const cap = PRODUCT_LIMITS[plan] ?? 1;
         const nextPlan: Record<string, string> = { free: 'Pro', pro: 'Elite' };
 
         const appearance = (profile.appearance as any) || {};
@@ -554,6 +575,7 @@ export class ProfilesService {
     private formatProfile(profile: any, verifiedVideos: any[] = []) {
         return {
             id: profile.id,
+            plan: profile.user?.subscription?.plan || 'free',
             handle: profile.handle,
             display_name: profile.displayName,
             bio: profile.bio,

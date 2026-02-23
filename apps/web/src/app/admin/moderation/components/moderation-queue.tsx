@@ -16,7 +16,6 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { DiffViewer } from "./diff-viewer"
 import { toast } from "sonner"
-import { api } from "@/lib/api" // Assuming api helper exists, or use fetch
 
 export function ModerationQueue() {
     const [items, setItems] = useState<any[]>([])

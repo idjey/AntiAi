@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { SocialIcon, getIconType } from '@/components/SocialIcon';
 import { ImageUpload } from '@/components/ImageUpload';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion";
 
 // Helper for tooltips
 const InfoTooltip = ({ content }: { content: string }) => (
@@ -51,6 +57,7 @@ const getBrandGradient = (icon: string) => {
 
 interface Profile {
     id: string;
+    plan?: string;
     verification_token?: string;
     handle: string;
     display_name: string;
@@ -118,7 +125,7 @@ export default function CreatorCardPage() {
     const [logoUrlError, setLogoUrlError] = useState<string | null>(null);
 
     // Layout State
-    const [layoutOrientation, setLayoutOrientation] = useState<'vertical' | 'horizontal'>('horizontal');
+    const [previewOpen, setPreviewOpen] = useState(true);
 
     // Filter/Tab State
     const [activeTab, setActiveTab] = useState<'links' | 'appearance' | 'shop'>('links');
@@ -146,6 +153,8 @@ export default function CreatorCardPage() {
     } | null>(null);
     const [productLimitError, setProductLimitError] = useState<string | null>(null);
     const [planInfo, setPlanInfo] = useState<{ plan: string; cap: number } | null>(null);
+
+    const isPro = profile?.plan === 'pro' || profile?.plan === 'elite';
 
     const [appearance, setAppearance] = useState({
         theme: 'modern_dark',
@@ -440,27 +449,31 @@ export default function CreatorCardPage() {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {/* Toggle Preview Page */}
+                        <button
+                            onClick={() => setPreviewOpen(!previewOpen)}
+                            className="btn-secondary flex items-center gap-2"
+                            title={previewOpen ? 'Hide Preview' : 'Show Preview'}
+                        >
+                            {previewOpen ? (
+                                <>
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                                    <span className="hidden sm:inline">Hide Preview</span>
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                    <span className="hidden sm:inline">Show Preview</span>
+                                </>
+                            )}
+                        </button>
+
                         {/* View Public Page */}
                         <Link href={publicUrl} target="_blank" className="btn-secondary flex items-center gap-2">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                             <span className="hidden sm:inline">View Public Page</span>
                         </Link>
 
-                        {/* Layout Toggle */}
-                        <div className="flex bg-surface border border-border rounded-lg p-1">
-                            <button
-                                onClick={() => setLayoutOrientation('horizontal')}
-                                className={`p-2 rounded-md transition-colors ${layoutOrientation === 'horizontal' ? 'bg-primary/20 text-primary' : 'text-text-secondary hover:text-text-primary'}`}
-                            >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-                            </button>
-                            <button
-                                onClick={() => setLayoutOrientation('vertical')}
-                                className={`p-2 rounded-md transition-colors ${layoutOrientation === 'vertical' ? 'bg-primary/20 text-primary' : 'text-text-secondary hover:text-text-primary'}`}
-                            >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" /></svg>
-                            </button>
-                        </div>
                     </div>
                 </div>
 
@@ -676,14 +689,25 @@ export default function CreatorCardPage() {
                             {productMeta !== null && (
                                 <div className="space-y-3 pt-3 border-t border-border animate-in fade-in slide-in-from-top-2">
                                     <div className="flex gap-4">
-                                        {/* Image preview */}
-                                        <div className="w-24 h-24 rounded-lg border border-border overflow-hidden bg-surface-light flex-shrink-0">
+                                        {/* Image preview with upload wrapper */}
+                                        <ImageUpload
+                                            onUpload={(url) => setProductMeta(p => p ? { ...p, image: url } : p)}
+                                            className="w-24 h-24 rounded-lg border border-border overflow-hidden bg-surface-light flex-shrink-0 cursor-pointer group relative"
+                                        >
                                             {productMeta.image ? (
-                                                <img src={productMeta.image} alt="Preview" className="w-full h-full object-cover" onError={e => { e.currentTarget.src = ''; }} />
+                                                <>
+                                                    <img src={productMeta.image} alt="Preview" className="w-full h-full object-cover" onError={e => { e.currentTarget.src = ''; }} />
+                                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs z-10">
+                                                        Change
+                                                    </div>
+                                                </>
                                             ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-text-muted text-xs text-center p-2">No image</div>
+                                                <div className="w-full h-full flex flex-col items-center justify-center text-text-muted text-xs text-center p-2 hover:text-primary transition-colors">
+                                                    <svg className="w-6 h-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                                    Upload
+                                                </div>
                                             )}
-                                        </div>
+                                        </ImageUpload>
                                         <div className="flex-1 space-y-2">
                                             <input
                                                 type="text"
@@ -820,16 +844,17 @@ export default function CreatorCardPage() {
                     </div>
                 ) : (
                     <div className="space-y-6"> {/* Parent div for appearance tab content */}
-                        <div className={`grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-2`}>
-                            {/* Left Column: Identity */}
-                            <div className="space-y-6">
-                                {/* ═══ SECTION 3: MY COLORS ═══ */}
-                                <div className="bg-surface border border-border rounded-xl p-5 space-y-6">
-                                    <div className="flex items-center justify-between">
-                                        <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider">
-                                            ✦ Accent & Colors
-                                            <InfoTooltip content="Select your primary brand color and avatar glow effects." />
-                                        </h2>
+                        <Accordion type="multiple" defaultValue={['accent-colors']} className="w-full space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                            {/* ═══ SECTION 3: MY COLORS ═══ */}
+                            <AccordionItem value="accent-colors" className="bg-surface border border-border rounded-xl px-5 border-b-0 shadow-sm">
+                                <AccordionTrigger className="hover:no-underline py-5 text-sm font-bold text-text-primary uppercase tracking-wider text-left">
+                                    <div className="flex items-center gap-2">
+                                        ✦ Accent & Colors
+                                        <InfoTooltip content="Select your primary brand color and avatar glow effects." />
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pb-5 space-y-6 pt-1">
+                                    <div className="flex items-center justify-end">
                                         <button onClick={handleRandomize} className="text-xs text-primary hover:text-primary-light transition-colors flex items-center gap-1">
                                             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                                             Shuffle
@@ -867,15 +892,18 @@ export default function CreatorCardPage() {
                                         </div>
                                         <p className="text-xs text-text-muted">Hover over your avatar to see the effect.</p>
                                     </div>
-                                </div>
+                                </AccordionContent>
+                            </AccordionItem>
 
-                                {/* ═══ SECTION 5: BRANDING ═══ */}
-                                <div className="bg-surface border border-border rounded-xl p-5 space-y-4">
-                                    <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider">
+                            {/* ═══ SECTION 5: BRANDING ═══ */}
+                            <AccordionItem value="branding" className="bg-surface border border-border rounded-xl px-5 border-b-0 shadow-sm">
+                                <AccordionTrigger className="hover:no-underline py-5 text-sm font-bold text-text-primary uppercase tracking-wider text-left">
+                                    <div className="flex items-center gap-2">
                                         ✦ Branding & Logo
                                         <InfoTooltip content="Manage your profile identity, picture, and brand logos." />
-                                    </h2>
-
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pb-5 space-y-6 pt-1">
                                     <div className="grid grid-cols-1 gap-8">
                                         <div className="space-y-4">
                                             {/* Profile Picture Upload */}
@@ -1117,30 +1145,37 @@ export default function CreatorCardPage() {
                                             </div>
                                         )}
                                     </div>
-                                </div>
-                            </div>
+                                </AccordionContent>
+                            </AccordionItem>
 
-                            {/* Right Column: Aesthetics */}
-                            <div className="space-y-6">
-                                {/* ═══ SECTION 1: PUBLIC PAGE APPEARANCE ═══ */}
-                                <div className="bg-surface border border-border rounded-xl p-5 space-y-6">
-                                    <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider">
+                            {/* ═══ SECTION 1: PUBLIC PAGE APPEARANCE ═══ */}
+                            <AccordionItem value="public-page" className="bg-surface border border-border rounded-xl px-5 border-b-0 shadow-sm">
+                                <AccordionTrigger className="hover:no-underline py-5 text-sm font-bold text-text-primary uppercase tracking-wider text-left">
+                                    <div className="flex items-center gap-2">
                                         ✦ Public Page Styling
                                         <InfoTooltip content="Design the overall look and feel of your public profile background." />
-                                    </h2>
-
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pb-5 space-y-6 pt-1">
                                     <div className="space-y-4">
                                         <label className="text-sm font-medium text-text-secondary">Background Type</label>
                                         <div className="grid grid-cols-4 gap-2">
-                                            {['color', 'gradient', 'image', 'emoji'].map(type => (
-                                                <button
-                                                    key={type}
-                                                    onClick={() => setAppearance(prev => ({ ...prev, public_background_type: type as any }))}
-                                                    className={`py-2 px-3 rounded-lg border text-sm capitalize transition-all ${appearance.public_background_type === type ? 'border-primary bg-primary/10 text-primary font-medium' : 'border-border text-text-secondary hover:text-text-primary'}`}
-                                                >
-                                                    {type}
-                                                </button>
-                                            ))}
+                                            {['color', 'gradient', 'image', 'emoji'].map(type => {
+                                                const isPremium = type !== 'color';
+                                                const disabled = isPremium && !isPro;
+                                                return (
+                                                    <button
+                                                        key={type}
+                                                        disabled={disabled}
+                                                        onClick={() => setAppearance(prev => ({ ...prev, public_background_type: type as any }))}
+                                                        className={`py-2 px-3 rounded-lg border text-sm capitalize transition-all flex items-center justify-center gap-1.5 ${appearance.public_background_type === type ? 'border-primary bg-primary/10 text-primary font-medium' : 'border-border text-text-secondary'} ${disabled ? 'opacity-50 cursor-not-allowed cursor-help' : 'hover:text-text-primary'}`}
+                                                        title={disabled ? "Upgrade to Pro to unlock" : ""}
+                                                    >
+                                                        {type}
+                                                        {disabled && <span className="text-[10px] bg-primary text-background px-1.5 py-0.5 rounded-full font-bold ml-1">PRO</span>}
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                         {appearance.public_background_type === 'color' && (
                                             <div className="flex items-center gap-3">
@@ -1252,31 +1287,41 @@ export default function CreatorCardPage() {
                                             </div>
                                         )}
                                     </div>
-                                </div>
+                                </AccordionContent>
+                            </AccordionItem>
 
-                                {/* ── Card Configuration ── */}
-                                <div className="bg-surface border border-border rounded-xl p-5 space-y-6">
-                                    <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider">
+                            {/* ── Card Configuration ── */}
+                            <AccordionItem value="card-config" className="bg-surface border border-border rounded-xl px-5 border-b-0 shadow-sm">
+                                <AccordionTrigger className="hover:no-underline py-5 text-sm font-bold text-text-primary uppercase tracking-wider text-left">
+                                    <div className="flex items-center gap-2">
                                         ✦ Card Configuration
                                         <InfoTooltip content="Customize the appearance of your links card, shape, and lighting." />
-                                    </h2>
-
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pb-5 space-y-6 pt-1">
                                     <div className="space-y-4">
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium text-text-secondary">Card Background</label>
                                             <div className="grid grid-cols-3 gap-2 bg-surface-light p-1 rounded-lg border border-border">
-                                                {['color', 'gradient', 'image'].map((type) => (
-                                                    <button
-                                                        key={type}
-                                                        onClick={() => setAppearance(prev => ({ ...prev, card_background_type: type as any }))}
-                                                        className={`py-1.5 px-3 rounded-md text-xs capitalize transition-all duration-200 ${(appearance.card_background_type || 'color') === type
-                                                            ? 'bg-surface shadow text-primary font-medium'
-                                                            : 'text-text-secondary hover:text-text-primary'
-                                                            }`}
-                                                    >
-                                                        {type}
-                                                    </button>
-                                                ))}
+                                                {['color', 'gradient', 'image'].map((type) => {
+                                                    const isPremium = type !== 'color';
+                                                    const disabled = isPremium && !isPro;
+                                                    return (
+                                                        <button
+                                                            key={type}
+                                                            disabled={disabled}
+                                                            onClick={() => setAppearance(prev => ({ ...prev, card_background_type: type as any }))}
+                                                            className={`py-1.5 px-3 rounded-md text-xs capitalize transition-all duration-200 flex items-center justify-center gap-1.5 ${(appearance.card_background_type || 'color') === type
+                                                                ? 'bg-surface shadow text-primary font-medium'
+                                                                : 'text-text-secondary'
+                                                                } ${disabled ? 'opacity-50 cursor-not-allowed cursor-help' : 'hover:text-text-primary'}`}
+                                                            title={disabled ? "Upgrade to Pro to unlock" : ""}
+                                                        >
+                                                            {type}
+                                                            {disabled && <span className="text-[9px] bg-primary text-background px-1 py-0.5 rounded font-bold ml-1">PRO</span>}
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
 
@@ -1494,15 +1539,18 @@ export default function CreatorCardPage() {
                                         <div className="flex justify-between text-xs text-text-secondary"><span>Card Glow</span><span>{appearance.public_card_glow}</span></div>
                                         <input type="range" min="0" max="100" step="5" value={appearance.public_card_glow} onChange={e => setAppearance(prev => ({ ...prev, public_card_glow: parseInt(e.target.value) }))} className="w-full accent-primary h-1.5 bg-surface-light rounded-lg appearance-none cursor-pointer" />
                                     </div>
-                                </div>
+                                </AccordionContent>
+                            </AccordionItem>
 
-                                {/* ── Card Border ── */}
-                                <div className="bg-surface border border-border rounded-xl p-5 space-y-6">
-                                    <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider">
+                            {/* ── Card Border ── */}
+                            <AccordionItem value="card-border" className="bg-surface border border-border rounded-xl px-5 border-b-0 shadow-sm">
+                                <AccordionTrigger className="hover:no-underline py-5 text-sm font-bold text-text-primary uppercase tracking-wider text-left">
+                                    <div className="flex items-center gap-2">
                                         ✦ Card Border
                                         <InfoTooltip content="Add a custom border and hover glow effect to your public card." />
-                                    </h2>
-
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pb-5 space-y-6 pt-1">
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
                                             <label className="text-sm font-medium text-text-secondary">Border Style</label>
@@ -1572,9 +1620,9 @@ export default function CreatorCardPage() {
                                             </div>
                                         )}
                                     </div>
-                                </div>
-                            </div>
-                        </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
 
                         {/* ═══ SAVE BUTTON ═══ */}
                         <button
@@ -1604,88 +1652,89 @@ export default function CreatorCardPage() {
             </div>
 
             {/* Right: Preview */}
-            <div className="hidden lg:flex flex-col items-center justify-center p-8 min-h-screen sticky top-0 h-screen w-[450px]">
-                <div className="mb-4 text-center">
-                    <h3 className="text-sm font-bold text-text-secondary uppercase tracking-wider">Live Preview</h3>
-                    <p className="text-xs text-text-muted">Changes update in real-time</p>
-                </div>
+            {previewOpen && (
+                <div className="hidden lg:flex flex-col items-center justify-center p-8 min-h-screen sticky top-0 h-screen w-[450px]">
+                    <div className="mb-4 text-center">
+                        <h3 className="text-sm font-bold text-text-secondary uppercase tracking-wider">Live Preview</h3>
+                        <p className="text-xs text-text-muted">Changes update in real-time</p>
+                    </div>
 
-                {/* Mobile Frame */}
-                <div className="relative w-[340px] h-[680px] bg-black rounded-[3rem] shadow-2xl border-[8px] border-surface-dark overflow-hidden ring-4 ring-black/20">
-                    {/* Screen Content */}
-                    <div
-                        className="w-full h-full overflow-y-auto scrollbar-hide relative transition-colors duration-500"
-                        style={{
-                            background: appearance.public_background_type === 'image' && appearance.public_background_image
-                                ? `url(${appearance.public_background_image}) center/cover no-repeat`
-                                : appearance.public_background_type === 'gradient' && appearance.public_background_gradient
-                                    ? appearance.public_background_gradient
-                                    : appearance.public_background_type === 'emoji'
-                                        ? (appearance.public_background_color || '#000000')
-                                        : (appearance.public_background_color || '#000000'),
-                            boxShadow: `0 40px 80px -12px rgba(0, 0, 0, 0.6)${appearance.public_card_glow > 0 ? `, 0 0 ${appearance.public_card_glow * 40}px ${appearance.primary_color}50` : ''}`
-                        }}
-                    >
-                        {/* Emoji Background */}
-                        {appearance.public_background_type === 'emoji' && Boolean(appearance.public_background_emojis) && (
-                            <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40 -z-10">
-                                {(() => {
-                                    const pattern = appearance.public_background_emoji_pattern || 'scatter';
-                                    const emojisArr = Array.from(appearance.public_background_emojis!);
-                                    if (emojisArr.length === 0) return null;
-                                    if (pattern === 'grid') {
-                                        return (
-                                            <div className="w-full h-full flex flex-wrap justify-center content-start py-8 gap-x-12 gap-y-12" style={{ transform: 'scale(1.2)' }}>
-                                                {Array.from({ length: 48 }).map((_, i) => (
-                                                    <div key={`emoji-${i}`} className="text-4xl filter blur-[1px]">
-                                                        {emojisArr[i % emojisArr.length]}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        );
-                                    } else if (pattern === 'floating') {
-                                        const direction = appearance.public_background_emoji_direction || 'up';
-                                        return (
-                                            <div className="relative w-full h-full">
-                                                {Array.from({ length: 24 }).map((_, i) => {
-                                                    let style: any = {
-                                                        animationDelay: `-${Math.random() * 10}s`,
-                                                        animationDuration: `${10 + Math.random() * 10}s`,
-                                                    };
-                                                    if (direction === 'up' || direction === 'down') {
-                                                        style.left = `${Math.random() * 100}%`;
-                                                        style['--float-x-start'] = `${(Math.random() - 0.5) * 50}px`;
-                                                        style['--float-x-end'] = `${(Math.random() - 0.5) * 100}px`;
-                                                        if (direction === 'up') {
-                                                            style.bottom = '-10%';
-                                                            style['--float-y-start'] = '10vh';
-                                                            style['--float-y-end'] = '-120vh';
-                                                        } else {
-                                                            style.top = '-10%';
-                                                            style['--float-y-start'] = '-10vh';
-                                                            style['--float-y-end'] = '120vh';
-                                                        }
-                                                    } else {
-                                                        style.top = `${Math.random() * 100}%`;
-                                                        style['--float-y-start'] = `${(Math.random() - 0.5) * 50}px`;
-                                                        style['--float-y-end'] = `${(Math.random() - 0.5) * 100}px`;
-                                                        if (direction === 'left') {
-                                                            style.right = '-10%';
-                                                            style['--float-x-start'] = '10vw';
-                                                            style['--float-x-end'] = '-120vw';
-                                                        } else {
-                                                            style.left = '-10%';
-                                                            style['--float-x-start'] = '-10vw';
-                                                            style['--float-x-end'] = '120vw';
-                                                        }
-                                                    }
-                                                    return (
-                                                        <div key={`floating-emoji-${i}`} className="absolute text-5xl filter blur-[1px] animate-[float_10s_linear_infinite]" style={style}>
+                    {/* Mobile Frame */}
+                    <div className="relative w-[340px] h-[680px] bg-black rounded-[3rem] shadow-2xl border-[8px] border-surface-dark overflow-hidden ring-4 ring-black/20">
+                        {/* Screen Content */}
+                        <div
+                            className="w-full h-full overflow-y-auto scrollbar-hide relative transition-colors duration-500"
+                            style={{
+                                background: appearance.public_background_type === 'image' && appearance.public_background_image
+                                    ? `url(${appearance.public_background_image}) center/cover no-repeat`
+                                    : appearance.public_background_type === 'gradient' && appearance.public_background_gradient
+                                        ? appearance.public_background_gradient
+                                        : appearance.public_background_type === 'emoji'
+                                            ? (appearance.public_background_color || '#000000')
+                                            : (appearance.public_background_color || '#000000'),
+                                boxShadow: `0 40px 80px -12px rgba(0, 0, 0, 0.6)${appearance.public_card_glow > 0 ? `, 0 0 ${appearance.public_card_glow * 40}px ${appearance.primary_color}50` : ''}`
+                            }}
+                        >
+                            {/* Emoji Background */}
+                            {appearance.public_background_type === 'emoji' && Boolean(appearance.public_background_emojis) && (
+                                <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40 -z-10">
+                                    {(() => {
+                                        const pattern = appearance.public_background_emoji_pattern || 'scatter';
+                                        const emojisArr = Array.from(appearance.public_background_emojis!);
+                                        if (emojisArr.length === 0) return null;
+                                        if (pattern === 'grid') {
+                                            return (
+                                                <div className="w-full h-full flex flex-wrap justify-center content-start py-8 gap-x-12 gap-y-12" style={{ transform: 'scale(1.2)' }}>
+                                                    {Array.from({ length: 48 }).map((_, i) => (
+                                                        <div key={`emoji-${i}`} className="text-4xl filter blur-[1px]">
                                                             {emojisArr[i % emojisArr.length]}
                                                         </div>
-                                                    );
-                                                })}
-                                                <style>{`
+                                                    ))}
+                                                </div>
+                                            );
+                                        } else if (pattern === 'floating') {
+                                            const direction = appearance.public_background_emoji_direction || 'up';
+                                            return (
+                                                <div className="relative w-full h-full">
+                                                    {Array.from({ length: 24 }).map((_, i) => {
+                                                        let style: any = {
+                                                            animationDelay: `-${Math.random() * 10}s`,
+                                                            animationDuration: `${10 + Math.random() * 10}s`,
+                                                        };
+                                                        if (direction === 'up' || direction === 'down') {
+                                                            style.left = `${Math.random() * 100}%`;
+                                                            style['--float-x-start'] = `${(Math.random() - 0.5) * 50}px`;
+                                                            style['--float-x-end'] = `${(Math.random() - 0.5) * 100}px`;
+                                                            if (direction === 'up') {
+                                                                style.bottom = '-10%';
+                                                                style['--float-y-start'] = '10vh';
+                                                                style['--float-y-end'] = '-120vh';
+                                                            } else {
+                                                                style.top = '-10%';
+                                                                style['--float-y-start'] = '-10vh';
+                                                                style['--float-y-end'] = '120vh';
+                                                            }
+                                                        } else {
+                                                            style.top = `${Math.random() * 100}%`;
+                                                            style['--float-y-start'] = `${(Math.random() - 0.5) * 50}px`;
+                                                            style['--float-y-end'] = `${(Math.random() - 0.5) * 100}px`;
+                                                            if (direction === 'left') {
+                                                                style.right = '-10%';
+                                                                style['--float-x-start'] = '10vw';
+                                                                style['--float-x-end'] = '-120vw';
+                                                            } else {
+                                                                style.left = '-10%';
+                                                                style['--float-x-start'] = '-10vw';
+                                                                style['--float-x-end'] = '120vw';
+                                                            }
+                                                        }
+                                                        return (
+                                                            <div key={`floating-emoji-${i}`} className="absolute text-5xl filter blur-[1px] animate-[float_10s_linear_infinite]" style={style}>
+                                                                {emojisArr[i % emojisArr.length]}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                    <style>{`
                                                     @keyframes float {
                                                         0% { transform: translate(var(--float-x-start), var(--float-y-start)) rotate(0deg); opacity: 0; }
                                                         10% { opacity: 1; }
@@ -1693,187 +1742,188 @@ export default function CreatorCardPage() {
                                                         100% { transform: translate(var(--float-x-end), var(--float-y-end)) rotate(360deg); opacity: 0; }
                                                     }
                                                 `}</style>
-                                            </div>
-                                        );
-                                    } else {
-                                        return (
-                                            <div className="w-full h-full flex flex-wrap justify-center content-start py-8 gap-x-14 gap-y-16" style={{ transform: 'scale(1.2)' }}>
-                                                {Array.from({ length: 42 }).map((_, i) => {
-                                                    const rotation = (i * 47) % 360;
-                                                    const offset = (i % 3 === 0) ? 'translate-y-8' : (i % 2 === 0) ? '-translate-x-6' : 'translate-x-4';
-                                                    return (
-                                                        <div key={`emoji-${i}`} className={`text-4xl filter blur-[1px] ${offset}`} style={{ transform: `rotate(${rotation}deg)` }}>
-                                                            {emojisArr[i % emojisArr.length]}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        );
-                                    }
-                                })()}
-                            </div>
-                        )}
-                        {/* Overlays */}
-                        {appearance.public_background_type === 'image' && (
-                            <>
-                                {appearance.public_background_overlay > 0 && <div className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-300" style={{ opacity: appearance.public_background_overlay / 100 }} />}
-                                {appearance.public_background_blur > 0 && <div className="absolute inset-0 backdrop-blur-[var(--blur)] pointer-events-none transition-all duration-300" style={{ '--blur': `${appearance.public_background_blur}px` } as any} />}
-                            </>
-                        )}
-                        {appearance.public_background_vignette > 0 && <div className="absolute inset-0 pointer-events-none transition-opacity duration-300" style={{ background: `radial-gradient(circle, transparent 50%, rgba(0,0,0, ${appearance.public_background_vignette / 100}))` }} />}
-                        {appearance.public_background_grain > 0 && <div className="absolute inset-0 opacity-[var(--grain)] pointer-events-none mix-blend-overlay transition-opacity duration-300" style={{ backgroundImage: 'url("/grain.png")', '--grain': appearance.public_background_grain / 100 } as any} />}
+                                                </div>
+                                            );
+                                        } else {
+                                            return (
+                                                <div className="w-full h-full flex flex-wrap justify-center content-start py-8 gap-x-14 gap-y-16" style={{ transform: 'scale(1.2)' }}>
+                                                    {Array.from({ length: 42 }).map((_, i) => {
+                                                        const rotation = (i * 47) % 360;
+                                                        const offset = (i % 3 === 0) ? 'translate-y-8' : (i % 2 === 0) ? '-translate-x-6' : 'translate-x-4';
+                                                        return (
+                                                            <div key={`emoji-${i}`} className={`text-4xl filter blur-[1px] ${offset}`} style={{ transform: `rotate(${rotation}deg)` }}>
+                                                                {emojisArr[i % emojisArr.length]}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            );
+                                        }
+                                    })()}
+                                </div>
+                            )}
+                            {/* Overlays */}
+                            {appearance.public_background_type === 'image' && (
+                                <>
+                                    {appearance.public_background_overlay > 0 && <div className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-300" style={{ opacity: appearance.public_background_overlay / 100 }} />}
+                                    {appearance.public_background_blur > 0 && <div className="absolute inset-0 backdrop-blur-[var(--blur)] pointer-events-none transition-all duration-300" style={{ '--blur': `${appearance.public_background_blur}px` } as any} />}
+                                </>
+                            )}
+                            {appearance.public_background_vignette > 0 && <div className="absolute inset-0 pointer-events-none transition-opacity duration-300" style={{ background: `radial-gradient(circle, transparent 50%, rgba(0,0,0, ${appearance.public_background_vignette / 100}))` }} />}
+                            {appearance.public_background_grain > 0 && <div className="absolute inset-0 opacity-[var(--grain)] pointer-events-none mix-blend-overlay transition-opacity duration-300" style={{ backgroundImage: 'url("/grain.png")', '--grain': appearance.public_background_grain / 100 } as any} />}
 
-                        {/* Logo Scatter */}
-                        {appearance.logo_position === 'scatter' && (
-                            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                                {scatterPositions.map((pos, i) => (
+                            {/* Logo Scatter */}
+                            {appearance.logo_position === 'scatter' && (
+                                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                                    {scatterPositions.map((pos, i) => (
+                                        <img
+                                            key={i}
+                                            src={appearance.logo_url || '/logo.png'}
+                                            className="absolute w-8 h-8 opacity-[var(--op)] transition-all duration-1000"
+                                            style={{ top: `${pos.top}%`, left: `${pos.left}%`, transform: `rotate(${pos.rotate}deg)`, '--op': appearance.logo_opacity } as any}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Main Content */}
+                            <div className="relative z-10 px-6 py-12 flex flex-col items-center gap-6 min-h-full">
+                                {/* Logo — top row positions */}
+                                {(appearance.logo_position === 'center_top' || appearance.logo_position === 'top_left' || appearance.logo_position === 'top_right') && Boolean(appearance.logo_url) && (
                                     <img
-                                        key={i}
-                                        src={appearance.logo_url || '/logo.png'}
-                                        className="absolute w-8 h-8 opacity-[var(--op)] transition-all duration-1000"
-                                        style={{ top: `${pos.top}%`, left: `${pos.left}%`, transform: `rotate(${pos.rotate}deg)`, '--op': appearance.logo_opacity } as any}
+                                        src={appearance.logo_url}
+                                        style={{ height: `${appearance.logo_size || 32}px` }}
+                                        className={`w-auto absolute top-6 transition-all duration-500 ${appearance.logo_position === 'top_left' ? 'left-6' : appearance.logo_position === 'top_right' ? 'right-6' : 'left-1/2 -translate-x-1/2'}`}
                                     />
-                                ))}
-                            </div>
-                        )}
+                                )}
 
-                        {/* Main Content */}
-                        <div className="relative z-10 px-6 py-12 flex flex-col items-center gap-6 min-h-full">
-                            {/* Logo — top row positions */}
-                            {(appearance.logo_position === 'center_top' || appearance.logo_position === 'top_left' || appearance.logo_position === 'top_right') && Boolean(appearance.logo_url) && (
-                                <img
-                                    src={appearance.logo_url}
-                                    style={{ height: `${appearance.logo_size || 32}px` }}
-                                    className={`w-auto absolute top-6 transition-all duration-500 ${appearance.logo_position === 'top_left' ? 'left-6' : appearance.logo_position === 'top_right' ? 'right-6' : 'left-1/2 -translate-x-1/2'}`}
-                                />
-                            )}
+                                {/* Logo — center hero (watermark) */}
+                                {appearance.logo_position === 'center' && Boolean(appearance.logo_url) && (
+                                    <img
+                                        src={appearance.logo_url}
+                                        style={{ height: `${Math.max(appearance.logo_size || 32, 64)}px` }}
+                                        className="w-auto absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-500 z-0 opacity-20 pointer-events-none blur-[0.5px]"
+                                    />
+                                )}
 
-                            {/* Logo — center hero (watermark) */}
-                            {appearance.logo_position === 'center' && Boolean(appearance.logo_url) && (
-                                <img
-                                    src={appearance.logo_url}
-                                    style={{ height: `${Math.max(appearance.logo_size || 32, 64)}px` }}
-                                    className="w-auto absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-500 z-0 opacity-20 pointer-events-none blur-[0.5px]"
-                                />
-                            )}
+                                {/* Logo — bottom corners */}
+                                {(appearance.logo_position === 'bottom_left' || appearance.logo_position === 'bottom_right') && Boolean(appearance.logo_url) && (
+                                    <img
+                                        src={appearance.logo_url}
+                                        style={{ height: `${appearance.logo_size || 32}px` }}
+                                        className={`w-auto absolute bottom-6 transition-all duration-500 ${appearance.logo_position === 'bottom_left' ? 'left-6' : 'right-6'}`}
+                                    />
+                                )}
 
-                            {/* Logo — bottom corners */}
-                            {(appearance.logo_position === 'bottom_left' || appearance.logo_position === 'bottom_right') && Boolean(appearance.logo_url) && (
-                                <img
-                                    src={appearance.logo_url}
-                                    style={{ height: `${appearance.logo_size || 32}px` }}
-                                    className={`w-auto absolute bottom-6 transition-all duration-500 ${appearance.logo_position === 'bottom_left' ? 'left-6' : 'right-6'}`}
-                                />
-                            )}
-
-                            <div className="relative mt-8 group">
-                                <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-white/20 shadow-xl relative z-10 bg-surface transition-transform duration-300 group-hover:scale-105">
-                                    {profile?.avatar_url ? (
-                                        <img src={profile.avatar_url} className="w-full h-full object-cover relative z-10" />
-                                    ) : (
-                                        <div className="w-full h-full bg-primary/20 flex items-center justify-center text-xl font-bold relative z-10">{profile?.display_name?.charAt(0)}</div>
+                                <div className="relative mt-8 group">
+                                    <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-white/20 shadow-xl relative z-10 bg-surface transition-transform duration-300 group-hover:scale-105">
+                                        {profile?.avatar_url ? (
+                                            <img src={profile.avatar_url} className="w-full h-full object-cover relative z-10" />
+                                        ) : (
+                                            <div className="w-full h-full bg-primary/20 flex items-center justify-center text-xl font-bold relative z-10">{profile?.display_name?.charAt(0)}</div>
+                                        )}
+                                    </div>
+                                    <div className="absolute inset-0 bg-primary/30 blur-xl rounded-full scale-110 -z-0 transition-colors duration-300 pointer-events-none" style={{ backgroundColor: appearance.primary_color }} />
+                                    {appearance.avatar_aura === 'solid' && (
+                                        <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md pointer-events-none" style={{ backgroundColor: appearance.primary_color, transform: 'scale(1.3)' }} />
+                                    )}
+                                    {appearance.avatar_aura === 'rainbow' && (
+                                        <div className="absolute -inset-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-lg pointer-events-none animate-spin-slow" style={{ background: 'conic-gradient(from 0deg, #ff0000, #ff8000, #ffff00, #00ff00, #0000ff, #4b0082, #ee82ee, #ff0000)' }} />
+                                    )}
+                                    {appearance.avatar_aura === 'pulse' && (
+                                        <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-500 blur-sm pointer-events-none" style={{ backgroundColor: appearance.primary_color }} />
                                     )}
                                 </div>
-                                <div className="absolute inset-0 bg-primary/30 blur-xl rounded-full scale-110 -z-0 transition-colors duration-300 pointer-events-none" style={{ backgroundColor: appearance.primary_color }} />
-                                {appearance.avatar_aura === 'solid' && (
-                                    <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md pointer-events-none" style={{ backgroundColor: appearance.primary_color, transform: 'scale(1.3)' }} />
-                                )}
-                                {appearance.avatar_aura === 'rainbow' && (
-                                    <div className="absolute -inset-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-lg pointer-events-none animate-spin-slow" style={{ background: 'conic-gradient(from 0deg, #ff0000, #ff8000, #ffff00, #00ff00, #0000ff, #4b0082, #ee82ee, #ff0000)' }} />
-                                )}
-                                {appearance.avatar_aura === 'pulse' && (
-                                    <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-500 blur-sm pointer-events-none" style={{ backgroundColor: appearance.primary_color }} />
-                                )}
-                            </div>
 
-                            <div className="text-center space-y-1">
-                                <h1 className="text-xl font-bold tracking-tight">{profile?.display_name || 'Your Name'}</h1>
-                                <p className="text-sm opacity-70">@{profile?.handle || 'username'}</p>
-                            </div>
+                                <div className="text-center space-y-1">
+                                    <h1 className="text-xl font-bold tracking-tight">{profile?.display_name || 'Your Name'}</h1>
+                                    <p className="text-sm opacity-70">@{profile?.handle || 'username'}</p>
+                                </div>
 
-                            <div className={`w-full gap-3 ${appearance.link_style === 'grid' ? 'grid grid-cols-2' : appearance.link_style === 'row' ? 'flex flex-wrap justify-center' : 'grid grid-cols-1'}`}>
-                                {links.filter(l => l.is_active).map(link => (
-                                    <a
-                                        key={link.id}
-                                        href="#"
-                                        onClick={e => e.preventDefault()}
-                                        className={`group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${appearance.card_style === 'pill' ? 'rounded-[2rem]' : appearance.card_style === 'modern' ? 'rounded-xl' : appearance.card_style === 'sharp' ? 'rounded-none' : 'rounded-lg'} ${appearance.link_style === 'row' ? 'w-12 h-12 flex items-center justify-center bg-white/10 backdrop-blur-md' : 'w-full p-3 flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/5'} ${appearance.public_card_glow > 0 ? 'shadow-[0_0_var(--glow)_rgba(255,255,255,0.1)]' : ''}`}
-                                        style={{ backgroundColor: appearance.public_card_theme === 'light' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)', borderColor: appearance.public_card_theme === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)', color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff', '--glow': `${appearance.public_card_glow}px` } as any}
-                                    >
-                                        {appearance.link_style === 'grid' && Boolean(link.custom_image_url) && (
-                                            <div className="absolute inset-0 z-0">
-                                                <img src={link.custom_image_url} className="w-full h-full object-cover opacity-50 transition-transform duration-700 group-hover:scale-110" />
-                                                <div className="absolute inset-0 bg-black/40" />
-                                            </div>
-                                        )}
-                                        {appearance.link_style === 'row' ? (
-                                            <div style={{ color: appearance.icon_style === 'color' ? undefined : 'currentColor' }}>
-                                                <SocialIcon type={link.icon} variant={appearance.icon_style === 'monochrome' ? 'monochrome' : undefined} className="w-6 h-6 relative z-10" />
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <div className={`w-8 h-8 flex items-center justify-center shrink-0 ${appearance.icon_style === 'color' ? '' : 'text-current'}`}>
+                                <div className={`w-full gap-3 ${appearance.link_style === 'grid' ? 'grid grid-cols-2' : appearance.link_style === 'row' ? 'flex flex-wrap justify-center' : 'grid grid-cols-1'}`}>
+                                    {links.filter(l => l.is_active).map(link => (
+                                        <a
+                                            key={link.id}
+                                            href="#"
+                                            onClick={e => e.preventDefault()}
+                                            className={`group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${appearance.card_style === 'pill' ? 'rounded-[2rem]' : appearance.card_style === 'modern' ? 'rounded-xl' : appearance.card_style === 'sharp' ? 'rounded-none' : 'rounded-lg'} ${appearance.link_style === 'row' ? 'w-12 h-12 flex items-center justify-center bg-white/10 backdrop-blur-md' : 'w-full p-3 flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/5'} ${appearance.public_card_glow > 0 ? 'shadow-[0_0_var(--glow)_rgba(255,255,255,0.1)]' : ''}`}
+                                            style={{ backgroundColor: appearance.public_card_theme === 'light' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)', borderColor: appearance.public_card_theme === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)', color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff', '--glow': `${appearance.public_card_glow}px` } as any}
+                                        >
+                                            {appearance.link_style === 'grid' && Boolean(link.custom_image_url) && (
+                                                <div className="absolute inset-0 z-0">
+                                                    <img src={link.custom_image_url} className="w-full h-full object-cover opacity-50 transition-transform duration-700 group-hover:scale-110" />
+                                                    <div className="absolute inset-0 bg-black/40" />
+                                                </div>
+                                            )}
+                                            {appearance.link_style === 'row' ? (
+                                                <div style={{ color: appearance.icon_style === 'color' ? undefined : 'currentColor' }}>
                                                     <SocialIcon type={link.icon} variant={appearance.icon_style === 'monochrome' ? 'monochrome' : undefined} className="w-6 h-6 relative z-10" />
                                                 </div>
-                                                <span className={`font-medium text-sm truncate relative z-10 flex-1 ${appearance.link_style === 'grid' ? 'text-center' : 'text-left'}`}>{link.label}</span>
-                                                {appearance.link_style === 'list' && (
-                                                    <svg className="w-4 h-4 opacity-50 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                                                )}
-                                            </>
-                                        )}
-                                    </a>
-                                ))}
-                                {links.filter(l => l.is_active).length === 0 && (
-                                    <div className="col-span-full text-center py-8 opacity-50 text-xs">
-                                        <p>Add active links to see them here</p>
+                                            ) : (
+                                                <>
+                                                    <div className={`w-8 h-8 flex items-center justify-center shrink-0 ${appearance.icon_style === 'color' ? '' : 'text-current'}`}>
+                                                        <SocialIcon type={link.icon} variant={appearance.icon_style === 'monochrome' ? 'monochrome' : undefined} className="w-6 h-6 relative z-10" />
+                                                    </div>
+                                                    <span className={`font-medium text-sm truncate relative z-10 flex-1 ${appearance.link_style === 'grid' ? 'text-center' : 'text-left'}`}>{link.label}</span>
+                                                    {appearance.link_style === 'list' && (
+                                                        <svg className="w-4 h-4 opacity-50 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                                    )}
+                                                </>
+                                            )}
+                                        </a>
+                                    ))}
+                                    {links.filter(l => l.is_active).length === 0 && (
+                                        <div className="col-span-full text-center py-8 opacity-50 text-xs">
+                                            <p>Add active links to see them here</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {profile?.verified_videos && profile.verified_videos.length > 0 && (
+                                    <div className="w-full space-y-3 pt-4 border-t border-white/10">
+                                        <h3 className="text-xs font-bold opacity-70 uppercase tracking-wider text-center" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>Verified Videos</h3>
+                                        <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide snap-x w-full">
+                                            {profile.verified_videos.map(video => (
+                                                <a key={video.id} href={`https://youtube.com/watch?v=${video.youtube_video_id}`} target="_blank" className="min-w-[160px] max-w-[160px] snap-center rounded-lg overflow-hidden border border-white/10 group relative flex-shrink-0" style={{ backgroundColor: appearance.public_card_theme === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)' }}>
+                                                    <div className="aspect-video relative">
+                                                        <img src={video.thumbnail_url} className="w-full h-full object-cover" />
+                                                        <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
+                                                        <div className="absolute top-1.5 right-1.5 bg-green-500 text-black text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                                                            <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                                            VERIFIED
+                                                        </div>
+                                                    </div>
+                                                    <div className="p-2">
+                                                        <h4 className="text-[10px] font-medium truncate leading-tight mb-1" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>{video.title}</h4>
+                                                        <span className="text-[9px] opacity-60" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>{new Date(video.published_at).toLocaleDateString()}</span>
+                                                    </div>
+                                                </a>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
-                            </div>
 
-                            {profile?.verified_videos && profile.verified_videos.length > 0 && (
-                                <div className="w-full space-y-3 pt-4 border-t border-white/10">
-                                    <h3 className="text-xs font-bold opacity-70 uppercase tracking-wider text-center" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>Verified Videos</h3>
-                                    <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide snap-x w-full">
-                                        {profile.verified_videos.map(video => (
-                                            <a key={video.id} href={`https://youtube.com/watch?v=${video.youtube_video_id}`} target="_blank" className="min-w-[160px] max-w-[160px] snap-center rounded-lg overflow-hidden border border-white/10 group relative flex-shrink-0" style={{ backgroundColor: appearance.public_card_theme === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)' }}>
-                                                <div className="aspect-video relative">
-                                                    <img src={video.thumbnail_url} className="w-full h-full object-cover" />
-                                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
-                                                    <div className="absolute top-1.5 right-1.5 bg-green-500 text-black text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
-                                                        <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                                                        VERIFIED
-                                                    </div>
-                                                </div>
-                                                <div className="p-2">
-                                                    <h4 className="text-[10px] font-medium truncate leading-tight mb-1" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>{video.title}</h4>
-                                                    <span className="text-[9px] opacity-60" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>{new Date(video.published_at).toLocaleDateString()}</span>
-                                                </div>
-                                            </a>
-                                        ))}
+                                <div className="mt-8 pt-6 border-t border-white/10 flex flex-col items-center gap-2 opacity-60 hover:opacity-100 transition-opacity group/badge cursor-help" title="This card is cryptographically signed and verified by AntiAI">
+                                    <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-bold" style={{ color: appearance.primary_color }}>
+                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                                        Securely Signed
                                     </div>
-                                </div>
-                            )}
-
-                            <div className="mt-8 pt-6 border-t border-white/10 flex flex-col items-center gap-2 opacity-60 hover:opacity-100 transition-opacity group/badge cursor-help" title="This card is cryptographically signed and verified by AntiAI">
-                                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-bold" style={{ color: appearance.primary_color }}>
-                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                                    Securely Signed
-                                </div>
-                                <div className="flex items-center gap-2 font-mono text-[9px] text-white/50 cursor-pointer select-none" onMouseDown={() => setIsTokenRevealed(true)} onMouseUp={() => setIsTokenRevealed(false)} onMouseLeave={() => setIsTokenRevealed(false)} onTouchStart={() => setIsTokenRevealed(true)} onTouchEnd={() => setIsTokenRevealed(false)}>
-                                    <span>hash:</span>
-                                    <span className={`transition-colors ${isTokenRevealed ? 'text-white' : 'text-white/70 group-hover/badge:text-white'}`}>
-                                        {isTokenRevealed
-                                            ? (profile?.verification_token || profile?.id || 'preview-id')
-                                            : (profile?.verification_token
-                                                ? `${profile.verification_token.substring(0, 12)}...${profile.verification_token.substring(profile.verification_token.length - 8)}`
-                                                : `0x${(profile?.id || 'preview-id').split('-')[0]}...${(profile?.id || 'preview-id').split('-').pop()}`)}
-                                    </span>
+                                    <div className="flex items-center gap-2 font-mono text-[9px] text-white/50 cursor-pointer select-none" onMouseDown={() => setIsTokenRevealed(true)} onMouseUp={() => setIsTokenRevealed(false)} onMouseLeave={() => setIsTokenRevealed(false)} onTouchStart={() => setIsTokenRevealed(true)} onTouchEnd={() => setIsTokenRevealed(false)}>
+                                        <span>hash:</span>
+                                        <span className={`transition-colors ${isTokenRevealed ? 'text-white' : 'text-white/70 group-hover/badge:text-white'}`}>
+                                            {isTokenRevealed
+                                                ? (profile?.verification_token || profile?.id || 'preview-id')
+                                                : (profile?.verification_token
+                                                    ? `${profile.verification_token.substring(0, 12)}...${profile.verification_token.substring(profile.verification_token.length - 8)}`
+                                                    : `0x${(profile?.id || 'preview-id').split('-')[0]}...${(profile?.id || 'preview-id').split('-').pop()}`)}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }
