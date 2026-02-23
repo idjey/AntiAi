@@ -138,8 +138,6 @@ export default function CreatorCardPage() {
         title: string;
         description: string | null;
         image: string | null;
-        description: string | null;
-        image: string | null;
         site_name: string | null;
         added_at: string;
         is_active?: boolean;
@@ -176,6 +174,7 @@ export default function CreatorCardPage() {
         background_image: '',
         card_style: 'modern' as 'classic' | 'modern' | 'sharp' | 'pill',
         link_style: 'list' as 'list' | 'grid' | 'row',
+        shop_layout: 'list' as 'list' | 'grid' | 'bento',
         // Public Page Defaults
         public_background_type: 'color' as 'color' | 'gradient' | 'image' | 'emoji',
         public_background_color: '#000000',
@@ -1569,6 +1568,15 @@ export default function CreatorCardPage() {
                                         <div className="flex bg-surface-light rounded-lg p-1 border border-border">
                                             {['list', 'grid', 'row'].map(style => (
                                                 <button key={style} onClick={() => setAppearance(prev => ({ ...prev, link_style: style as any }))} className={`px-3 py-1.5 rounded-md text-xs capitalize transition-all ${appearance.link_style === style ? 'bg-surface shadow text-primary font-medium' : 'text-text-secondary hover:text-text-primary'}`}>{style}</button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-sm font-medium text-text-secondary">Shop Layout</label>
+                                        <div className="flex bg-surface-light rounded-lg p-1 border border-border">
+                                            {['list', 'grid', 'bento'].map(layout => (
+                                                <button key={layout} onClick={() => setAppearance(prev => ({ ...prev, shop_layout: layout as any }))} className={`px-3 py-1.5 rounded-md text-xs capitalize transition-all ${(appearance.shop_layout || 'list') === layout ? 'bg-surface shadow text-primary font-medium' : 'text-text-secondary hover:text-text-primary'}`}>{layout === 'bento' ? 'Bento Box' : layout}</button>
                                             ))}
                                         </div>
                                     </div>

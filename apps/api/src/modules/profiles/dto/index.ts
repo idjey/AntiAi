@@ -136,6 +136,10 @@ export class AppearanceDto {
     @IsArray()
     sponsored_products?: any[];
 
+    @IsOptional()
+    @IsString()
+    shop_layout?: 'list' | 'grid' | 'bento';
+
     // Border Settings
     @IsOptional()
     @IsString()
