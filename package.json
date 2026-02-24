@@ -9,7 +9,6 @@
   ],
   "scripts": {
     "build:packages": "npm run build -w packages/shared -w packages/crypto -w packages/database",
-    "postinstall": "npm run db:generate && npm run build:packages",
     "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
     "dev:web": "cd apps/web && npm run dev",
     "dev:api": "cd apps/api && npm run dev",
