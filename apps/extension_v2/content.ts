@@ -8,6 +8,7 @@ export const config: PlasmoCSConfig = {
 }
 
 let currentVideoId: string | null = null
+let isExtensionEnabled: boolean = true
 
 // Helper to get video ID from URL
 const getVideoId = (url: string) => {
@@ -21,13 +22,23 @@ const getVideoId = (url: string) => {
 
 // Function to check content
 const checkContent = async (videoId: string) => {
+    if (!isExtensionEnabled) return;
     console.log(`[AntiAI] Checking video: ${videoId}`)
 
     try {
         // Delegate API call to Background Script to avoid CORS/Mixed Content issues
-        const data = await chrome.runtime.sendMessage({
-            action: "checkUrl",
-            videoId: videoId
+        const data = await new Promise<any>((resolve) => {
+            chrome.runtime.sendMessage({
+                action: "checkUrl",
+                videoId: videoId
+            }, (response) => {
+                if (chrome.runtime.lastError) {
+                    console.error("[AntiAI] sendMessage error:", chrome.runtime.lastError);
+                    resolve(null);
+                    return;
+                }
+                resolve(response);
+            });
         });
 
         const isVerified = data && data.status === 'verified'
@@ -94,21 +105,14 @@ function injectBadge(data: any) {
 
     if (!tryInject()) {
         // If not found yet, observe the DOM
-        console.log('[AntiAI] Title not found, observing DOM...');
-        const observer = new MutationObserver((mutations, obs) => {
-            if (tryInject()) {
-                obs.disconnect(); // Stop observing once found
+        console.log('[AntiAI] Title not found, checking periodically...');
+        let attempts = 0;
+        const interval = setInterval(() => {
+            attempts++;
+            if (tryInject() || attempts > 20) { // Max 10 seconds (500ms * 20)
+                clearInterval(interval);
             }
-        });
-
-        const target = document.querySelector('ytd-app') || document.body;
-        observer.observe(target, {
-            childList: true,
-            subtree: true
-        });
-
-        // Timeout to stop observing eventually
-        setTimeout(() => observer.disconnect(), 10000);
+        }, 500);
     }
 }
 
@@ -121,30 +125,56 @@ function removeBadge() {
 const vId = getVideoId(window.location.href)
 if (vId) {
     currentVideoId = vId
-    checkContent(vId)
 }
 
+chrome.storage.local.get(["antiAiEnabled"], (res) => {
+    isExtensionEnabled = res.antiAiEnabled !== false; // default true
+    if (isExtensionEnabled && currentVideoId) {
+        checkContent(currentVideoId)
+    } else {
+        // Set default icon
+        chrome.runtime.sendMessage({ action: "updateIcon", verified: true })
+    }
+});
+
+// Listen for messages from popup
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg.action === "toggleEnabled") {
+        isExtensionEnabled = msg.enabled;
+        if (!isExtensionEnabled) {
+            removeBadge();
+            chrome.runtime.sendMessage({ action: "updateIcon", verified: true })
+        } else if (currentVideoId) {
+            checkContent(currentVideoId);
+        }
+    }
+});
+
 // Listen for navigation (SPA)
-// YouTube uses history API.
-let lastUrl = location.href
-new MutationObserver(() => {
-    const url = location.href
+// YouTube dispatches custom events for navigation which is much more efficient than observing all DOM mutations.
+let lastUrl = location.href;
+
+const handleNavigation = () => {
+    const url = location.href;
     if (url !== lastUrl) {
-        lastUrl = url
-        const newVid = getVideoId(url)
+        lastUrl = url;
+        const newVid = getVideoId(url);
         if (newVid && newVid !== currentVideoId) {
-            currentVideoId = newVid
-            checkContent(newVid)
+            currentVideoId = newVid;
+            if (isExtensionEnabled) {
+                checkContent(newVid);
+            }
         } else if (!newVid) {
-            // Not a video page, reset to default (Green)?
-            // User said "If www.youtube.com is not opened..." but inside YT navigation?
-            // "logo will stay default green color".
-            // So reset to green.
-            currentVideoId = null
+            currentVideoId = null;
             chrome.runtime.sendMessage({
                 action: "updateIcon",
                 verified: true
-            })
+            });
         }
     }
-}).observe(document, { subtree: true, childList: true })
+};
+
+// YouTube specific event for SPA navigation
+window.addEventListener('yt-navigate-finish', handleNavigation);
+// Fallback standard history events
+window.addEventListener('popstate', handleNavigation);

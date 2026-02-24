@@ -4,7 +4,7 @@ export default function ViewerExperience() {
             <div className="container-custom">
                 <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
                     {/* Left side - Content */}
-                    <div>
+                    <header>
                         <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-6">
                             How viewers know it's{' '}
                             <span className="text-primary">really you.</span>
@@ -15,23 +15,23 @@ export default function ViewerExperience() {
                         </p>
 
                         {/* Features list */}
-                        <div className="space-y-4">
+                        <ul className="space-y-4">
                             {[
                                 'Works automatically on YouTube',
                                 'Shows verified badge on authentic videos',
                                 'Flags suspicious or unverified content',
                                 'One-click to view proof details',
                             ].map((feature, index) => (
-                                <div key={index} className="flex items-center gap-3">
-                                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                                <li key={index} className="flex items-center gap-3">
+                                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0" aria-hidden="true">
                                         <svg className="w-3 h-3 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                         </svg>
                                     </div>
                                     <span className="text-text-primary">{feature}</span>
-                                </div>
+                                </li>
                             ))}
-                        </div>
+                        </ul>
 
                         {/* CTA */}
                         <div className="mt-8 flex flex-wrap gap-4">
@@ -45,10 +45,10 @@ export default function ViewerExperience() {
                                 Learn more
                             </button>
                         </div>
-                    </div>
+                    </header>
 
                     {/* Right side - Browser mockup */}
-                    <div className="relative">
+                    <div className="relative" aria-hidden="true">
                         <div className="bg-surface rounded-xl border border-white/10 shadow-card overflow-hidden">
                             {/* Browser chrome */}
                             <div className="flex items-center gap-2 px-4 py-3 bg-surface-light border-b border-white/5">

@@ -25,9 +25,21 @@ async function bootstrap() {
 
     // CORS for frontend and extension
     app.enableCors({
-        origin: process.env.NODE_ENV === 'production'
-            ? ['https://antiai.me', 'https://www.antiai.me']
-            : ['http://localhost:3000', 'chrome-extension://*'],
+        origin: function (origin, callback) {
+            // allow requests with no origin (like mobile apps or curl requests)
+            if (!origin) return callback(null, true);
+            if (process.env.NODE_ENV === 'production') {
+                if (['https://antiai.me', 'https://www.antiai.me'].includes(origin) || origin.startsWith('chrome-extension://') || origin.startsWith('moz-extension://')) {
+                    return callback(null, true);
+                }
+                return callback(null, false);
+            }
+            // in development
+            if (origin.startsWith('http://localhost') || origin.startsWith('chrome-extension://') || origin.startsWith('moz-extension://')) {
+                return callback(null, true);
+            }
+            callback(null, false);
+        },
         credentials: true,
     });
 

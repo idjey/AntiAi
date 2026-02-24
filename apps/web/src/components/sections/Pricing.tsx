@@ -60,7 +60,7 @@ export default function Pricing() {
         <section id="pricing" className="section bg-surface/50">
             <div className="container-custom">
                 {/* Section header */}
-                <div className="text-center mb-12">
+                <header className="text-center mb-12">
                     <h2 className="section-title">
                         Simple, transparent <span className="text-primary">pricing.</span>
                     </h2>
@@ -83,14 +83,14 @@ export default function Pricing() {
                                     }`}
                             />
                         </button>
-                        <span className={`text-sm font-medium transition-colors flex items-center gap-2 ${billingCycle === 'yearly' ? 'text-text-primary' : 'text-text-secondary'}`}>
+                        <span id="yearly-billing" className={`text-sm font-medium transition-colors flex items-center gap-2 ${billingCycle === 'yearly' ? 'text-text-primary' : 'text-text-secondary'}`}>
                             Yearly
                             <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
                                 1 month free
                             </span>
                         </span>
                     </div>
-                </div>
+                </header>
 
                 {/* Pricing cards */}
                 <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto">
@@ -99,7 +99,7 @@ export default function Pricing() {
                         const period = billingCycle === 'monthly' ? '/month' : '/year'
 
                         return (
-                            <div
+                            <article
                                 key={index}
                                 className={`relative rounded-card p-6 lg:p-8 transition-all duration-300 group hover:-translate-y-2 hover:shadow-[0_0_30px_rgba(34,197,94,0.2)] ${plan.featured
                                     ? 'bg-surface border-2 border-primary shadow-glow scale-105 lg:scale-110 z-10'
@@ -108,13 +108,13 @@ export default function Pricing() {
                             >
                                 {/* Featured badge */}
                                 {plan.featured && (
-                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary rounded-full text-xs font-semibold text-background shadow-[0_0_15px_rgba(34,197,94,0.4)]">
+                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary rounded-full text-xs font-semibold text-background shadow-[0_0_15px_rgba(34,197,94,0.4)]" role="status">
                                         Most Popular
                                     </div>
                                 )}
 
                                 {/* Plan header */}
-                                <div className="text-center mb-6">
+                                <header className="text-center mb-6">
                                     <h3 className="text-lg font-semibold text-text-primary mb-2 group-hover:text-primary transition-colors">
                                         {plan.name}
                                     </h3>
@@ -129,7 +129,7 @@ export default function Pricing() {
                                     <p className="text-sm text-text-secondary mt-2">
                                         {plan.description}
                                     </p>
-                                </div>
+                                </header>
 
                                 {/* Features */}
                                 <ul className="space-y-3 mb-8">
@@ -142,6 +142,7 @@ export default function Pricing() {
                                                 viewBox="0 0 24 24"
                                                 stroke="currentColor"
                                                 strokeWidth={2}
+                                                aria-hidden="true"
                                             >
                                                 <path
                                                     strokeLinecap="round"
@@ -166,7 +167,7 @@ export default function Pricing() {
                                 >
                                     {plan.cta}
                                 </Link>
-                            </div>
+                            </article>
                         )
                     })}
                 </div>

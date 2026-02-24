@@ -7,7 +7,15 @@
     "scripts": {
         "dev": "plasmo dev",
         "build": "plasmo build",
-        "package": "plasmo package"
+        "package": "plasmo package",
+        "dev:firefox": "plasmo dev --target=firefox-mv2",
+        "build:firefox": "plasmo build --target=firefox-mv2",
+        "dev:edge": "plasmo dev --target=edge-mv3",
+        "build:edge": "plasmo build --target=edge-mv3",
+        "dev:opera": "plasmo dev --target=opera-mv3",
+        "build:opera": "plasmo build --target=opera-mv3",
+        "dev:brave": "plasmo dev --target=brave-mv3",
+        "build:brave": "plasmo build --target=brave-mv3"
     },
     "dependencies": {
         "clsx": "^2.0.0",
@@ -29,6 +37,16 @@
         "typescript": "5.2.2"
     },
     "manifest": {
+        "browser_specific_settings": {
+            "gecko": {
+                "id": "antiai@antiai.me",
+                "data_collection_permissions": {
+                    "required": [
+                        "none"
+                    ]
+                }
+            }
+        },
         "host_permissions": [
             "https://*.youtube.com/*",
             "http://localhost:4000/*"

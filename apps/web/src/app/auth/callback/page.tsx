@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function AuthCallbackPage() {
+function AuthCallbackContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [status, setStatus] = useState('Processing login...')
@@ -34,12 +34,20 @@ export default function AuthCallbackPage() {
     }, [searchParams, router])
 
     return (
+        <div className="bg-surface border border-white/10 rounded-2xl p-8 shadow-card backdrop-blur-sm max-w-md w-full text-center">
+            <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-6" />
+            <h2 className="text-xl font-bold mb-2">Authenticating</h2>
+            <p className="text-text-secondary">{status}</p>
+        </div>
+    )
+}
+
+export default function AuthCallbackPage() {
+    return (
         <div className="min-h-screen flex items-center justify-center p-4">
-            <div className="bg-surface border border-white/10 rounded-2xl p-8 shadow-card backdrop-blur-sm max-w-md w-full text-center">
-                <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-6" />
-                <h2 className="text-xl font-bold mb-2">Authenticating</h2>
-                <p className="text-text-secondary">{status}</p>
-            </div>
+            <Suspense fallback={<div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-6" />}>
+                <AuthCallbackContent />
+            </Suspense>
         </div>
     )
 }
