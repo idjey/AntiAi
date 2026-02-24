@@ -6,11 +6,11 @@
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "scripts": {
-        "generate": "prisma generate",
-        "push": "prisma db push",
-        "migrate": "prisma migrate dev",
-        "migrate:deploy": "prisma migrate deploy",
-        "studio": "prisma studio",
+        "generate": "npx prisma generate",
+        "push": "npx prisma db push",
+        "migrate": "npx prisma migrate dev",
+        "migrate:deploy": "npx prisma migrate deploy",
+        "studio": "npx prisma studio",
         "build": "tsc",
         "clean": "rimraf dist"
     },
