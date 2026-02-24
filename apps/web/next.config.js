@@ -1,7 +1,19 @@
 /** @type {import('next').NextConfig} */
+const path = require('path');
+
 const nextConfig = {
   reactStrictMode: true,
+  // Required for Railway/Docker deployment
+  output: 'standalone',
+  // Point tracing to the monorepo root so standalone includes workspace packages
+  outputFileTracingRoot: path.join(__dirname, '../../'),
   experimental: {
+  },
+  // Prevent duplicate React instances in monorepo (fixes useContext null error)
+  webpack: (config) => {
+    config.resolve.alias['react'] = path.resolve(__dirname, '../../node_modules/react');
+    config.resolve.alias['react-dom'] = path.resolve(__dirname, '../../node_modules/react-dom');
+    return config;
   },
   async headers() {
     return [
@@ -43,3 +55,4 @@ const nextConfig = {
 }
 
 module.exports = nextConfig
+
