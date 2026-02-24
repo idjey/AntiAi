@@ -4,6 +4,11 @@ import CookieConsent from '@/components/CookieConsent'
 import { ThemeProvider } from '@/components/providers/ThemeProvider'
 import { Toaster } from '@/components/ui/sonner'
 
+// All pages are dynamic (server-rendered on request, not statically generated at build time).
+// This is required because UI libraries used in the root layout (ThemeProvider, Toaster)
+// use React context that is incompatible with Next.js SSG worker isolation.
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
     metadataBase: new URL('https://antiai.me'),
     title: {
