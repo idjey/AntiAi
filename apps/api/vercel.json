@@ -1,15 +1,15 @@
 {
     "version": 2,
-    "builds": [
-        {
-            "src": "dist/main.js",
-            "use": "@vercel/node"
+    "functions": {
+        "dist/main.js": {
+            "memory": 1024,
+            "maxDuration": 30
         }
-    ],
-    "routes": [
+    },
+    "rewrites": [
         {
-            "src": "/(.*)",
-            "dest": "dist/main.js"
+            "source": "/(.*)",
+            "destination": "/dist/main.js"
         }
     ]
 }
