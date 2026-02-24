@@ -59,6 +59,17 @@ if (process.env.NODE_ENV !== 'production') {
     });
 }
 
+// Railway / EC2 / any persistent server — start normally
+if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
+    bootstrap().then(server => {
+        const port = process.env.PORT || 4000;
+        server.listen(port, () => {
+            console.log(`🚀 AntiAI.me API running on port ${port}`);
+        });
+    });
+}
+
+// Vercel Serverless Function export
 export default async (req: any, res: any) => {
     const server = await bootstrap();
     return server(req, res);
