@@ -4,7 +4,7 @@
     "private": true,
     "description": "AntiAI.me NestJS Backend API",
     "scripts": {
-        "build": "nest build",
+        "build": "cd ../.. && npm run db:generate && npm run build:packages && cd apps/api && nest build",
         "dev": "nest start --watch",
         "start": "node dist/main",
         "start:debug": "nest start --debug --watch",
