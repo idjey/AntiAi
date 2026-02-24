@@ -6,12 +6,12 @@
  */
 
 import * as ed25519 from '@noble/ed25519';
-import { sha512 } from '@noble/hashes/sha2.js';
+import { sha512 } from '@noble/hashes/sha512';
 import { canonicalize } from 'json-canonicalize';
 import { randomBytes } from 'crypto';
 
-// Required for @noble/ed25519 v2
-ed25519.etc.sha512Sync = (...m) => sha512(ed25519.etc.concatBytes(...m));
+// Required for @noble/ed25519 v1 sync operations
+ed25519.utils.sha512Sync = (...m) => sha512(ed25519.utils.concatBytes(...m));
 
 // ==================== TYPES ====================
 
@@ -73,7 +73,7 @@ function randomNonceB64Url(byteLen = 16): string {
  */
 export async function generateKeyPair(): Promise<KeyPair> {
     const privateKey = ed25519.utils.randomPrivateKey();
-    const publicKey = await ed25519.getPublicKeyAsync(privateKey);
+    const publicKey = await ed25519.getPublicKey(privateKey);
 
     return {
         privateKeyB64: Buffer.from(privateKey).toString('base64'),
@@ -87,7 +87,7 @@ export async function generateKeyPair(): Promise<KeyPair> {
 export async function getPublicKey(privateKeyB64: string): Promise<string> {
     const privBytes = fromBase64(privateKeyB64);
     const priv32 = privBytes.length === 32 ? privBytes : privBytes.slice(0, 32);
-    const publicKey = await ed25519.getPublicKeyAsync(priv32);
+    const publicKey = await ed25519.getPublicKey(priv32);
     return Buffer.from(publicKey).toString('base64');
 }
 
@@ -181,7 +181,7 @@ export async function signProof(options: SignProofOptions): Promise<SignedProof>
     const priv32 = privBytes.length === 32 ? privBytes : privBytes.slice(0, 32);
 
     // Sign canonical payload bytes
-    const sigBytes = await ed25519.signAsync(payloadBytes, priv32);
+    const sigBytes = await ed25519.sign(payloadBytes, priv32);
 
     // Produce base64url outputs
     const payload_b64 = toBase64Url(payloadBytes);
@@ -225,7 +225,7 @@ export async function verifyProof(options: {
         const pubBytes = fromBase64(publicKeyB64);
 
         // Verify Ed25519 signature
-        const signatureOk = await ed25519.verifyAsync(sigBytes, payloadBytes, pubBytes);
+        const signatureOk = await ed25519.verify(sigBytes, payloadBytes, pubBytes);
         if (!signatureOk) {
             return { ok: false, status: 'error', reason: 'bad_signature' };
         }
@@ -282,7 +282,7 @@ export async function verifySignature(options: {
         const payloadBytes = fromBase64Url(options.payload_b64);
         const sigBytes = fromBase64Url(options.signature_b64);
         const pubBytes = fromBase64(options.publicKeyB64);
-        return await ed25519.verifyAsync(sigBytes, payloadBytes, pubBytes);
+        return await ed25519.verify(sigBytes, payloadBytes, pubBytes);
     } catch {
         return false;
     }
