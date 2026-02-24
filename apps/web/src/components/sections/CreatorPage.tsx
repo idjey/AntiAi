@@ -210,7 +210,7 @@ export default function CreatorPage() {
         <section id="creators" className="section group overflow-hidden">
             <div className="container-custom">
                 {/* Section header */}
-                <div className="text-center mb-12">
+                <header className="text-center mb-12">
                     <h2 className="section-title">
                         Your official creator{' '}
                         <span className="text-primary">trust page.</span>
@@ -218,7 +218,7 @@ export default function CreatorPage() {
                     <p className="section-subtitle">
                         A Linktree-style profile that proves your authenticity. Share it everywhere.
                     </p>
-                </div>
+                </header>
 
                 {/* Horizontal Scrollable Container */}
                 <div className="relative py-10">
@@ -252,7 +252,7 @@ export default function CreatorPage() {
                             const isFocused = index === centerIndex
 
                             return (
-                                <div
+                                <article
                                     key={index}
                                     className={`
                                         card border border-white/10 overflow-hidden shrink-0 w-[85vw] md:w-[400px] snap-center 
@@ -261,7 +261,7 @@ export default function CreatorPage() {
                                     `}
                                 >
                                     {/* Banner */}
-                                    <div className={`h-24 bg-gradient-to-r ${creator.gradient}`} />
+                                    <div className={`h-24 bg-gradient-to-r ${creator.gradient}`} aria-hidden="true" />
 
                                     {/* Profile */}
                                     <div className="px-6 pb-6 -mt-10">
@@ -346,7 +346,7 @@ export default function CreatorPage() {
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </article>
                             )
                         })}
                     </div>

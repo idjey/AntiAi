@@ -14,7 +14,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // So we should use the imported variable directly.
         const iconPath = isVerified ? iconGreen : iconRed
 
-        chrome.action.setIcon({
+        const setExtIcon = (opts: any) => {
+            const actionAPI = chrome.action || chrome.browserAction;
+            if (actionAPI && actionAPI.setIcon) {
+                actionAPI.setIcon(opts);
+            }
+        };
+
+        setExtIcon({
             tabId: sender.tab.id,
             path: iconPath
         })
@@ -34,8 +41,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
                 // Update icon immediately from background
                 const iconPath = isVerified ? iconGreen : iconRed;
+                const setExtIcon = (opts: any) => {
+                    const actionAPI = chrome.action || chrome.browserAction;
+                    if (actionAPI && actionAPI.setIcon) {
+                        actionAPI.setIcon(opts);
+                    }
+                };
+
                 if (sender.tab?.id) {
-                    chrome.action.setIcon({
+                    setExtIcon({
                         tabId: sender.tab.id,
                         path: iconPath
                     });
@@ -48,7 +62,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 console.error(`[Background] Verification failed`, err);
                 // Default to unverified on error
                 if (sender.tab?.id) {
-                    chrome.action.setIcon({
+                    const setExtIcon = (opts: any) => {
+                        const actionAPI = chrome.action || chrome.browserAction;
+                        if (actionAPI && actionAPI.setIcon) {
+                            actionAPI.setIcon(opts);
+                        }
+                    };
+                    setExtIcon({
                         tabId: sender.tab.id,
                         path: iconRed
                     });

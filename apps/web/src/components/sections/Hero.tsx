@@ -35,19 +35,19 @@ export default function Hero() {
             />
 
             {/* Background grid */}
-            <div className="absolute inset-0 bg-grid opacity-50" />
+            <div className="absolute inset-0 bg-grid opacity-50" aria-hidden="true" />
 
             {/* Gradient orb */}
-            <div className="absolute top-1/4 -left-1/4 w-[600px] h-[600px] rounded-full bg-primary/5 blur-[120px]" />
-            <div className="absolute bottom-1/4 -right-1/4 w-[500px] h-[500px] rounded-full bg-secondary/5 blur-[100px]" />
+            <div className="absolute top-1/4 -left-1/4 w-[600px] h-[600px] rounded-full bg-primary/5 blur-[120px]" aria-hidden="true" />
+            <div className="absolute bottom-1/4 -right-1/4 w-[500px] h-[500px] rounded-full bg-secondary/5 blur-[100px]" aria-hidden="true" />
 
             <div className="container-custom relative z-10">
                 <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
                     {/* Left side - Content */}
                     <div className="text-center lg:text-left">
                         {/* Badge */}
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-6">
-                            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-6" role="status">
+                            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" aria-hidden="true" />
                             <span className="text-sm font-medium text-primary">Trusted by 2,000+ creators</span>
                         </div>
 
@@ -67,10 +67,12 @@ export default function Hero() {
                         {/* Handle input + CTA */}
                         <div className="flex flex-col sm:flex-row items-center gap-3 max-w-md mx-auto lg:mx-0 mb-6">
                             <div className="relative flex-1 w-full">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted font-medium">
+                                <label htmlFor="hero-handle-input" className="sr-only">Your AntiAI handle</label>
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted font-medium" aria-hidden="true">
                                     antiai.me/
                                 </span>
                                 <input
+                                    id="hero-handle-input"
                                     type="text"
                                     placeholder="yourname"
                                     value={handle}
@@ -90,16 +92,17 @@ export default function Hero() {
                         <Link
                             href="#how-it-works"
                             className="inline-flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors group"
+                            aria-label="Scroll to learn how AntiAI works"
                         >
                             <span>See how it works</span>
-                            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
                         </Link>
                     </div>
 
                     {/* Right side - Mockup */}
-                    <div className="relative lg:pl-8">
+                    <div className="relative lg:pl-8" aria-hidden="true">
                         <div className="animate-float">
                             {/* YouTube player mockup */}
                             <div className="relative bg-surface rounded-xl overflow-hidden border border-white/10 shadow-card">

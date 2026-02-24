@@ -6,24 +6,47 @@ import { Toaster } from '@/components/ui/sonner'
 
 export const metadata: Metadata = {
     metadataBase: new URL('https://antiai.me'),
-    title: 'AntiAI.me - The Authenticity Badge for Real Creators',
-    description: 'Verify your videos with cryptographic proof. Protect your audience from deepfakes and impersonators. Get the authenticity badge that proves you are real.',
-    keywords: ['video verification', 'deepfake protection', 'creator authenticity', 'YouTube verification', 'digital trust'],
+    title: {
+        default: 'AntiAI.me | The Cryptographic Proof for Real Creators',
+        template: '%s | AntiAI.me'
+    },
+    description: 'Provide cryptographic proof of your content authenticity. AntiAI.me protects your audience from deepfakes and AI-generated fabrications using verifiable signatures, not reactive detection.',
+    keywords: ['AI content verification', 'cryptographic proof for creators', 'prove content authenticity', 'deepfake protection platform', 'content provenance for video', 'verifiable creator identity'],
+    alternates: {
+        canonical: '/',
+    },
     openGraph: {
-        title: 'AntiAI.me - The Authenticity Badge for Real Creators',
-        description: 'Verify your videos with cryptographic proof. Protect your audience from deepfakes and impersonators.',
+        title: 'AntiAI.me | Cryptographic Authenticity for Creators',
+        description: 'Provide cryptographic proof of your content authenticity. Protect your audience from deepfakes with a verifiable creator identity.',
         url: 'https://antiai.me',
         siteName: 'AntiAI.me',
+        images: [
+            {
+                url: '/og-image.png',
+                width: 1200,
+                height: 630,
+                alt: 'AntiAI.me - The Cryptographic Proof for Real Creators',
+            }
+        ],
+        locale: 'en_US',
         type: 'website',
     },
     twitter: {
         card: 'summary_large_image',
-        title: 'AntiAI.me - The Authenticity Badge for Real Creators',
-        description: 'Verify your videos with cryptographic proof. Protect your audience from deepfakes.',
+        title: 'AntiAI.me | The Cryptographic Proof for Creators',
+        description: 'Provide cryptographic proof of your content authenticity. Protect your audience from deepfakes.',
+        images: ['/og-image.png'],
     },
     robots: {
         index: true,
         follow: true,
+        googleBot: {
+            index: true,
+            follow: true,
+            'max-video-preview': -1,
+            'max-image-preview': 'large',
+            'max-snippet': -1,
+        },
     },
 }
 
