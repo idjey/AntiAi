@@ -25,11 +25,11 @@ import { HealthController } from './health.controller';
             envFilePath: ['.env', '../../.env'],
         }),
 
-        // Serve Static Files (Uploads)
-        ServeStaticModule.forRoot({
+        // Serve Static Files (Uploads) — local only, NOT on Vercel serverless
+        ...(process.env.NODE_ENV !== 'production' ? [ServeStaticModule.forRoot({
             rootPath: join(process.cwd(), 'uploads'),
             serveRoot: '/uploads',
-        }),
+        })] : []),
 
         // Rate limiting
         // ThrottlerModule.forRoot([{
