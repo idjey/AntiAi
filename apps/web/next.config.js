@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Required for Railway/Docker deployment
-  output: 'standalone',
   experimental: {
   },
   async headers() {
