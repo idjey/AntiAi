@@ -1,7 +1,15 @@
 /** @type {import('next').NextConfig} */
+const path = require('path');
+
 const nextConfig = {
   reactStrictMode: true,
+  // Standalone output is required for Railway/Docker deployments.
+  // It creates a self-contained server bundle that Railway can package and run.
+  output: 'standalone',
   experimental: {
+    // Required in monorepo: tells Next.js to trace dependencies from the repo root
+    // so the standalone bundle includes all workspace packages.
+    outputFileTracingRoot: path.join(__dirname, '../../'),
   },
   async headers() {
     return [
