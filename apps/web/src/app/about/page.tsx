@@ -4,7 +4,7 @@ import Footer from '@/components/sections/Footer'
 
 export const metadata = {
     title: 'About | AntiAI.me',
-    description: 'Why we built AntiAI.me — the story behind cryptographic authenticity for creators.',
+    description: 'Why we built AntiAI.me - the story behind cryptographic authenticity for creators.',
 }
 
 const values = [
@@ -66,7 +66,7 @@ export default function AboutPage() {
                         <span className="text-gradient bg-gradient-to-r from-primary to-secondary"> fake content win.</span>
                     </h1>
                     <p className="text-lg text-text-secondary leading-relaxed max-w-2xl">
-                        AntiAI.me started with a simple frustration — deepfakes were getting good, detection tools weren't keeping up,
+                        AntiAI.me started with a simple frustration, deepfakes were getting good, detection tools weren't keeping up,
                         and real creators were paying the price. So we built something different.
                     </p>
                 </div>
@@ -78,14 +78,14 @@ export default function AboutPage() {
                     <div className="prose prose-lg max-w-none">
                         <div className="space-y-6 text-text-secondary leading-relaxed text-[17px]">
                             <p>
-                                It started with a YouTube video. Someone had created a convincing deepfake of a creator we follow —
-                                same voice, same face, same editing style — promoting a scam. The comments were full of people who
+                                It started with a YouTube video. Someone had created a convincing deepfake of a creator we follow
+                                same voice, same face, same editing style  promoting a scam. The comments were full of people who
                                 had already fallen for it. The original creator had to put out a damage-control video explaining it
                                 wasn't them.
                             </p>
                             <p>
                                 That felt wrong to us. The burden was entirely on the victim. After years of building an audience
-                                and establishing trust, one well-crafted fake can do real damage — and there's basically nothing
+                                and establishing trust, one well-crafted fake can do real damage  and there's basically nothing
                                 you can do to stop it after the fact.
                             </p>
                             <p>
@@ -100,7 +100,7 @@ export default function AboutPage() {
                             </p>
                             <p>
                                 When a creator publishes through AntiAI.me, they sign their content with a private key that only
-                                they control. Anyone — a viewer, a journalist, a platform — can verify that signature against our
+                                they control. Anyone  a viewer, a journalist, a platform  can verify that signature against our
                                 public registry. If the signature checks out, the content is real. If it doesn't, it isn't.
                                 No machine learning required.
                             </p>
@@ -120,7 +120,7 @@ export default function AboutPage() {
                             <div className="space-y-4 text-text-secondary text-[17px] leading-relaxed">
                                 <p>
                                     In 2020, you could spot a deepfake if you looked hard enough. Today, you often can't.
-                                    By 2026 — and we're already there — the gap between real and synthetic has effectively closed for most people.
+                                    By 2026  and we're already there  the gap between real and synthetic has effectively closed for most people.
                                 </p>
                                 <p>
                                     Platforms are overwhelmed. Viewers are confused. Creators are vulnerable. The internet's default
@@ -128,7 +128,7 @@ export default function AboutPage() {
                                     has replaced it.
                                 </p>
                                 <p>
-                                    We think the answer is provenance — knowing where content came from, who made it, and being able
+                                    We think the answer is provenance  knowing where content came from, who made it, and being able
                                     to verify that independently. Not as a checkbox. As an actual cryptographic guarantee.
                                 </p>
                             </div>
@@ -178,17 +178,17 @@ export default function AboutPage() {
                     <h2 className="text-2xl md:text-3xl font-bold mb-6 tracking-tight">Who's building this</h2>
                     <div className="space-y-5 text-text-secondary text-[17px] leading-relaxed">
                         <p>
-                            We're a small team — the kind where everyone ships code, talks to users, and handles support tickets.
+                            We're a small team  the kind where everyone ships code, talks to users, and handles support tickets.
                             We didn't come from a big AI research lab. We came from building products and watching the internet change
                             around us faster than most people expected.
                         </p>
                         <p>
-                            We're not here to eliminate AI — that ship has sailed, and honestly we use it too. We're here to make sure
+                            We're not here to eliminate AI  that ship has sailed, and honestly we use it too. We're here to make sure
                             that authenticity still means something. That when a creator puts their name on something, that name
                             actually carries weight.
                         </p>
                         <p>
-                            If you have thoughts on what we're building — what's missing, what's broken, what you'd actually use —
+                            If you have thoughts on what we're building  what's missing, what's broken, what you'd actually use
                             we genuinely want to hear it. <a href="mailto:hello@antiai.me" className="text-primary hover:text-primary/80 underline underline-offset-4 transition-colors">hello@antiai.me</a>
                         </p>
                     </div>
