@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, Suspense, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 
@@ -16,6 +16,26 @@ function SignupContent() {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState('')
     const [otp, setOtp] = useState('')
+    const [countdown, setCountdown] = useState(600) // 10 minutes in seconds
+    const [isResending, setIsResending] = useState(false)
+    const [resendMessage, setResendMessage] = useState('')
+
+    // Timer effect
+    useEffect(() => {
+        if (step !== 'verification' || countdown <= 0) return
+
+        const timer = setInterval(() => {
+            setCountdown((prev) => prev - 1)
+        }, 1000)
+
+        return () => clearInterval(timer)
+    }, [step, countdown])
+
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60)
+        const s = seconds % 60
+        return `${m}:${s.toString().padStart(2, '0')}`
+    }
 
     // Debounce check
     const checkHandleAvailability = async (val: string) => {
@@ -54,8 +74,11 @@ function SignupContent() {
                 throw new Error(data.message || 'Signup failed')
             }
 
-            // Move to verification step
+            // Move to verification step and reset timer
             setStep('verification')
+            setCountdown(600)
+            setOtp('')
+            setResendMessage('')
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -105,6 +128,34 @@ function SignupContent() {
         }
     }
 
+    const handleResendOtp = async () => {
+        setIsResending(true)
+        setError('')
+        setResendMessage('')
+
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/auth/resend-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                throw new Error(data.message || 'Failed to resend OTP')
+            }
+
+            // Success
+            setResendMessage(data.message || 'A new verification code has been sent!')
+            setCountdown(600) // Reset 10-minute timer
+        } catch (err: any) {
+            setError(err.message)
+        } finally {
+            setIsResending(false)
+        }
+    }
+
     return (
         <div className="w-full max-w-md relative z-10">
             <Link href="/" className="flex items-center justify-center gap-2 mb-8">
@@ -132,6 +183,11 @@ function SignupContent() {
                 {error && (
                     <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                         {error}
+                    </div>
+                )}
+                {resendMessage && (
+                    <div className="mb-6 p-4 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
+                        {resendMessage}
                     </div>
                 )}
 
@@ -318,11 +374,33 @@ function SignupContent() {
 
                         <button
                             type="button"
-                            onClick={() => setStep('details')}
+                            onClick={() => {
+                                setStep('details')
+                                setError('')
+                                setResendMessage('')
+                            }}
                             className="w-full text-sm text-text-secondary hover:text-primary transition-colors"
                         >
                             Back to details
                         </button>
+
+                        {/* Resend OTP Section */}
+                        <div className="border-t border-white/5 pt-6 text-center">
+                            {countdown > 0 ? (
+                                <p className="text-sm text-text-secondary">
+                                    Resend code in <span className="text-primary font-medium">{formatTime(countdown)}</span>
+                                </p>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={handleResendOtp}
+                                    disabled={isResending}
+                                    className="text-sm text-primary hover:text-primary-400 transition-colors disabled:opacity-50"
+                                >
+                                    {isResending ? 'Sending...' : 'Resend verification code'}
+                                </button>
+                            )}
+                        </div>
                     </form>
                 )}
 

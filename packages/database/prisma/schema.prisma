@@ -80,6 +80,8 @@ model User {
   lastLoginAt     DateTime? @map("last_login_at")
   otp             String?   @db.VarChar(8)
   otpExpiresAt    DateTime? @map("otp_expires_at")
+  failedOtpAttempts Int       @default(0) @map("failed_otp_attempts")
+  otpLockedUntil  DateTime? @map("otp_locked_until")
 
   // Relations
   oauthAccounts   OAuthAccount[]
