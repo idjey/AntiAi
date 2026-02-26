@@ -54,6 +54,12 @@ export class AuthController {
     async verifyOtp(@Body('email') email: string, @Body('otp') otp: string) {
         return this.authService.verifyOtp(email, otp);
     }
+
+    @Post('resend-otp')
+    @HttpCode(HttpStatus.OK)
+    async resendOtp(@Body('email') email: string) {
+        return this.authService.resendOtp(email);
+    }
     @Post('change-password')
     @UseGuards(AuthGuard('jwt'))
     @HttpCode(HttpStatus.OK)

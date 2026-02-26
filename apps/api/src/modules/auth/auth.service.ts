@@ -34,7 +34,12 @@ export class AuthService {
         });
 
         if (existingUser) {
-            throw new BadRequestException('Email already registered');
+            if (existingUser.isEmailVerified) {
+                throw new BadRequestException('Email already registered');
+            } else {
+                // User exists but is unverified. Resend OTP and allow them to proceed.
+                return this.resendOtp(existingUser.email);
+            }
         }
 
         // Check if handle exists
@@ -93,20 +98,46 @@ export class AuthService {
             throw new BadRequestException('User not found');
         }
 
-        if (user.otp !== otp) {
-            throw new BadRequestException('Invalid OTP');
+        // 1. Check if account is temporarily locked
+        if (user.otpLockedUntil && user.otpLockedUntil > new Date()) {
+            throw new UnauthorizedException('Too many failed attempts. Try again in 30 minutes.');
         }
 
+        // 2. Check if OTP is expired
         if (user.otpExpiresAt && user.otpExpiresAt < new Date()) {
             throw new BadRequestException('OTP expired');
         }
 
-        // Clear OTP and mark verified
+        // 3. Check if OTP is incorrect
+        if (user.otp !== otp) {
+            const newAttempts = user.failedOtpAttempts + 1;
+            const updateData: any = { failedOtpAttempts: newAttempts };
+
+            // Lock for 30 minutes on 3rd failure
+            if (newAttempts >= 3) {
+                updateData.otpLockedUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 mins
+                updateData.failedOtpAttempts = 0; // Reset counter for next time
+            }
+
+            await this.prisma.user.update({
+                where: { id: user.id },
+                data: updateData,
+            });
+
+            if (newAttempts >= 3) {
+                throw new UnauthorizedException('Too many failed attempts. Account locked for 30 minutes.');
+            }
+            throw new BadRequestException('Invalid OTP');
+        }
+
+        // Clear OTP, unlock account, and mark verified
         await this.prisma.user.update({
             where: { id: user.id },
             data: {
                 otp: null,
                 otpExpiresAt: null,
+                failedOtpAttempts: 0,
+                otpLockedUntil: null,
                 isEmailVerified: true,
             },
         });
@@ -118,6 +149,46 @@ export class AuthService {
             access_token: token,
             token_type: 'Bearer',
             expires_in: this.getExpiresIn(),
+        };
+    }
+
+    async resendOtp(email: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { email: email.toLowerCase() },
+        });
+
+        if (!user) {
+            throw new BadRequestException('User not found');
+        }
+
+        if (user.isEmailVerified) {
+            throw new BadRequestException('Email already verified. Please log in.');
+        }
+
+        // 1. Check if account is temporarily locked
+        if (user.otpLockedUntil && user.otpLockedUntil > new Date()) {
+            throw new UnauthorizedException('Account is locked from too many failed attempts. Try again later.');
+        }
+
+        // Generate new OTP
+        const otp = Math.floor(10000000 + Math.random() * 90000000).toString();
+        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                otp,
+                otpExpiresAt,
+                failedOtpAttempts: 0, // Reset failures on new request
+            },
+        });
+
+        // Send OTP
+        await this.emailService.sendOtpEmail(user.email, otp);
+
+        return {
+            message: 'A new verification code has been sent to your email.',
+            email: user.email,
         };
     }
 
