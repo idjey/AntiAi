@@ -13,6 +13,7 @@ import { UploadModule } from './modules/upload/upload.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { EmailModule } from './modules/email/email.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { HealthController } from './health.controller';
@@ -51,6 +52,7 @@ import { HealthController } from './health.controller';
         UploadModule,
         AnalyticsModule,
         AdminModule,
+        EmailModule,
     ],
     providers: [
         // {
