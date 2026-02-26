@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SignupDto, LoginDto } from './dto';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -15,6 +16,7 @@ export class AuthService {
         private readonly prisma: PrismaService,
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
+        private readonly emailService: EmailService,
     ) { }
 
     async signup(dto: SignupDto) {
@@ -73,8 +75,8 @@ export class AuthService {
             },
         });
 
-        // Send OTP (Mock for now)
-        console.log(`[AUTH] sent OTP to ${user.email}: ${otp}`);
+        // Send OTP
+        await this.emailService.sendOtpEmail(user.email, otp);
 
         return {
             message: 'Signup successful. Please verify your email with the OTP sent.',
