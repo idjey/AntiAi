@@ -8,15 +8,20 @@ export class EmailService {
     private readonly logger = new Logger(EmailService.name);
 
     constructor(private configService: ConfigService) {
+        const secureStr = String(this.configService.get<string>('SMTP_SECURE') || 'false').toLowerCase();
+
         // Fallback or actual SMTP config from env
         this.transporter = nodemailer.createTransport({
             host: this.configService.get<string>('SMTP_HOST') || 'smtp.sendgrid.net',
-            port: this.configService.get<number>('SMTP_PORT') || 587,
-            secure: this.configService.get<string>('SMTP_SECURE') === 'true', // true for 465, false for other ports
+            port: Number(this.configService.get<string>('SMTP_PORT')) || 587,
+            secure: secureStr === 'true', // true for 465, false for other ports
             auth: {
                 user: this.configService.get<string>('SMTP_USER') || '',
                 pass: this.configService.get<string>('SMTP_PASS') || '',
             },
+            connectionTimeout: 10000, // 10 seconds timeout
+            socketTimeout: 15000, // 15 seconds socket timeout
+            greetingTimeout: 10000, // 10 seconds greeting timeout
         });
     }
 
@@ -33,10 +38,11 @@ export class EmailService {
                 this.logger.warn(`SMTP_PASS not configured. Skipping actual email send to ${to}. Simulated OTP: ${otp}`);
                 return;
             }
+            this.logger.log(`Attempting to send OTP email to ${to} via ${this.configService.get<string>('SMTP_HOST')}:${Number(this.configService.get<string>('SMTP_PORT')) || 587}...`);
             const info = await this.transporter.sendMail(mailOptions);
-            this.logger.log(`Email sent: ${info.messageId}`);
+            this.logger.log(`Email sent successfully: ${info.messageId}`);
         } catch (error) {
-            this.logger.error(`Failed to send email to ${to}:`, error);
+            this.logger.error(`Failed to send email to ${to}. Is SMTP properly configured on Railway?`, error);
         }
     }
 
