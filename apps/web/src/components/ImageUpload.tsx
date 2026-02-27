@@ -3,12 +3,14 @@ import { useState, useRef } from 'react';
 
 interface ImageUploadProps {
     onUpload: (url: string) => void;
+    onUploadStart?: () => void;
+    onUploadEnd?: () => void;
     className?: string;
     children?: React.ReactNode;
     maxDimension?: number;
 }
 
-export const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, className, children, maxDimension }) => {
+export const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, onUploadStart, onUploadEnd, className, children, maxDimension }) => {
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -94,6 +96,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, className, c
         };
 
         setIsUploading(true);
+        if (onUploadStart) onUploadStart();
+
         try {
             const processedFile = await processImage(file, maxDimension || 512);
 
@@ -121,6 +125,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ onUpload, className, c
             alert(`Failed to upload image: ${error.message}`);
         } finally {
             setIsUploading(false);
+            if (onUploadEnd) onUploadEnd();
         }
     };
 
