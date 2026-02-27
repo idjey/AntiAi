@@ -224,33 +224,43 @@ export default function ExtensionDownloadPage() {
                             <h3 className="text-slate-500 font-medium mb-8">Looking for another browser?</h3>
                             <div className="flex flex-wrap justify-center gap-6">
                                 {browser !== 'chrome' && (
-                                    <a href={LINKS.chrome} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-6 py-4 rounded-xl bg-surface border border-white/5 hover:border-blue-500/30 hover:bg-surface-light transition-all text-slate-300 hover:text-white">
-                                        <div className="w-6 h-6"><ChromeLogo /></div>
-                                        <span className="font-semibold">Google Chrome</span>
+                                    <a href={LINKS.chrome} target="_blank" rel="noopener noreferrer" className="group relative flex flex-col items-center justify-center w-40 h-32 rounded-2xl bg-surface border border-white/5 hover:border-blue-500/40 hover:bg-surface-light transition-all duration-500 overflow-hidden shadow-lg shadow-black/20">
+                                        <span className="font-semibold text-slate-400 group-hover:text-white group-hover:-translate-y-5 transition-all duration-500 z-10 relative">Google Chrome</span>
+                                        <div className="absolute -bottom-10 group-hover:-bottom-2 opacity-5 group-hover:opacity-100 transition-all duration-500 ease-out z-0 pointer-events-none flex justify-center items-center w-full scale-75 group-hover:scale-100 pb-2">
+                                            <ChromeLogo />
+                                        </div>
                                     </a>
                                 )}
                                 {browser !== 'firefox' && (
-                                    <a href={LINKS.firefox} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-6 py-4 rounded-xl bg-surface border border-white/5 hover:border-orange-500/30 hover:bg-surface-light transition-all text-slate-300 hover:text-white">
-                                        <div className="w-6 h-6"><FirefoxLogo /></div>
-                                        <span className="font-semibold">Mozilla Firefox</span>
+                                    <a href={LINKS.firefox} target="_blank" rel="noopener noreferrer" className="group relative flex flex-col items-center justify-center w-40 h-32 rounded-2xl bg-surface border border-white/5 hover:border-orange-500/40 hover:bg-surface-light transition-all duration-500 overflow-hidden shadow-lg shadow-black/20">
+                                        <span className="font-semibold text-slate-400 group-hover:text-white group-hover:-translate-y-5 transition-all duration-500 z-10 relative">Mozilla Firefox</span>
+                                        <div className="absolute -bottom-10 group-hover:-bottom-2 opacity-5 group-hover:opacity-100 transition-all duration-500 ease-out z-0 pointer-events-none flex justify-center items-center w-full scale-75 group-hover:scale-100 pb-2">
+                                            <FirefoxLogo />
+                                        </div>
                                     </a>
                                 )}
                                 {browser !== 'edge' && (
-                                    <a href={LINKS.edge} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-6 py-4 rounded-xl bg-surface border border-white/5 hover:border-cyan-500/30 hover:bg-surface-light transition-all text-slate-300 hover:text-white">
-                                        <div className="w-6 h-6"><EdgeLogo /></div>
-                                        <span className="font-semibold">Microsoft Edge</span>
+                                    <a href={LINKS.edge} target="_blank" rel="noopener noreferrer" className="group relative flex flex-col items-center justify-center w-40 h-32 rounded-2xl bg-surface border border-white/5 hover:border-cyan-500/40 hover:bg-surface-light transition-all duration-500 overflow-hidden shadow-lg shadow-black/20">
+                                        <span className="font-semibold text-slate-400 group-hover:text-white group-hover:-translate-y-5 transition-all duration-500 z-10 relative">Microsoft Edge</span>
+                                        <div className="absolute -bottom-10 group-hover:-bottom-2 opacity-5 group-hover:opacity-100 transition-all duration-500 ease-out z-0 pointer-events-none flex justify-center items-center w-full scale-75 group-hover:scale-100 pb-2">
+                                            <EdgeLogo />
+                                        </div>
                                     </a>
                                 )}
                                 {browser !== 'brave' && browser !== 'chrome' && (
-                                    <a href={LINKS.brave} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-6 py-4 rounded-xl bg-surface border border-white/5 hover:border-orange-500/30 hover:bg-surface-light transition-all text-slate-300 hover:text-white">
-                                        <div className="w-6 h-6"><BraveLogo /></div>
-                                        <span className="font-semibold">Brave</span>
+                                    <a href={LINKS.brave} target="_blank" rel="noopener noreferrer" className="group relative flex flex-col items-center justify-center w-40 h-32 rounded-2xl bg-surface border border-white/5 hover:border-orange-500/40 hover:bg-surface-light transition-all duration-500 overflow-hidden shadow-lg shadow-black/20">
+                                        <span className="font-semibold text-slate-400 group-hover:text-white group-hover:-translate-y-5 transition-all duration-500 z-10 relative">Brave</span>
+                                        <div className="absolute -bottom-10 group-hover:-bottom-2 opacity-5 group-hover:opacity-100 transition-all duration-500 ease-out z-0 pointer-events-none flex justify-center items-center w-full scale-75 group-hover:scale-100 pb-2">
+                                            <BraveLogo />
+                                        </div>
                                     </a>
                                 )}
                                 {browser !== 'opera' && browser !== 'chrome' && (
-                                    <a href={LINKS.opera} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-6 py-4 rounded-xl bg-surface border border-white/5 hover:border-red-500/30 hover:bg-surface-light transition-all text-slate-300 hover:text-white">
-                                        <div className="w-6 h-6"><OperaLogo /></div>
-                                        <span className="font-semibold">Opera</span>
+                                    <a href={LINKS.opera} target="_blank" rel="noopener noreferrer" className="group relative flex flex-col items-center justify-center w-40 h-32 rounded-2xl bg-surface border border-white/5 hover:border-red-500/40 hover:bg-surface-light transition-all duration-500 overflow-hidden shadow-lg shadow-black/20">
+                                        <span className="font-semibold text-slate-400 group-hover:text-white group-hover:-translate-y-5 transition-all duration-500 z-10 relative">Opera</span>
+                                        <div className="absolute -bottom-10 group-hover:-bottom-2 opacity-5 group-hover:opacity-100 transition-all duration-500 ease-out z-0 pointer-events-none flex justify-center items-center w-full scale-75 group-hover:scale-100 pb-2">
+                                            <OperaLogo />
+                                        </div>
                                     </a>
                                 )}
                             </div>
