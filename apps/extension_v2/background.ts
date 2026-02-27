@@ -33,7 +33,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const videoId = message.videoId;
         console.log(`[Background] Checking video: ${videoId}`);
 
-        fetch(`https://api.antiai.me/public/verify?youtube_video_id=${videoId}`)
+        fetch(`https://antiaiapi-production.up.railway.app/public/verify?youtube_video_id=${videoId}`)
             .then(res => res.json())
             .then(data => {
                 const isVerified = data && data.status === 'verified';
