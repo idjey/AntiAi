@@ -31,7 +31,9 @@
     "storage",
     "activeTab",
     "https://*.youtube.com/*",
-    "http://localhost:4000/*"
+    "http://localhost:4000/*",
+    "https://*.antiai.me/*",
+    "https://antiaiapi-production.up.railway.app/*"
   ],
   "content_scripts": [
     {
