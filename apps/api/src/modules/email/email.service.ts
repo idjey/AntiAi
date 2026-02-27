@@ -8,6 +8,8 @@ export class EmailService {
     private readonly logger = new Logger(EmailService.name);
 
     constructor(private configService: ConfigService) {
+        // We will keep the nodemailer transport code intact for alternative SMTP providers,
+        // but it will be bypassed if using Resend, which requires REST over HTTPS.
         const secureStr = String(this.configService.get<string>('SMTP_SECURE') || 'false').toLowerCase();
 
         // Fallback or actual SMTP config from env
@@ -26,23 +28,55 @@ export class EmailService {
     }
 
     async sendOtpEmail(to: string, otp: string) {
-        const mailOptions = {
-            from: `"AntiAI" <${this.configService.get<string>('SMTP_FROM') || 'noreply@antiai.me'}>`,
-            to,
-            subject: 'Verify your email - AntiAI.me',
-            html: this.getOtpTemplate(otp),
-        };
+        const apiKey = this.configService.get<string>('SMTP_PASS');
+        const host = this.configService.get<string>('SMTP_HOST');
+        const fromEmail = this.configService.get<string>('SMTP_FROM') || 'noreply@antiai.me';
 
         try {
-            if (!this.configService.get<string>('SMTP_PASS')) {
+            if (!apiKey) {
                 this.logger.warn(`SMTP_PASS not configured. Skipping actual email send to ${to}. Simulated OTP: ${otp}`);
                 return;
             }
-            this.logger.log(`Attempting to send OTP email to ${to} via ${this.configService.get<string>('SMTP_HOST')}:${Number(this.configService.get<string>('SMTP_PORT')) || 587}...`);
-            const info = await this.transporter.sendMail(mailOptions);
-            this.logger.log(`Email sent successfully: ${info.messageId}`);
+
+            // RAILWAY FIX: Railway blocks outbound SMTP on ports 25, 587, and 465 for security.
+            // If the provider is Resend, we intercept it and use their HTTPS REST API (Port 443) which is never blocked.
+            if (host === 'smtp.resend.com') {
+                this.logger.log(`Attempting to send OTP email to ${to} via Resend REST API (HTTPS)...`);
+                const response = await fetch('https://api.resend.com/emails', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        from: `AntiAI <${fromEmail}>`,
+                        to: [to],
+                        subject: 'Verify your email - AntiAI.me',
+                        html: this.getOtpTemplate(otp)
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorResponse = await response.text();
+                    throw new Error(`Resend API Error: ${response.status} ${errorResponse}`);
+                }
+
+                const data = await response.json();
+                this.logger.log(`Email sent successfully via REST API: ${data.id}`);
+                return;
+            }
+
+            // Fallback to SMTP NodeMailer for other providers 
+            this.logger.log(`Attempting to send OTP email to ${to} via ${host}:${Number(this.configService.get<string>('SMTP_PORT')) || 587}...`);
+            const info = await this.transporter.sendMail({
+                from: `"AntiAI" <${fromEmail}>`,
+                to,
+                subject: 'Verify your email - AntiAI.me',
+                html: this.getOtpTemplate(otp),
+            });
+            this.logger.log(`Email sent successfully via SMTP: ${info.messageId}`);
         } catch (error) {
-            this.logger.error(`Failed to send email to ${to}. Is SMTP properly configured on Railway?`, error);
+            this.logger.error(`Failed to send email to ${to}. Is SMTP properly configured on Railway? Error:`, error);
         }
     }
 
