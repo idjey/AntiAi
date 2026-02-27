@@ -49,7 +49,8 @@
         },
         "host_permissions": [
             "https://*.youtube.com/*",
-            "http://localhost:4000/*"
+            "http://localhost:4000/*",
+            "https://*.antiai.me/*"
         ],
         "permissions": [
             "tabs",

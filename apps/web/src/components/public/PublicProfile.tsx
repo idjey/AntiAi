@@ -513,16 +513,18 @@ export const PublicProfile = ({ creator }: Props) => {
                                                             ? 'w-full p-4 flex flex-col justify-center text-center aspect-square gap-4'
                                                             : 'w-full p-4 flex items-center gap-4'
                                                     }
+                                                ${appearance.card_border_glow ? 'hover:shadow-[0_0_15px_var(--border-color)]' : ''}
                                                 animate-in fade-in slide-in-from-bottom-2
                                             `}
                                                 style={{
                                                     backgroundColor: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.08)',
                                                     borderColor: `${appearance.primary_color}30`,
+                                                    '--border-color': appearance.card_border_color || appearance.primary_color || '#10B981',
                                                     animationDelay: `${i * 60}ms`,
                                                     animationFillMode: 'backwards',
                                                     minWidth: appearance.link_style === 'row' ? '44px' : undefined,
                                                     minHeight: appearance.link_style === 'row' ? '44px' : undefined
-                                                }}
+                                                } as any}
                                                 aria-label={link.label}
                                                 title={appearance.link_style === 'row' ? link.label : undefined}
                                             >

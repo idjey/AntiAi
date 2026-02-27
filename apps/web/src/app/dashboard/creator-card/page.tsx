@@ -123,6 +123,8 @@ export default function CreatorCardPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [isVerifyingLogo, setIsVerifyingLogo] = useState(false);
     const [logoUrlError, setLogoUrlError] = useState<string | null>(null);
+    const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+    const [isUploadingLogoFile, setIsUploadingLogoFile] = useState(false);
 
     // Layout State
     const [previewOpen, setPreviewOpen] = useState(true);
@@ -977,22 +979,31 @@ export default function CreatorCardPage() {
                                                         style={{ borderColor: appearance.primary_color }}
                                                     >
                                                         <div className="w-full h-full rounded-full overflow-hidden bg-surface-light flex items-center justify-center">
-                                                            {profile?.avatar_url ? (
+                                                            {isUploadingAvatar ? (
+                                                                <svg className="animate-spin h-6 w-6 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                </svg>
+                                                            ) : profile?.avatar_url ? (
                                                                 <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                                                             ) : (
                                                                 <span className="text-xl font-bold text-text-secondary">{profile?.display_name?.substring(0, 2).toUpperCase()}</span>
                                                             )}
                                                         </div>
-                                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                            <ImageUpload
-                                                                onUpload={(url) => setProfile(prev => prev ? ({ ...prev, avatar_url: url }) : null)}
-                                                                className="w-full h-full flex items-center justify-center cursor-pointer"
-                                                            >
-                                                                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                                </svg>
-                                                            </ImageUpload>
+                                                        <div className={`absolute inset-0 bg-black/50 transition-opacity flex items-center justify-center ${isUploadingAvatar ? 'opacity-100 cursor-wait' : 'opacity-0 group-hover:opacity-100'}`}>
+                                                            {!isUploadingAvatar && (
+                                                                <ImageUpload
+                                                                    onUploadStart={() => setIsUploadingAvatar(true)}
+                                                                    onUploadEnd={() => setIsUploadingAvatar(false)}
+                                                                    onUpload={(url) => setProfile(prev => prev ? ({ ...prev, avatar_url: url }) : null)}
+                                                                    className="w-full h-full flex items-center justify-center cursor-pointer"
+                                                                >
+                                                                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                    </svg>
+                                                                </ImageUpload>
+                                                            )}
                                                         </div>
                                                     </div>
                                                     <div className="flex-1">
@@ -1049,15 +1060,29 @@ export default function CreatorCardPage() {
                                                 <p className="text-xs text-text-secondary mt-1">Enter a direct link to your logo image (PNG/JPG/SVG).</p>
                                                 <div className="flex gap-2 pt-2">
                                                     <ImageUpload
+                                                        onUploadStart={() => setIsUploadingLogoFile(true)}
+                                                        onUploadEnd={() => setIsUploadingLogoFile(false)}
                                                         onUpload={(url) => {
                                                             setAppearance(prev => ({ ...prev, logo_url: url }));
                                                             setLogoUrlError(null);
                                                         }}
                                                         className="inline-block"
                                                     >
-                                                        <button className="flex items-center gap-2 px-4 py-2 bg-surface border border-dashed border-border rounded-lg text-sm text-text-secondary hover:text-primary hover:border-primary transition-colors">
-                                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                                                            Upload Image
+                                                        <button disabled={isUploadingLogoFile} className="flex items-center gap-2 px-4 py-2 bg-surface border border-dashed border-border rounded-lg text-sm text-text-secondary hover:text-primary hover:border-primary transition-colors disabled:opacity-50 disabled:cursor-wait">
+                                                            {isUploadingLogoFile ? (
+                                                                <>
+                                                                    <svg className="animate-spin w-4 h-4 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                    </svg>
+                                                                    Uploading...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                                                    Upload Image
+                                                                </>
+                                                            )}
                                                         </button>
                                                     </ImageUpload>
                                                     <button
@@ -1917,8 +1942,8 @@ export default function CreatorCardPage() {
                                             key={link.id}
                                             href="#"
                                             onClick={e => e.preventDefault()}
-                                            className={`group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${appearance.card_style === 'pill' ? 'rounded-[2rem]' : appearance.card_style === 'modern' ? 'rounded-xl' : appearance.card_style === 'sharp' ? 'rounded-none' : 'rounded-lg'} ${appearance.link_style === 'row' ? 'w-12 h-12 flex items-center justify-center bg-white/10 backdrop-blur-md' : 'w-full p-3 flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/5'} ${appearance.public_card_glow > 0 ? 'shadow-[0_0_var(--glow)_rgba(255,255,255,0.1)]' : ''}`}
-                                            style={{ backgroundColor: appearance.public_card_theme === 'light' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)', borderColor: appearance.public_card_theme === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)', color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff', '--glow': `${appearance.public_card_glow}px` } as any}
+                                            className={`group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${appearance.card_style === 'pill' ? 'rounded-[2rem]' : appearance.card_style === 'modern' ? 'rounded-xl' : appearance.card_style === 'sharp' ? 'rounded-none' : 'rounded-lg'} ${appearance.link_style === 'row' ? 'w-12 h-12 flex items-center justify-center bg-white/10 backdrop-blur-md' : 'w-full p-3 flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/5'} ${appearance.public_card_glow > 0 ? 'shadow-[0_0_var(--glow)_rgba(255,255,255,0.1)]' : ''} ${appearance.card_border_glow ? 'hover:shadow-[0_0_15px_var(--border-color)]' : ''}`}
+                                            style={{ backgroundColor: appearance.public_card_theme === 'light' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)', borderColor: appearance.public_card_theme === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)', color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff', '--glow': `${appearance.public_card_glow}px`, '--border-color': appearance.card_border_color || appearance.primary_color || '#10B981' } as any}
                                         >
                                             {appearance.link_style === 'grid' && Boolean(link.custom_image_url) && (
                                                 <div className="absolute inset-0 z-0">
