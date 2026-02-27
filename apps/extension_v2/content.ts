@@ -81,7 +81,7 @@ function injectBadge(data: any) {
 
             const badge = document.createElement('a');
             badge.className = 'antiai-badge';
-            badge.href = `http://localhost:3000/verify/${data.youtube_video_id}`;
+            badge.href = `https://antiai.me/verify/${data.youtube_video_id}`;
             badge.target = '_blank';
             badge.innerHTML = `
                 <svg viewBox="0 0 24 24" class="antiai-icon">
