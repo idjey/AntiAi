@@ -17,18 +17,21 @@ const PLANS = {
     free: {
         name: 'Free',
         prices: { month: '$0', year: '$0' },
+        savings: null,
         features: ['10 videos/month', '1 Creator Shop Product', 'Standard Verification', 'Standard Theme Styles'],
         limit: 10
     },
     pro: {
         name: 'Pro',
-        prices: { month: '$29.99', year: '$329.89' },
+        prices: { month: '$15.99', year: '$155.88' },
+        savings: '$36.00',
         features: ['100 videos/month', 'Unlimited Shop Products', 'Custom Borders & Effects', 'Advanced Verification', 'Full Analytics Access'],
         limit: 100
     },
     elite: {
         name: 'Elite',
-        prices: { month: '$99.99', year: '$1,099.89' },
+        prices: { month: '$99.99', year: '$1,079.88' },
+        savings: '$120.00',
         features: ['Unlimited Videos & Products', 'White-label (Hide Logo)', 'Custom Domain Support (Soon)', '24/7 Priority Support', 'Export Analytics Data'],
         limit: Infinity
     }
@@ -303,7 +306,7 @@ export default function BillingPage() {
                     >
                         Yearly
                         <span className="text-[10px] font-bold bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                            1 Month Free
+                            Save up to $120
                         </span>
                     </button>
                 </div>
@@ -329,12 +332,12 @@ export default function BillingPage() {
                                 {price}
                                 <span className="text-sm font-normal text-text-secondary">/{billingInterval}</span>
                             </div>
-                            {billingInterval === 'year' && planKey !== 'free' && (
+                            {billingInterval === 'year' && planKey !== 'free' && plan.savings && (
                                 <div className="text-xs text-green-400 font-medium mb-6">
-                                    Save ~9% with yearly
+                                    Save {plan.savings} with yearly
                                 </div>
                             )}
-                            {billingInterval === 'month' || planKey === 'free' ? (
+                            {billingInterval === 'month' || planKey === 'free' || !plan.savings ? (
                                 <div className="mb-6 h-4" />
                             ) : null}
 
