@@ -24,8 +24,10 @@ export default function Pricing() {
         },
         {
             name: 'Pro',
-            monthlyPrice: '29.99',
-            yearlyPrice: '329.89', // 1 month free
+            monthlyPrice: '15.99',
+            yearlyPrice: '12.99',
+            yearlyTotal: '155.88',
+            savings: '36.00',
             description: 'For serious creators',
             features: [
                 '100 videos per month',
@@ -41,7 +43,9 @@ export default function Pricing() {
         {
             name: 'Elite',
             monthlyPrice: '99.99',
-            yearlyPrice: '1,099.89', // 1 month free
+            yearlyPrice: '89.99',
+            yearlyTotal: '1,079.88',
+            savings: '120.00',
             description: 'For teams and agencies',
             features: [
                 'Unlimited videos',
@@ -86,7 +90,7 @@ export default function Pricing() {
                         <span id="yearly-billing" className={`text-sm font-medium transition-colors flex items-center gap-2 ${billingCycle === 'yearly' ? 'text-text-primary' : 'text-text-secondary'}`}>
                             Yearly
                             <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                                1 month free
+                                Save up to $120
                             </span>
                         </span>
                     </div>
@@ -126,7 +130,22 @@ export default function Pricing() {
                                             {price === '0' ? 'forever' : period}
                                         </span>
                                     </div>
-                                    <p className="text-sm text-text-secondary mt-2">
+                                    {billingCycle === 'yearly' && plan.yearlyTotal && (
+                                        <div className="mt-2 text-sm text-text-muted">
+                                            Billed <span className="font-semibold text-text-primary">${plan.yearlyTotal}</span>/year
+                                            <br />
+                                            <span className="text-green-500 font-medium whitespace-nowrap bg-green-500/10 px-2 py-0.5 rounded-full mt-2 inline-block">
+                                                Save ${plan.savings}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {billingCycle === 'monthly' && plan.yearlyTotal && (
+                                        <div className="mt-2 text-sm text-transparent select-none">
+                                            {/* Spacer to prevent layout shift */}
+                                            Billed ${plan.yearlyTotal}/year<br /><span className="inline-block mt-2 px-2 py-0.5">Save</span>
+                                        </div>
+                                    )}
+                                    <p className="text-sm text-text-secondary mt-3">
                                         {plan.description}
                                     </p>
                                 </header>
