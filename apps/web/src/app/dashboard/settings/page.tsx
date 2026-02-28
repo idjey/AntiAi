@@ -18,7 +18,8 @@ export default function SettingsPage() {
         avatarUrl: '',
         isPublic: false,
         plan: 'free',
-        lastHandleChange: null as string | null
+        lastHandleChange: null as string | null,
+        customDomain: null as string | null
     })
 
     // Handle Change State
@@ -26,6 +27,10 @@ export default function SettingsPage() {
     const [handleAvailability, setHandleAvailability] = useState<{ available: boolean, reason: string | null } | null>(null)
     const [isCheckingHandle, setIsCheckingHandle] = useState(false)
     const [isUpdatingHandle, setIsUpdatingHandle] = useState(false)
+
+    // Custom Domain State
+    const [domainInput, setDomainInput] = useState('')
+    const [isUpdatingDomain, setIsUpdatingDomain] = useState(false)
 
     // Password State
     const [passwordData, setPasswordData] = useState({
@@ -57,9 +62,11 @@ export default function SettingsPage() {
                         avatarUrl: data.profile.avatar_url || '',
                         isPublic: data.profile.is_public || false,
                         plan: data.profile.plan || 'free',
-                        lastHandleChange: data.profile.lastHandleChange || null
+                        lastHandleChange: data.profile.lastHandleChange || null,
+                        customDomain: data.profile.customDomain || null
                     })
                     setHandleInput(data.profile.handle || '')
+                    setDomainInput(data.profile.customDomain || '')
                 }
             }
         } catch (err) {
@@ -158,6 +165,35 @@ export default function SettingsPage() {
             setMessage({ type: 'error', text: err.message })
         } finally {
             setIsUpdatingHandle(false)
+        }
+    }
+
+    const handleDomainUpdate = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (domainInput === profile.customDomain) return
+
+        setIsUpdatingDomain(true)
+        setMessage(null)
+        try {
+            const token = localStorage.getItem('token')
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/profile/domain`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ customDomain: domainInput })
+            })
+
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.message || 'Failed to update custom domain')
+
+            setMessage({ type: 'success', text: 'Custom domain updated successfully!' })
+            setProfile(prev => ({ ...prev, customDomain: data.customDomain }))
+        } catch (err: any) {
+            setMessage({ type: 'error', text: err.message })
+        } finally {
+            setIsUpdatingDomain(false)
         }
     }
 
@@ -393,6 +429,58 @@ export default function SettingsPage() {
                                 className={`w-full btn-primary ${isUpdatingHandle || handleInput === profile.handle || handleAvailability?.available === false ? 'opacity-50 cursor-not-allowed border-gray-600 bg-gray-600/20 text-gray-400' : ''}`}
                             >
                                 {isUpdatingHandle ? 'Updating...' : 'Change Handle'}
+                            </button>
+                        )}
+                    </form>
+                </div>
+            )}
+
+            {/* Custom Domain Configuration (ELITE Only) */}
+            {activeTab === 'profile' && (
+                <div className="max-w-2xl mt-12 bg-surface border border-border rounded-xl p-6 space-y-4">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h2 className="text-xl font-bold text-text-primary">Custom Domain</h2>
+                            <p className="text-sm text-text-secondary mt-1">Host your profile on your own website (e.g., verify.yourname.com)</p>
+                        </div>
+                        {['free', 'pro', ''].includes(profile.plan) && (
+                            <span className="bg-purple-500/10 text-purple-400 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                                ELITE Feature
+                            </span>
+                        )}
+                    </div>
+
+                    <form onSubmit={handleDomainUpdate} className="space-y-4 pt-2">
+                        <div className="space-y-2">
+                            <div className="relative">
+                                <span className="absolute left-3 top-2.5 text-text-muted font-medium">https://</span>
+                                <input
+                                    type="text"
+                                    value={domainInput}
+                                    onChange={(e) => setDomainInput(e.target.value)}
+                                    disabled={['free', 'pro', ''].includes(profile.plan)}
+                                    className={`w-full bg-surface-dark border border-border rounded-lg pl-20 pr-4 py-2 text-text-primary focus:outline-none focus:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    placeholder="yourname.com"
+                                />
+                            </div>
+                            <p className="text-xs text-text-secondary pt-1">To connect, go to your domain registrar (GoDaddy, Namecheap, etc.) and add a <strong>CNAME</strong> record pointing to <code className="bg-surface-light px-1 py-0.5 rounded text-primary">cname.antiai.me</code></p>
+                        </div>
+
+                        {['free', 'pro', ''].includes(profile.plan) ? (
+                            <button
+                                type="button"
+                                onClick={() => router.push('/dashboard/billing')}
+                                className="w-full btn-primary bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white border-none"
+                            >
+                                Upgrade to ELITE to unlock
+                            </button>
+                        ) : (
+                            <button
+                                type="submit"
+                                disabled={isUpdatingDomain || domainInput === profile.customDomain}
+                                className={`w-full btn-primary ${isUpdatingDomain || domainInput === profile.customDomain ? 'opacity-50 cursor-not-allowed border-gray-600 bg-gray-600/20 text-gray-400' : ''}`}
+                            >
+                                {isUpdatingDomain ? 'Saving...' : 'Save Domain'}
                             </button>
                         )}
                     </form>
