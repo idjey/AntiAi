@@ -264,6 +264,66 @@ export class ProfilesService {
         return { handle: updatedProfile.handle };
     }
 
+    // ==================== CUSTOM DOMAIN ====================
+
+    async updateCustomDomain(userId: string, newDomain: string | null) {
+        const profile = await this.prisma.creatorProfile.findUnique({
+            where: { userId },
+            include: { user: { include: { subscription: true } } }
+        });
+
+        if (!profile) {
+            throw new NotFoundException('Profile not found');
+        }
+
+        const plan = profile.user?.subscription?.plan || 'free';
+        if (plan !== 'elite') {
+            throw new ForbiddenException('You must have an ELITE subscription to use custom domains.');
+        }
+
+        // If they are un-setting their custom domain
+        if (!newDomain || newDomain.trim() === '') {
+            await this.prisma.creatorProfile.update({
+                where: { userId },
+                data: { customDomain: null }
+            });
+            return { customDomain: null };
+        }
+
+        const normalized = newDomain.toLowerCase().trim();
+
+        // 1. Check if SFW
+        if (!this.isDomainSFW(normalized)) {
+            throw new BadRequestException('This domain contains restricted or inappropriate language.');
+        }
+
+        // 2. Format validation (rough check for a valid domain structure)
+        if (!/^[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,}$/.test(normalized)) {
+            throw new BadRequestException('Please provide a valid domain format (e.g., yourname.com)');
+        }
+
+        // 3. Make sure it's not an internal AntiAI domain attempting to be spoofed
+        if (normalized.includes('antiai.me') || normalized.includes('localhost')) {
+            throw new BadRequestException('You cannot use AntiAI system domains.');
+        }
+
+        // 4. Check uniqueness across the database
+        const existing = await this.prisma.creatorProfile.findUnique({
+            where: { customDomain: normalized }
+        });
+
+        if (existing && existing.userId !== userId) {
+            throw new BadRequestException('This custom domain is already registered to another user.');
+        }
+
+        const updatedProfile = await this.prisma.creatorProfile.update({
+            where: { userId },
+            data: { customDomain: normalized }
+        });
+
+        return { customDomain: updatedProfile.customDomain };
+    }
+
     // ==================== LINKS ====================
 
     async getLinks(userId: string) {
@@ -638,6 +698,31 @@ export class ProfilesService {
     private isValidHandleFormat(handle: string): boolean {
         // Allows alphanumeric, _, -, and . between 3 to 10 characters (no emojis or other special characters)
         return /^[a-z0-9_\-\.]{3,10}$/.test(handle);
+    }
+
+    private isDomainSFW(domainOrHandle: string): boolean {
+        const normalized = domainOrHandle.toLowerCase().replace(/[^a-z0-9]/g, ''); // Strip symbols to prevent obfuscation like p.o.r.n
+
+        const EXPLICIT_LIST = [
+            'porn', 'porno', 'sex', 'sexy', 'xxx', 'nude', 'nudes', 'naked', 'dick', 'cock', 'pussy', 'vagina', 'tits', 'boobs',
+            'asshole', 'fuck', 'fucker', 'fucking', 'bitch', 'cunt', 'slut', 'whore', 'cum', 'jizz', 'masturbate', 'wank', 'dildo', 'vibrator', 'rape', 'incest'
+        ];
+
+        const ABUSIVE_LIST = [
+            'nigger', 'nigga', 'faggot', 'fag', 'retard', 'spic', 'kike', 'chink', 'gook', 'dyke', 'tranny', 'kill', 'suicide', 'murder', 'terrorist', 'hitler', 'nazi'
+        ];
+
+        const ILLICIT_SUBSTANCES_LIST = [
+            'cocaine', 'crack', 'heroin', 'meth', 'lsd', 'fentanyl', 'ecstasy', 'mdma', 'oxycodone', 'pills', 'drug', 'drugs', 'weed', 'marijuana', 'cannabis', 'kush'
+        ];
+
+        for (const word of [...EXPLICIT_LIST, ...ABUSIVE_LIST, ...ILLICIT_SUBSTANCES_LIST]) {
+            if (normalized.includes(word)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     // ==================== HELPERS ====================
