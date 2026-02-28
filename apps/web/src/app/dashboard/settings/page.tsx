@@ -22,6 +22,8 @@ export default function SettingsPage() {
         customDomain: null as string | null
     })
 
+    const [lastDomainChange, setLastDomainChange] = useState<string | null>(null)
+
     // Handle Change State
     const [handleInput, setHandleInput] = useState('')
     const [handleAvailability, setHandleAvailability] = useState<{ available: boolean, reason: string | null } | null>(null)
@@ -31,6 +33,8 @@ export default function SettingsPage() {
     // Custom Domain State
     const [domainInput, setDomainInput] = useState('')
     const [isUpdatingDomain, setIsUpdatingDomain] = useState(false)
+    const [isDomainConfirmDialogOpen, setIsDomainConfirmDialogOpen] = useState(false)
+    const [domainConfirmInput, setDomainConfirmInput] = useState('')
 
     // Password State
     const [passwordData, setPasswordData] = useState({
@@ -62,11 +66,12 @@ export default function SettingsPage() {
                         avatarUrl: data.profile.avatar_url || '',
                         isPublic: data.profile.is_public || false,
                         plan: data.profile.plan || 'free',
-                        lastHandleChange: data.profile.lastHandleChange || null,
-                        customDomain: data.profile.customDomain || null
+                        lastHandleChange: data.profile.last_handle_change || null,
+                        customDomain: data.profile.custom_domain || null
                     })
+                    setLastDomainChange(data.profile.last_domain_change || null)
                     setHandleInput(data.profile.handle || '')
-                    setDomainInput(data.profile.customDomain || '')
+                    setDomainInput(data.profile.custom_domain || '')
                 }
             }
         } catch (err) {
@@ -168,10 +173,17 @@ export default function SettingsPage() {
         }
     }
 
-    const handleDomainUpdate = async (e: React.FormEvent) => {
+    const onDomainFormSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         if (domainInput === profile.customDomain) return
+        setIsDomainConfirmDialogOpen(true)
+        setDomainConfirmInput('')
+    }
 
+    const handleDomainUpdate = async () => {
+        if (domainInput === profile.customDomain || domainConfirmInput !== domainInput) return
+
+        setIsDomainConfirmDialogOpen(false)
         setIsUpdatingDomain(true)
         setMessage(null)
         try {
@@ -190,12 +202,25 @@ export default function SettingsPage() {
 
             setMessage({ type: 'success', text: 'Custom domain updated successfully!' })
             setProfile(prev => ({ ...prev, customDomain: data.customDomain }))
+            setLastDomainChange(new Date().toISOString())
         } catch (err: any) {
             setMessage({ type: 'error', text: err.message })
         } finally {
             setIsUpdatingDomain(false)
         }
     }
+
+    const getDaysLeft = (lastChangeDate: string | null, cooldownDays: number) => {
+        if (!lastChangeDate) return 0;
+        const lastDate = new Date(lastChangeDate);
+        const now = new Date();
+        const diffTime = now.getTime() - lastDate.getTime();
+        const daysPassed = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        return Math.max(0, cooldownDays - daysPassed);
+    }
+
+    const handleDaysLeft = getDaysLeft(profile.lastHandleChange, 180);
+    const domainDaysLeft = getDaysLeft(lastDomainChange, 90);
 
     const handlePasswordChange = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -450,7 +475,7 @@ export default function SettingsPage() {
                         )}
                     </div>
 
-                    <form onSubmit={handleDomainUpdate} className="space-y-4 pt-2">
+                    <form onSubmit={onDomainFormSubmit} className="space-y-4 pt-2">
                         <div className="space-y-2">
                             <div className="relative">
                                 <span className="absolute left-3 top-2.5 text-text-muted font-medium">https://</span>
@@ -458,13 +483,28 @@ export default function SettingsPage() {
                                     type="text"
                                     value={domainInput}
                                     onChange={(e) => setDomainInput(e.target.value)}
-                                    disabled={['free', 'pro', ''].includes(profile.plan)}
+                                    disabled={['free', 'pro', ''].includes(profile.plan) || domainDaysLeft > 0}
                                     className={`w-full bg-surface-dark border border-border rounded-lg pl-20 pr-4 py-2 text-text-primary focus:outline-none focus:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
                                     placeholder="yourname.com"
                                 />
                             </div>
                             <p className="text-xs text-text-secondary pt-1">To connect, go to your domain registrar (GoDaddy, Namecheap, etc.) and add a <strong>CNAME</strong> record pointing to <code className="bg-surface-light px-1 py-0.5 rounded text-primary">cname.antiai.me</code></p>
                         </div>
+
+                        {domainDaysLeft > 0 ? (
+                            <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+                                <h4 className="text-orange-500 font-semibold mb-1 flex items-center gap-2">
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                    Domain Locked
+                                </h4>
+                                <p className="text-sm text-orange-400/80">You recently changed your custom domain. You can change it again in <strong>{domainDaysLeft} days</strong>.</p>
+                            </div>
+                        ) : (
+                            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                                <h4 className="text-red-500 font-semibold mb-1">Warning: Domain Lock</h4>
+                                <p className="text-sm text-red-400/80">Changing your custom domain will break any existing links pointing to your old domain. You can only change your domain <strong>once every 90 days</strong>.</p>
+                            </div>
+                        )}
 
                         {['free', 'pro', ''].includes(profile.plan) ? (
                             <button
@@ -477,8 +517,8 @@ export default function SettingsPage() {
                         ) : (
                             <button
                                 type="submit"
-                                disabled={isUpdatingDomain || domainInput === profile.customDomain}
-                                className={`w-full btn-primary ${isUpdatingDomain || domainInput === profile.customDomain ? 'opacity-50 cursor-not-allowed border-gray-600 bg-gray-600/20 text-gray-400' : ''}`}
+                                disabled={isUpdatingDomain || domainInput === profile.customDomain || domainDaysLeft > 0}
+                                className={`w-full btn-primary ${isUpdatingDomain || domainInput === profile.customDomain || domainDaysLeft > 0 ? 'opacity-50 cursor-not-allowed border-gray-600 bg-gray-600/20 text-gray-400' : ''}`}
                             >
                                 {isUpdatingDomain ? 'Saving...' : 'Save Domain'}
                             </button>
@@ -536,6 +576,59 @@ export default function SettingsPage() {
                     </div>
                 </form>
             )}
+
+            {/* Verification Dialog for Custom Domains */}
+            {isDomainConfirmDialogOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4">
+                    <div className="bg-surface-dark border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl relative">
+                        <h3 className="text-xl font-bold text-white mb-2">Confirm Custom Domain</h3>
+                        <p className="text-sm text-text-secondary mb-6 leading-relaxed">
+                            You are about to change your domain to <strong className="text-primary">{domainInput}</strong>.
+                            If you make a typo, you will be locked out from changing this again for <strong>90 days</strong>.
+                        </p>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-medium text-text-secondary mb-1">
+                                    Type <strong className="text-white select-none">{domainInput}</strong> below to confirm:
+                                </label>
+                                <input
+                                    type="text"
+                                    value={domainConfirmInput}
+                                    onChange={(e) => setDomainConfirmInput(e.target.value)}
+                                    className="w-full bg-black/50 border border-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-red-500 transition-colors"
+                                    placeholder={domainInput}
+                                    autoComplete="off"
+                                    spellCheck="false"
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsDomainConfirmDialogOpen(false)
+                                        setDomainConfirmInput('')
+                                    }}
+                                    className="px-4 py-2 rounded-lg text-sm font-medium text-text-secondary hover:text-white hover:bg-white/5 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleDomainUpdate}
+                                    disabled={domainConfirmInput !== domainInput}
+                                    className={`px-4 py-2 rounded-lg text-sm font-bold bg-red-600 text-white hover:bg-red-500 transition-colors ${domainConfirmInput !== domainInput ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                    Yes, I'm sure
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     )
 }

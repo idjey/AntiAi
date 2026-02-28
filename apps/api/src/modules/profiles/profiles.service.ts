@@ -281,6 +281,18 @@ export class ProfilesService {
             throw new ForbiddenException('You must have an ELITE subscription to use custom domains.');
         }
 
+        // Enforce 90-day cooldown
+        if (profile.lastDomainChange) {
+            const ninetyDaysAgo = new Date();
+            ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+            if (profile.lastDomainChange > ninetyDaysAgo) {
+                const diffTime = profile.lastDomainChange.getTime() - ninetyDaysAgo.getTime();
+                const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                throw new ForbiddenException(`You can only change your custom domain once every 90 days. Please wait ${daysLeft} more days.`);
+            }
+        }
+
         // If they are un-setting their custom domain
         if (!newDomain || newDomain.trim() === '') {
             await this.prisma.creatorProfile.update({
@@ -318,7 +330,10 @@ export class ProfilesService {
 
         const updatedProfile = await this.prisma.creatorProfile.update({
             where: { userId },
-            data: { customDomain: normalized }
+            data: {
+                customDomain: normalized,
+                lastDomainChange: new Date()
+            }
         });
 
         return { customDomain: updatedProfile.customDomain };
@@ -775,6 +790,9 @@ export class ProfilesService {
             is_public: profile.isPublic,
             public_url: `https://antiai.me/${profile.handle}`,
             created_at: profile.createdAt.toISOString(),
+            last_handle_change: profile.lastHandleChange ? profile.lastHandleChange.toISOString() : null,
+            last_domain_change: profile.lastDomainChange ? profile.lastDomainChange.toISOString() : null,
+            custom_domain: profile.customDomain || null,
             verification_token: this.generateVerificationToken(profile),
         };
     }

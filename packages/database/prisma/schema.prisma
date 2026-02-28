@@ -111,6 +111,7 @@ model CreatorProfile {
   appearance      Json?    @default("{}") // { theme, primaryColor, backgroundColor, backgroundImageUrl, ... }
   lastHandleChange DateTime? @map("last_handle_change")
   customDomain    String?  @unique @map("custom_domain")
+  lastDomainChange DateTime? @map("last_domain_change")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
