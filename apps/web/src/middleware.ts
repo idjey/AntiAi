@@ -42,6 +42,6 @@ export function middleware(req: NextRequest) {
     }
 
     // It is a custom domain (e.g., proof.johndoe.com)
-    // Rewrite everything to the `/[domain]/[...path]` dynamic route
-    return NextResponse.rewrite(new URL(`/${hostname}${path}`, req.url))
+    // Rewrite everything to the root dynamic route but prefixed, so `[handle]/page.tsx` can intercept it
+    return NextResponse.rewrite(new URL(`/_domain_${hostname}${path}`, req.url))
 }
