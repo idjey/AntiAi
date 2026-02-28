@@ -146,11 +146,11 @@ export class PublicService {
     }
 
     /**
-     * Get public creator profile by handle (Linktree-style page)
+     * Reusable profile structure query to minimize duplication
      */
-    async getCreatorProfile(handle: string): Promise<any> {
-        const profile = await this.prisma.creatorProfile.findUnique({
-            where: { handle: handle.toLowerCase() },
+    private async fetchProfileQuery(where: any) {
+        return this.prisma.creatorProfile.findUnique({
+            where,
             include: {
                 user: {
                     include: {
@@ -185,13 +185,43 @@ export class PublicService {
                 },
             },
         });
+    }
+
+    /**
+     * Get public creator profile by handle (Linktree-style page)
+     */
+    async getCreatorProfile(handle: string): Promise<any> {
+        const profile = await this.fetchProfileQuery({ handle: handle.toLowerCase() });
 
         if (!profile || !profile.isPublic) {
             return null;
         }
 
+        return this.formatProfileResponse(profile);
+    }
+
+    /**
+     * Get public creator profile by custom domain
+     */
+    async getCreatorProfileByDomain(domain: string): Promise<any> {
+        const profile = await this.fetchProfileQuery({ customDomain: domain.toLowerCase() });
+
+        if (!profile || !profile.isPublic) {
+            return null;
+        }
+
+        // Check if user is still on ELITE plan, otherwise refuse to render the custom domain
+        const plan = profile.user?.subscription?.plan || 'free';
+        if (plan !== 'elite') {
+            return null;
+        }
+
+        return this.formatProfileResponse(profile);
+    }
+
+    private async formatProfileResponse(profile: any) {
         // Get recent verified videos from all channels
-        const channelIds = profile.user.channels.map(c => c.id);
+        const channelIds = profile.user.channels.map((c: any) => c.id);
         let recentVideos: any[] = [];
 
         if (channelIds.length > 0) {
@@ -219,13 +249,13 @@ export class PublicService {
             banner_url: profile.bannerUrl,
             appearance: profile.appearance,
             sponsored_products: (profile.appearance as any)?.sponsored_products || [],
-            channels: profile.user.channels.map(c => ({
+            channels: profile.user.channels.map((c: any) => ({
                 youtube_channel_id: c.youtubeChannelId,
                 channel_name: c.channelName,
                 channel_handle: c.channelHandle,
                 avatar_url: c.avatarUrl,
             })),
-            links: profile.user.links.map(l => ({
+            links: profile.user.links.map((l: any) => ({
                 label: l.label,
                 url: l.url,
                 icon: l.icon,
@@ -246,10 +276,10 @@ export class PublicService {
             })),
             id: profile.id,
             plan: profile.user.subscription?.plan || 'free',
+            custom_domain: profile.customDomain || null,
             verification_token: this.generateVerificationToken(profile),
         };
     }
-
     private generateVerificationToken(profile: any): string {
         // Create a deterministic hash based on stable profile identity and modification time
         // In a real scenario, this would use a secret key from environment variables

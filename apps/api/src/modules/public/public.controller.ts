@@ -62,5 +62,18 @@ export class PublicController {
         return result;
     }
 
+    /**
+     * Get public creator profile by custom domain (e.g., proof.johndoe.com)
+     * GET /public/creators/domain/:domain
+     */
+    @Get('creators/domain/:domain')
+    async getCreatorProfileByDomain(@Param('domain') domain: string): Promise<any> {
+        const result = await this.publicService.getCreatorProfileByDomain(domain);
+        if (!result) {
+            throw new NotFoundException('Creator not found for this domain');
+        }
+        return result;
+    }
+
 }
 
