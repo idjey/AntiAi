@@ -23,12 +23,29 @@ async function getCreator(handle: string) {
     }
 }
 
+async function getCreatorByDomain(domain: string) {
+    try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/public/creators/domain/${domain}`, {
+            cache: 'no-store',
+        });
+        if (!res.ok) return null;
+        return res.json();
+    } catch (error) {
+        return null;
+    }
+}
+
 export async function generateMetadata(
     { params }: Props,
     parent: ResolvingMetadata
 ): Promise<Metadata> {
-    const handle = params.handle;
-    const creator = await getCreator(handle);
+    const rawParam = params.handle;
+    const isCustomDomain = rawParam.startsWith('_domain_');
+    const identifier = isCustomDomain ? rawParam.replace('_domain_', '') : rawParam;
+
+    const creator = isCustomDomain
+        ? await getCreatorByDomain(identifier)
+        : await getCreator(identifier);
 
     if (!creator) {
         return {
@@ -40,8 +57,13 @@ export async function generateMetadata(
     const displayName = creator.name || `@${creator.handle}`;
     const description = `Check out authenticated links, verified videos, and secure content from ${displayName}. This profile is cryptographically signed and verified by AntiAI.`;
 
-    // The relative URL to the opengraph-image route we will create
-    const ogImageUrl = `/${handle}/opengraph-image`;
+    const ogImageUrl = isCustomDomain
+        ? `https://antiai.me/${creator.handle}/opengraph-image`
+        : `/${identifier}/opengraph-image`;
+
+    const publicUrl = isCustomDomain
+        ? `https://${identifier}`
+        : `https://antiai.me/${identifier}`;
 
     return {
         title: `${displayName} | Verified on AntiAI`,
@@ -49,8 +71,8 @@ export async function generateMetadata(
         openGraph: {
             title: `${displayName} | Verified on AntiAI`,
             description: description,
-            url: `https://antiai.me/${handle}`,
-            siteName: 'AntiAI',
+            url: publicUrl,
+            siteName: isCustomDomain ? displayName : 'AntiAI',
             images: [
                 {
                     url: ogImageUrl,
@@ -71,7 +93,13 @@ export async function generateMetadata(
 }
 
 export default async function PublicProfilePage({ params }: Props) {
-    const creator = await getCreator(params.handle);
+    const rawParam = params.handle;
+    const isCustomDomain = rawParam.startsWith('_domain_');
+    const identifier = isCustomDomain ? rawParam.replace('_domain_', '') : rawParam;
+
+    const creator = isCustomDomain
+        ? await getCreatorByDomain(identifier)
+        : await getCreator(identifier);
 
     if (!creator) {
         notFound();
