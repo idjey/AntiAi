@@ -141,6 +141,17 @@ export class ProfilesController {
         return this.profilesService.deleteSponsoredProduct(user.id, productId);
     }
 
+    // ==================== DOMAINS ====================
+
+    @Patch('domain')
+    @HttpCode(HttpStatus.OK)
+    async updateDomain(
+        @CurrentUser() user: any,
+        @Body() body: { customDomain: string | null },
+    ) {
+        return this.profilesService.updateCustomDomain(user.id, body.customDomain);
+    }
+
     // ==================== HANDLE AVAILABILITY ====================
 
     @Get('check-handle/:handle')
