@@ -221,6 +221,49 @@ export class ProfilesService {
         return { profile: this.formatProfile(profile, verifiedVideos) };
     }
 
+    async updateHandle(userId: string, newHandle: string) {
+        const profile = await this.prisma.creatorProfile.findUnique({
+            where: { userId },
+            include: { user: { include: { subscription: true } } }
+        });
+
+        if (!profile) {
+            throw new NotFoundException('Profile not found');
+        }
+
+        const plan = profile.user?.subscription?.plan || 'free';
+        if (!['pro', 'elite'].includes(plan)) {
+            throw new ForbiddenException('You must have a PRO or ELITE subscription to change your handle.');
+        }
+
+        const normalized = newHandle.toLowerCase().trim();
+
+        if (profile.handle === normalized) {
+            throw new BadRequestException('You are already using this handle.');
+        }
+
+        // 180-day Cooldown Check
+        if (profile.lastHandleChange) {
+            const daysSinceLastChange = (new Date().getTime() - new Date(profile.lastHandleChange).getTime()) / (1000 * 3600 * 24);
+            if (daysSinceLastChange < 180) {
+                const daysLeft = Math.ceil(180 - daysSinceLastChange);
+                throw new ForbiddenException(`You can only change your handle once every 180 days. Please wait ${daysLeft} more days.`);
+            }
+        }
+
+        await this.validateHandle(normalized);
+
+        const updatedProfile = await this.prisma.creatorProfile.update({
+            where: { userId },
+            data: {
+                handle: normalized,
+                lastHandleChange: new Date()
+            }
+        });
+
+        return { handle: updatedProfile.handle };
+    }
+
     // ==================== LINKS ====================
 
     async getLinks(userId: string) {
@@ -593,7 +636,8 @@ export class ProfilesService {
     }
 
     private isValidHandleFormat(handle: string): boolean {
-        return /^[a-z0-9_]{3,30}$/.test(handle);
+        // Allows alphanumeric, _, -, and . between 3 to 30 characters
+        return /^[a-z0-9_\-\.]{3,30}$/.test(handle);
     }
 
     // ==================== HELPERS ====================

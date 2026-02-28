@@ -109,6 +109,7 @@ model CreatorProfile {
   featuredVideoId String?  @map("featured_video_id") @db.Uuid
   isPublic        Boolean  @default(true) @map("is_public")
   appearance      Json?    @default("{}") // { theme, primaryColor, backgroundColor, backgroundImageUrl, ... }
+  lastHandleChange DateTime? @map("last_handle_change")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 

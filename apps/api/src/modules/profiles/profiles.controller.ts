@@ -3,12 +3,14 @@ import {
     Get,
     Post,
     Put,
+    Patch,
     Delete,
     Body,
     Param,
     UseGuards,
     HttpCode,
     HttpStatus,
+    BadRequestException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ProfilesService } from './profiles.service';
@@ -44,6 +46,15 @@ export class ProfilesController {
     async updateProfile(@CurrentUser() user: any, @Body() dto: UpdateProfileDto) {
         console.log('Update Profile DTO:', JSON.stringify(dto, null, 2));
         return this.profilesService.updateProfile(user.id, dto);
+    }
+
+    @Put('handle')
+    @HttpCode(HttpStatus.OK)
+    async updateHandle(@CurrentUser() user: any, @Body() body: { handle: string }) {
+        if (!body.handle) {
+            throw new BadRequestException('Handle is required');
+        }
+        return this.profilesService.updateHandle(user.id, body.handle);
     }
 
     // ==================== LINKS ====================
