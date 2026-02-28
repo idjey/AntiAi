@@ -5,6 +5,7 @@
     "description": "AntiAI Browser Extension",
     "author": "AntiAI",
     "scripts": {
+        "start": "node -e \"require('http').createServer((req, res) => res.end('AntiAI Extension built successfully. This is a static build.')).listen(process.env.PORT || 8080, '0.0.0.0')\"",
         "dev": "plasmo dev",
         "build": "plasmo build",
         "package": "plasmo package",
