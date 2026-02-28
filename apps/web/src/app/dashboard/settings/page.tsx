@@ -350,6 +350,7 @@ export default function SettingsPage() {
                                     value={handleInput}
                                     onChange={(e) => setHandleInput(e.target.value)}
                                     disabled={['free', ''].includes(profile.plan)}
+                                    maxLength={10}
                                     className={`w-full bg-surface-dark border ${handleAvailability?.available === false ? 'border-red-500' : 'border-border'} rounded-lg pl-24 pr-4 py-2 text-text-primary focus:outline-none focus:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
                                     placeholder="your-handle"
                                 />
@@ -362,12 +363,12 @@ export default function SettingsPage() {
                                         <span className={handleAvailability.available ? 'text-green-500' : 'text-red-500'}>
                                             {handleAvailability.available
                                                 ? '✓ Handle is available'
-                                                : `✗ ${handleAvailability.reason === 'invalid_format' ? 'Must be 3-30 characters (a-z, 0-9, -, _, .)' : 'Handle is taken'}`}
+                                                : `✗ ${handleAvailability.reason === 'invalid_format' ? 'Must be 3-10 characters (a-z, 0-9, -, _, .)' : 'Handle is taken'}`}
                                         </span>
                                     )}
                                 </div>
                                 <div className="text-text-muted">
-                                    {handleInput.length}/30
+                                    {handleInput.length}/10
                                 </div>
                             </div>
                         </div>

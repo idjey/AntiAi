@@ -636,8 +636,8 @@ export class ProfilesService {
     }
 
     private isValidHandleFormat(handle: string): boolean {
-        // Allows alphanumeric, _, -, and . between 3 to 30 characters
-        return /^[a-z0-9_\-\.]{3,30}$/.test(handle);
+        // Allows alphanumeric, _, -, and . between 3 to 10 characters (no emojis or other special characters)
+        return /^[a-z0-9_\-\.]{3,10}$/.test(handle);
     }
 
     // ==================== HELPERS ====================
