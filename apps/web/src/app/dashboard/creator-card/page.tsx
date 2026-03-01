@@ -410,7 +410,68 @@ export default function CreatorCardPage() {
 
     if (isLoading) return <div className="p-8 text-center text-text-secondary">Loading...</div>;
 
-    const publicUrl = profile ? `${window.location.origin}/${profile.handle}` : '';
+    if (!profile) {
+        return (
+            <div className="max-w-[800px] mx-auto py-24 px-6 text-center">
+                <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-primary/20 shadow-[0_0_40px_rgba(16,185,129,0.15)]">
+                    <svg className="w-10 h-10 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                </div>
+                <h1 className="text-4xl font-extrabold tracking-tight text-text-primary mb-4">Set up your profile</h1>
+                <p className="text-text-secondary mb-10 leading-relaxed max-w-md mx-auto text-lg">Claim a unique handle before you configure your Creator Card. This will be your public URL.</p>
+
+                <div className="max-w-md mx-auto p-8 bg-surface-light border border-white/5 rounded-2xl shadow-xl">
+                    <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        setIsSaving(true);
+                        try {
+                            const input = document.getElementById('setup-handle') as HTMLInputElement;
+                            const handleVal = input.value.toLowerCase().trim();
+                            const token = localStorage.getItem('token');
+
+                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/profile`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                body: JSON.stringify({ handle: handleVal })
+                            });
+
+                            if (res.ok) {
+                                await fetchData();
+                            } else {
+                                const data = await res.json();
+                                alert(data.message || 'Failed to claim handle');
+                            }
+                        } catch (err) {
+                            alert('An error occurred');
+                        } finally {
+                            setIsSaving(false);
+                        }
+                    }}>
+                        <div className="mb-6 relative group">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted font-medium transition-colors group-focus-within:text-primsry text-lg tracking-wide">antiai.me/</span>
+                            <input
+                                id="setup-handle"
+                                type="text"
+                                required
+                                minLength={3}
+                                maxLength={30}
+                                className="w-full bg-black/40 border border-white/10 rounded-xl pl-[110px] pr-4 py-4 text-text-primary focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-bold text-lg"
+                                placeholder="your-handle"
+                                disabled={isSaving}
+                            />
+                        </div>
+                        <button type="submit" disabled={isSaving} className="w-full btn-primary py-4 font-bold text-base shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all">
+                            {isSaving ? 'Claiming Handle...' : 'Claim Handle'}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        );
+    }
+
+    const NEXT_PUBLIC_FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL && process.env.NEXT_PUBLIC_FRONTEND_URL !== '' ? process.env.NEXT_PUBLIC_FRONTEND_URL : (typeof window !== 'undefined' ? window.location.origin : '');
+    const publicUrl = profile ? `${NEXT_PUBLIC_FRONTEND_URL}/${profile.handle}` : '';
 
     const handleRandomize = () => {
         const themes = ['modern_dark', 'holographic', 'minimal'];
