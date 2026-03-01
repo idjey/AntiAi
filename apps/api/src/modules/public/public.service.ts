@@ -38,6 +38,9 @@ export class PublicService {
         const { video, proof } = result;
         const now = new Date();
 
+        // Extract true AntiAI Handle if it exists
+        const antiAiHandle = video.channel?.user?.profile?.handle || null;
+
         // Check if proof is expired
         if (proof.expiresAt < now) {
             return {
@@ -47,7 +50,7 @@ export class PublicService {
                 channel_name: video.channel.channelName,
                 channel_handle: video.channel.channelHandle,
                 proof: this.formatProof(proof),
-                public_creator_url: this.getCreatorUrl(video.channel.channelHandle),
+                public_creator_url: this.getCreatorUrl(antiAiHandle),
                 message: 'Verification proof has expired',
             };
         }
@@ -73,7 +76,7 @@ export class PublicService {
             channel_name: video.channel.channelName,
             channel_handle: video.channel.channelHandle,
             proof: this.formatProof(proof),
-            public_creator_url: this.getCreatorUrl(video.channel.channelHandle),
+            public_creator_url: this.getCreatorUrl(antiAiHandle),
             message: null,
         };
     }
