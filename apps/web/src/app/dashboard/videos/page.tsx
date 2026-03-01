@@ -5,6 +5,7 @@ import Link from 'next/link'
 
 interface Video {
     id: string
+    youtube_video_id: string
     title: string
     thumbnail_url: string
     video_url: string
@@ -273,7 +274,7 @@ export default function VideosPage() {
                                                     Watch
                                                 </a>
                                                 <Link
-                                                    href={`/verify/${video.id}`}
+                                                    href={`/verify/${video.youtube_video_id}`}
                                                     className="flex-1 px-3 py-2 bg-primary/10 text-primary border border-primary/20 rounded text-xs font-medium hover:bg-primary/20 transition-colors text-center"
                                                 >
                                                     View Proof
