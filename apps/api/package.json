@@ -4,9 +4,9 @@
     "private": true,
     "description": "AntiAI.me NestJS Backend API",
     "scripts": {
-        "build": "cd ../.. && npm run db:generate && npm run db:push -- --accept-data-loss && npm run build:packages && cd apps/api && nest build",
+        "build": "cd ../.. && npm run db:generate && npm run build:packages && cd apps/api && nest build",
         "dev": "nest start --watch",
-        "start": "node dist/main",
+        "start": "cd ../.. && npm run db:push -- --accept-data-loss && cd apps/api && node dist/main",
         "start:debug": "nest start --debug --watch",
         "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
         "test": "jest",
