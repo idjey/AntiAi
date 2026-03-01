@@ -4,7 +4,9 @@ import {
     ConflictException,
     NotFoundException,
     ForbiddenException,
+    InternalServerErrorException,
 } from '@nestjs/common';
+import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
     CreateProfileDto,
@@ -247,7 +249,7 @@ export class ProfilesService {
             const daysSinceLastChange = (new Date().getTime() - new Date(profile.lastHandleChange).getTime()) / (1000 * 3600 * 24);
             if (daysSinceLastChange < 180) {
                 const daysLeft = Math.ceil(180 - daysSinceLastChange);
-                throw new ForbiddenException(`You can only change your handle once every 180 days. Please wait ${daysLeft} more days.`);
+                throw new ForbiddenException(`You can only change your handle once every 180 days.Please wait ${daysLeft} more days.`);
             }
         }
 
@@ -289,7 +291,7 @@ export class ProfilesService {
             if (profile.lastDomainChange > ninetyDaysAgo) {
                 const diffTime = profile.lastDomainChange.getTime() - ninetyDaysAgo.getTime();
                 const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                throw new ForbiddenException(`You can only change your custom domain once every 90 days. Please wait ${daysLeft} more days.`);
+                throw new ForbiddenException(`You can only change your custom domain once every 90 days.Please wait ${daysLeft} more days.`);
             }
         }
 
@@ -479,7 +481,7 @@ export class ProfilesService {
                             return;
                         }
                         if (res.statusCode !== 200) {
-                            reject(new Error(`HTTP ${res.statusCode}`));
+                            reject(new Error(`HTTP ${res.statusCode} `));
                             return;
                         }
                         let body = '';
@@ -505,7 +507,7 @@ export class ProfilesService {
                 const match =
                     html.match(
                         new RegExp(
-                            `<meta[^>]+property=["']${property}["'][^>]+content=["']([^"']+)["']`,
+                            `< meta[^>] + property=["']${property}["'][^>]+content=["']([^ "']+)["']`,
                             'i',
                         ),
                     ) ||
@@ -548,53 +550,57 @@ export class ProfilesService {
             site_name?: string;
         },
     ) {
-        const profile = await this.prisma.creatorProfile.findUnique({
-            where: { userId },
-            include: { user: { include: { subscription: { select: { plan: true } } } } },
-        });
+        try {
+            const profile = await this.prisma.creatorProfile.findUnique({
+                where: { userId },
+                include: { user: { include: { subscription: { select: { plan: true } } } } },
+            });
 
 
-        if (!profile) throw new NotFoundException('Profile not found');
+            if (!profile) throw new NotFoundException('Profile not found');
 
-        const plan: string = profile.user?.subscription?.plan || 'free';
-        const { PRODUCT_LIMITS } = require('@antiai/shared');
-        const cap = PRODUCT_LIMITS[plan] ?? 1;
-        const nextPlan: Record<string, string> = { free: 'Pro', pro: 'Elite' };
+            const plan: string = profile.user?.subscription?.plan || 'free';
+            const { PRODUCT_LIMITS } = require('@antiai/shared');
+            const cap = PRODUCT_LIMITS[plan] ?? 1;
+            const nextPlan: Record<string, string> = { free: 'Pro', pro: 'Elite' };
 
-        const appearance = (profile.appearance as any) || {};
-        const current: any[] = appearance.sponsored_products || [];
+            const appearance = (profile.appearance as any) || {};
+            const current: any[] = appearance.sponsored_products || [];
 
-        if (current.length >= cap) {
-            const next = nextPlan[plan];
-            const message = next
-                ? `You've reached the ${cap}-product limit on your ${plan.charAt(0).toUpperCase() + plan.slice(1)} plan. Upgrade to ${next} to add more.`
-                : `You've reached the maximum ${cap} products allowed.`;
-            throw new BadRequestException({ message, upgrade_required: true, current_plan: plan });
+            if (current.length >= cap) {
+                const next = nextPlan[plan];
+                const message = next
+                    ? `You've reached the ${cap}-product limit on your ${plan.charAt(0).toUpperCase() + plan.slice(1)} plan. Upgrade to ${next} to add more.`
+                    : `You've reached the maximum ${cap} products allowed.`;
+                throw new BadRequestException({ message, upgrade_required: true, current_plan: plan });
+            }
+
+            const newProduct = {
+                id: uuidv4(),
+                url: product.url,
+                title: product.title,
+                description: product.description || null,
+                image: product.image || null,
+                site_name: product.site_name || null,
+                added_at: new Date().toISOString(),
+                is_active: true,
+            };
+
+            const updated = await this.prisma.creatorProfile.update({
+                where: { userId },
+                data: {
+                    appearance: {
+                        ...appearance,
+                        sponsored_products: [...current, newProduct],
+                    } as any,
+                },
+            });
+
+            return { product: newProduct, total: current.length + 1, cap };
+        } catch (error: any) {
+            console.error('addSponsoredProduct Error:', error);
+            throw new InternalServerErrorException(error.message || 'Failed to add sponsored product');
         }
-
-        const { randomUUID } = require('crypto');
-        const newProduct = {
-            id: randomUUID(),
-            url: product.url,
-            title: product.title,
-            description: product.description || null,
-            image: product.image || null,
-            site_name: product.site_name || null,
-            added_at: new Date().toISOString(),
-            is_active: true,
-        };
-
-        const updated = await this.prisma.creatorProfile.update({
-            where: { userId },
-            data: {
-                appearance: {
-                    ...appearance,
-                    sponsored_products: [...current, newProduct],
-                } as any,
-            },
-        });
-
-        return { product: newProduct, total: current.length + 1, cap };
     }
 
     /**
