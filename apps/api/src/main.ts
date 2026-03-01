@@ -3,10 +3,28 @@ import { ValidationPipe } from '@nestjs/common';
 import 'dotenv/config';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { execSync } from 'child_process';
+import * as path from 'path';
+import * as fs from 'fs';
 
 let cachedServer: any;
 
 async function bootstrap() {
+    // Run database migrations on startup in production (bypassing Railway/Nixpacks script limitations)
+    if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
+        try {
+            console.log('🔄 Running runtime database schema push...');
+            const isRoot = fs.existsSync(path.join(process.cwd(), 'packages', 'database', 'prisma', 'schema.prisma'));
+            const schemaPath = isRoot
+                ? 'packages/database/prisma/schema.prisma'
+                : '../../packages/database/prisma/schema.prisma';
+            execSync(`npx prisma@5.22.0 db push --schema=${schemaPath} --accept-data-loss`, { stdio: 'inherit' });
+            console.log('✅ Database schema updated successfully');
+        } catch (error) {
+            console.error('❌ Failed to push database schema. The API might crash if columns are missing:', error);
+        }
+    }
+
     if (!cachedServer) {
         const app = await NestFactory.create(AppModule, {
             rawBody: true,
