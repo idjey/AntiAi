@@ -234,9 +234,11 @@ export class ProofsService {
         };
     }
 
-    async getActiveProofByVideoId(youtubeVideoId: string): Promise<any> {
-        const video = await this.prisma.video.findUnique({
-            where: { youtubeVideoId },
+    async getActiveProofByVideoId(identifier: string): Promise<any> {
+        const isUuid = identifier.length === 36 && identifier.includes('-');
+
+        const video = await this.prisma.video.findFirst({
+            where: isUuid ? { id: identifier } : { youtubeVideoId: identifier },
             include: {
                 channel: true,
                 proofs: {

@@ -42,7 +42,7 @@ export class PublicService {
         if (proof.expiresAt < now) {
             return {
                 status: 'expired',
-                youtube_video_id: youtubeVideoId,
+                youtube_video_id: video.youtubeVideoId,
                 youtube_channel_id: video.channel.youtubeChannelId,
                 channel_name: video.channel.channelName,
                 channel_handle: video.channel.channelHandle,
@@ -56,7 +56,7 @@ export class PublicService {
         if (video.channel.verificationStatus !== 'verified') {
             return {
                 status: 'revoked',
-                youtube_video_id: youtubeVideoId,
+                youtube_video_id: video.youtubeVideoId,
                 youtube_channel_id: video.channel.youtubeChannelId,
                 channel_name: video.channel.channelName,
                 channel_handle: video.channel.channelHandle,
@@ -68,7 +68,7 @@ export class PublicService {
 
         return {
             status: 'verified',
-            youtube_video_id: youtubeVideoId,
+            youtube_video_id: video.youtubeVideoId,
             youtube_channel_id: video.channel.youtubeChannelId,
             channel_name: video.channel.channelName,
             channel_handle: video.channel.channelHandle,
