@@ -6,7 +6,8 @@ import {
     ForbiddenException,
     InternalServerErrorException,
 } from '@nestjs/common';
-import { v4 as uuidv4 } from 'uuid';
+import * as crypto from 'crypto';
+import { PRODUCT_LIMITS } from '@antiai/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
     CreateProfileDto,
@@ -560,8 +561,7 @@ export class ProfilesService {
             if (!profile) throw new NotFoundException('Profile not found');
 
             const plan: string = profile.user?.subscription?.plan || 'free';
-            const { PRODUCT_LIMITS } = require('@antiai/shared');
-            const cap = PRODUCT_LIMITS[plan] ?? 1;
+            const cap = PRODUCT_LIMITS[plan as keyof typeof PRODUCT_LIMITS] ?? 1;
             const nextPlan: Record<string, string> = { free: 'Pro', pro: 'Elite' };
 
             const appearance = (profile.appearance as any) || {};
@@ -576,7 +576,7 @@ export class ProfilesService {
             }
 
             const newProduct = {
-                id: uuidv4(),
+                id: crypto.randomUUID(),
                 url: product.url,
                 title: product.title,
                 description: product.description || null,
