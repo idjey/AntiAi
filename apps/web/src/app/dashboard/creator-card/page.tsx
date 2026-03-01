@@ -475,10 +475,10 @@ export default function CreatorCardPage() {
                         </button>
 
                         {/* View Public Page */}
-                        <Link href={publicUrl} target="_blank" className="btn-secondary flex items-center gap-2">
+                        <a href={publicUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary flex items-center gap-2">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                             <span className="hidden sm:inline">View Public Page</span>
-                        </Link>
+                        </a>
 
                     </div>
                 </div>
@@ -990,8 +990,8 @@ export default function CreatorCardPage() {
                                                                 <span className="text-xl font-bold text-text-secondary">{profile?.display_name?.substring(0, 2).toUpperCase()}</span>
                                                             )}
                                                         </div>
-                                                        <div className={`absolute inset-0 bg-black/50 transition-opacity flex items-center justify-center ${isUploadingAvatar ? 'opacity-100 cursor-wait' : 'opacity-0 group-hover:opacity-100'}`}>
-                                                            {!isUploadingAvatar && (
+                                                        <div className={`absolute inset-0 bg-black/50 transition-opacity flex items-center justify-center ${isUploadingAvatar ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                                            <div className={`w-full h-full flex items-center justify-center ${isUploadingAvatar ? 'hidden' : ''}`}>
                                                                 <ImageUpload
                                                                     onUploadStart={() => setIsUploadingAvatar(true)}
                                                                     onUploadEnd={() => setIsUploadingAvatar(false)}
@@ -1003,7 +1003,7 @@ export default function CreatorCardPage() {
                                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                                                                     </svg>
                                                                 </ImageUpload>
-                                                            )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                     <div className="flex-1">
@@ -1974,6 +1974,41 @@ export default function CreatorCardPage() {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Sponsored Products (Live Preview) */}
+                                {products.length > 0 && (
+                                    <div className="w-full space-y-3 pt-4 border-t border-white/10">
+                                        <h3 className="text-xs font-bold opacity-70 uppercase tracking-wider text-center" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>Featured Products</h3>
+                                        <div className={`w-full gap-3 ${appearance.shop_layout === 'grid' || appearance.shop_layout === 'bento' ? 'grid grid-cols-2' : 'flex flex-col'}`}>
+                                            {products.filter(p => p.is_active !== false).map(product => (
+                                                <a
+                                                    key={product.id}
+                                                    href="#"
+                                                    onClick={e => e.preventDefault()}
+                                                    className={`group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${appearance.card_style === 'pill' ? 'rounded-[2rem]' : appearance.card_style === 'modern' ? 'rounded-xl' : appearance.card_style === 'sharp' ? 'rounded-none' : 'rounded-lg'} bg-white/10 backdrop-blur-md border border-white/5 ${appearance.public_card_glow > 0 ? 'shadow-[0_0_var(--glow)_rgba(255,255,255,0.1)]' : ''} flex ${appearance.shop_layout === 'grid' || appearance.shop_layout === 'bento' ? 'flex-col aspect-square' : 'items-center p-3 gap-3'}`}
+                                                    style={{ backgroundColor: appearance.public_card_theme === 'light' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)', borderColor: appearance.public_card_theme === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)', color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff', '--glow': `${appearance.public_card_glow}px` } as any}
+                                                >
+                                                    <div className={`${appearance.shop_layout === 'grid' || appearance.shop_layout === 'bento' ? 'w-full h-2/3 border-b border-white/10' : 'w-12 h-12 rounded-lg flex-shrink-0 border border-white/10'} bg-black/20 overflow-hidden relative`}>
+                                                        {product.image ? (
+                                                            <img src={product.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center opacity-50">
+                                                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                                                            </div>
+                                                        )}
+                                                        <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
+                                                    </div>
+                                                    <div className={`${appearance.shop_layout === 'grid' || appearance.shop_layout === 'bento' ? 'p-2 flex-1 flex flex-col justify-center' : 'flex-1 min-w-0'} flex flex-col overflow-hidden`}>
+                                                        <span className="font-bold text-xs truncate leading-tight w-full" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>{product.title}</span>
+                                                        {product.site_name && (
+                                                            <span className="text-[9px] opacity-70 truncate mt-0.5" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>{product.site_name}</span>
+                                                        )}
+                                                    </div>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {profile?.verified_videos && profile.verified_videos.length > 0 && (
                                     <div className="w-full space-y-3 pt-4 border-t border-white/10">
