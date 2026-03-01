@@ -240,7 +240,15 @@ export class ProofsService {
         const video = await this.prisma.video.findFirst({
             where: isUuid ? { id: identifier } : { youtubeVideoId: identifier },
             include: {
-                channel: true,
+                channel: {
+                    include: {
+                        user: {
+                            include: {
+                                profile: true
+                            }
+                        }
+                    }
+                },
                 proofs: {
                     where: { status: 'active' },
                     take: 1,
@@ -263,7 +271,15 @@ export class ProofsService {
         const video = await this.prisma.video.findUnique({
             where: { id: videoId },
             include: {
-                channel: true,
+                channel: {
+                    include: {
+                        user: {
+                            include: {
+                                profile: true
+                            }
+                        }
+                    }
+                },
                 proofs: {
                     where: { status: 'active' },
                     take: 1,
@@ -303,7 +319,15 @@ export class ProofsService {
         const video = await this.prisma.video.findUnique({
             where: { youtubeVideoId },
             include: {
-                channel: true,
+                channel: {
+                    include: {
+                        user: {
+                            include: {
+                                profile: true
+                            }
+                        }
+                    }
+                },
                 proofs: {
                     where: { status: 'active' },
                     take: 1,
