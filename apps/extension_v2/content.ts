@@ -1,6 +1,6 @@
 
 import type { PlasmoCSConfig } from "plasmo"
-import "./style.css"
+import "./content.css"
 
 export const config: PlasmoCSConfig = {
     matches: ["https://www.youtube.com/*"],

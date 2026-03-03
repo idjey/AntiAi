@@ -43,3 +43,7 @@ apps/api/keys.txt
 
 # Uploads
 apps/api/uploads/
+
+# Plasmo extension build
+apps/extension_v2/build/
+apps/extension_v2/.plasmo/
