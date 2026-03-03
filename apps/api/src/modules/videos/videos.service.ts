@@ -7,14 +7,19 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ChannelsService } from '../channels/channels.service';
-import { ImportVideoDto } from './dto';
+import { ImportVideoDto, SyncChannelDto } from './dto';
 import { PLAN_LIMITS } from '@antiai/shared';
+import { ConfigService } from '@nestjs/config';
+import { signProof } from '@antiai/crypto';
+import { YoutubeService } from './youtube.service';
 
 @Injectable()
 export class VideosService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly channelsService: ChannelsService,
+        private readonly configService: ConfigService,
+        private readonly youtubeService: YoutubeService,
     ) { }
 
     async listUserVideos(userId: string, channelId?: string) {
@@ -131,6 +136,148 @@ export class VideosService {
             title: video.title,
             video_url: video.videoUrl,
             published_at: video.publishedAt?.toISOString() || null,
+        };
+    }
+
+    async syncChannel(userId: string, dto: SyncChannelDto) {
+        // Elite plan check
+        const subscription = await this.prisma.subscription.findUnique({
+            where: { userId },
+        });
+
+        if (!subscription || subscription.plan !== 'elite') {
+            throw new ForbiddenException('Bulk channel sync is an exclusive feature for the Elite plan.');
+        }
+
+        // Get verified channel
+        let channelId = dto.channel_id;
+        if (!channelId) {
+            // Pick their first verified channel if none specified
+            const channels = await this.prisma.channel.findMany({
+                where: { userId, verificationStatus: 'verified' },
+                take: 1
+            });
+            if (channels.length === 0) {
+                throw new ForbiddenException('No verified channel found to sync.');
+            }
+            channelId = channels[0].id;
+        }
+
+        const channel = await this.channelsService.getVerifiedChannel(userId, channelId);
+        if (!channel) {
+            throw new ForbiddenException('No verified channel found');
+        }
+
+        const kid = this.configService.get<string>('SIGNING_KEY_ID');
+        const privateKeyB64 = this.configService.get<string>('SIGNING_PRIVATE_KEY_B64');
+
+        if (!kid || !privateKeyB64) {
+            throw new BadRequestException('Signing keys not configured on server');
+        }
+
+        // Check if proof issuance is disabled globally
+        const setting = await this.prisma.systemSetting.findUnique({
+            where: { key: 'disable_proofs' },
+        });
+        if (setting?.value === 'true') {
+            throw new BadRequestException('Proof issuance is currently disabled.');
+        }
+
+        // 1. Resolve Playlist ID
+        const playlistId = await this.youtubeService.getChannelUploadsPlaylistId(dto.channelIdOrHandle);
+        if (!playlistId) {
+            throw new NotFoundException('Could not resolve uploads playlist for this channel');
+        }
+
+        // 2. Fetch all videos from YouTube
+        const allVideos = await this.youtubeService.getAllVideosFromPlaylist(playlistId);
+
+        // Security check: ensure the fetched channel ID matches the user's verified channel ID
+        if (allVideos.length > 0 && allVideos[0].channelId && allVideos[0].channelId !== channel.youtubeChannelId) {
+            throw new ForbiddenException(`The provided handle/URL does not match your verified channel ID (${channel.youtubeChannelId}).`);
+        }
+
+        // 3. Diff against existing database videos
+        const existingVideos = await this.prisma.video.findMany({
+            where: { channelId: channel.id },
+            select: { youtubeVideoId: true }
+        });
+        const existingIds = new Set(existingVideos.map(v => v.youtubeVideoId));
+        const newVideos = allVideos.filter(v => !existingIds.has(v.videoId));
+
+        // 4. Chunk & save new videos & proofs sequentially to prevent overwhelming DB pool
+        const syncedCount = newVideos.length;
+
+        for (const v of newVideos) {
+            try {
+                // Determine 1 year expiration
+                const expiresAt = new Date();
+                expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
+                // Construct URL
+                const videoUrl = `https://www.youtube.com/watch?v=${v.videoId}`;
+
+                await this.prisma.$transaction(async (tx) => {
+                    // Create Video
+                    const video = await tx.video.create({
+                        data: {
+                            channelId: channel.id,
+                            youtubeVideoId: v.videoId,
+                            title: v.title,
+                            videoUrl,
+                            thumbnailUrl: v.thumbnailUrl,
+                            publishedAt: v.publishedAt ? new Date(v.publishedAt) : undefined,
+                        },
+                    });
+
+                    // Sign Proof
+                    const signedProof = await signProof({
+                        kid,
+                        youtubeVideoId: video.youtubeVideoId,
+                        youtubeChannelId: channel.youtubeChannelId,
+                        expiresAt,
+                        privateKeyB64,
+                    });
+
+                    // Create Proof
+                    const proof = await tx.proof.create({
+                        data: {
+                            videoId: video.id,
+                            channelId: video.channelId,
+                            alg: signedProof.alg,
+                            kid: signedProof.kid,
+                            payloadJson: signedProof.payload_json as any,
+                            payloadB64: signedProof.payload_b64,
+                            signatureB64: signedProof.signature_b64,
+                            expiresAt,
+                            status: 'active',
+                        }
+                    });
+
+                    // Log Transparency
+                    await tx.transparencyLog.create({
+                        data: {
+                            eventType: 'proof_issued',
+                            entityType: 'proof',
+                            entityId: proof.id,
+                            data: {
+                                video_id: video.youtubeVideoId,
+                                channel_id: channel.youtubeChannelId,
+                                kid: signedProof.kid,
+                            },
+                        },
+                    });
+                });
+            } catch (err) {
+                console.error(`[SyncChannel] Failed to sync individual video ${v.videoId}:`, err);
+            }
+        }
+
+        return {
+            success: true,
+            synced_count: syncedCount,
+            total_videos: allVideos.length,
+            message: `Successfully synced ${syncedCount} new videos.`
         };
     }
 

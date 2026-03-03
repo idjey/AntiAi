@@ -12,3 +12,12 @@ export class ImportVideoDto {
     @IsString()
     title?: string;
 }
+
+export class SyncChannelDto {
+    @IsString()
+    channelIdOrHandle: string;
+
+    @IsOptional()
+    @IsUUID()
+    channel_id?: string;
+}

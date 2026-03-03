@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { SyncChannelDialog } from './components/sync-channel-dialog'
 
 interface Video {
     id: string
@@ -18,29 +19,30 @@ export default function VideosPage() {
     const [videos, setVideos] = useState<Video[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState('')
+    const [isSyncModalOpen, setIsSyncModalOpen] = useState(false)
+
+    const fetchVideos = async () => {
+        const token = localStorage.getItem('token')
+        if (!token) return
+
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/videos`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+
+            if (!res.ok) throw new Error('Failed to fetch videos')
+
+            const data = await res.json()
+            setVideos(data.items)
+        } catch (err) {
+            console.error(err)
+            setError('Failed to load videos')
+        } finally {
+            setIsLoading(false)
+        }
+    }
 
     useEffect(() => {
-        const fetchVideos = async () => {
-            const token = localStorage.getItem('token')
-            if (!token) return
-
-            try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/videos`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
-
-                if (!res.ok) throw new Error('Failed to fetch videos')
-
-                const data = await res.json()
-                setVideos(data.items)
-            } catch (err) {
-                console.error(err)
-                setError('Failed to load videos')
-            } finally {
-                setIsLoading(false)
-            }
-        }
-
         fetchVideos()
     }, [])
 
@@ -166,6 +168,17 @@ export default function VideosPage() {
                         <option value="unprotected">Unprotected First</option>
                     </select>
 
+                    <button
+                        onClick={() => setIsSyncModalOpen(true)}
+                        className="px-4 py-2 font-medium text-black bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-lg hover:opacity-90 flex items-center gap-2"
+                        title="Bulk Sync Channel (Elite Only)"
+                    >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Elite Sync
+                    </button>
+
                     <Link
                         href="/dashboard/videos/import"
                         className="btn-primary flex items-center gap-2 whitespace-nowrap"
@@ -177,6 +190,12 @@ export default function VideosPage() {
                     </Link>
                 </div>
             </div>
+
+            <SyncChannelDialog
+                isOpen={isSyncModalOpen}
+                onClose={() => setIsSyncModalOpen(false)}
+                onSuccess={fetchVideos}
+            />
 
             {error && (
                 <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
