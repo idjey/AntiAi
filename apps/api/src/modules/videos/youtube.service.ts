@@ -36,7 +36,7 @@ export class YoutubeService {
                 throw new BadRequestException('Invalid channel identifier (must be a @handle or a 24-char UC... ID)');
             }
 
-            const response = await this.youtube.channels.list(requestParams);
+            const response: any = await this.youtube.channels.list(requestParams as any);
 
             if (!response.data.items || response.data.items.length === 0) {
                 return null;
@@ -59,12 +59,12 @@ export class YoutubeService {
 
         try {
             do {
-                const response = await this.youtube.playlistItems.list({
+                const response: any = await this.youtube.playlistItems.list({
                     part: ['contentDetails', 'snippet'],
                     playlistId: playlistId,
                     maxResults: 50,
                     pageToken: nextPageToken || undefined,
-                });
+                } as any);
 
                 if (response.data.items) {
                     for (const item of response.data.items) {
