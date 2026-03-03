@@ -71,7 +71,7 @@ function IndexPopup() {
     }
 
     return (
-        <div className="w-64 p-4 bg-slate-900 text-white min-h-[220px] flex flex-col justify-between">
+        <div className="w-full h-full p-4 flex flex-col justify-between" style={{ backgroundColor: "#0f172a", color: "white" }}>
             <div>
                 <div className="flex items-center justify-between mb-4">
                     <h1 className="text-xl font-bold flex items-center gap-2">
@@ -82,7 +82,7 @@ function IndexPopup() {
                         className={`w-10 h-5 rounded-full relative transition-colors ${isEnabled ? 'bg-green-500' : 'bg-slate-600'}`}
                         aria-label="Toggle Extension"
                     >
-                        <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-transform ${isEnabled ? 'translate-x-5.5' : 'translate-x-0.5'}`} style={{ transform: isEnabled ? 'translateX(20px)' : 'translateX(2px)' }} />
+                        <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-transform`} style={{ transform: isEnabled ? 'translateX(22px)' : 'translateX(2px)' }} />
                     </button>
                 </div>
 
