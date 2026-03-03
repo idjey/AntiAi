@@ -13,7 +13,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { VideosService } from './videos.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { ImportVideoDto } from './dto';
+import { ImportVideoDto, SyncChannelDto } from './dto';
 
 @Controller('videos')
 @UseGuards(AuthGuard('jwt'))
@@ -44,5 +44,11 @@ export class VideosController {
     @HttpCode(HttpStatus.OK)
     async delete(@CurrentUser() user: any, @Param('id') id: string) {
         return this.videosService.deleteVideo(user.id, id);
+    }
+
+    @Post('sync-channel')
+    @HttpCode(HttpStatus.OK)
+    async syncChannel(@CurrentUser() user: any, @Body() dto: SyncChannelDto) {
+        return this.videosService.syncChannel(user.id, dto);
     }
 }
