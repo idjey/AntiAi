@@ -20,4 +20,10 @@ export class SyncChannelDto {
     @IsOptional()
     @IsUUID()
     channel_id?: string;
+
+    @IsOptional()
+    dryRun?: boolean;
+
+    @IsOptional()
+    selectedVideoIds?: string[];
 }

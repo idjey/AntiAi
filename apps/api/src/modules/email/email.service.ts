@@ -206,4 +206,107 @@ export class EmailService {
 </html>
         `;
     }
+
+    async sendVerificationSummary(to: string, videoTitles: string[]) {
+        const apiKey = this.configService.get<string>('SMTP_PASS');
+        const host = this.configService.get<string>('SMTP_HOST');
+        const fromEmail = this.configService.get<string>('SMTP_FROM') || 'noreply@antiai.me';
+
+        const subject = `Verified ${videoTitles.length} Videos - AntiAI.me`;
+        const html = this.getVerificationSummaryTemplate(videoTitles);
+
+        try {
+            if (!apiKey) {
+                this.logger.warn(`SMTP_PASS not configured. Skipping actual email send to ${to}. Subject: ${subject}`);
+                return;
+            }
+
+            if (host === 'smtp.resend.com') {
+                const response = await fetch('https://api.resend.com/emails', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        from: `AntiAI Elite <${fromEmail}>`,
+                        to: [to],
+                        subject,
+                        html
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorResponse = await response.text();
+                    throw new Error(`Resend API Error: ${response.status} ${errorResponse}`);
+                }
+                return;
+            }
+
+            await this.transporter.sendMail({
+                from: `"AntiAI Elite" <${fromEmail}>`,
+                to,
+                subject,
+                html,
+            });
+        } catch (error) {
+            this.logger.error(`Failed to send verification summary email to ${to}`, error);
+        }
+    }
+
+    private getVerificationSummaryTemplate(videoTitles: string[]): string {
+        const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+        let videosHtml = '';
+        if (videoTitles.length > 5) {
+            videosHtml = videoTitles.slice(0, 5).map(t => `<li style="margin-bottom: 8px;">${t}</li>`).join('');
+            videosHtml += `<li style="margin-bottom: 8px;">...and ${videoTitles.length - 5} more videos</li>`;
+        } else {
+            videosHtml = videoTitles.map(t => `<li style="margin-bottom: 8px;">${t}</li>`).join('');
+        }
+
+        return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verification Summary</title>
+</head>
+<body style="background-color: #0B0F14; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+        <div style="text-align: center; margin-bottom: 40px;">
+            <a href="https://antiai.me" style="text-decoration: none;">
+                <div style="font-size: 24px; font-weight: bold; color: #ffffff;">
+                    antiai<span style="color: #22C55E;">.me</span>
+                </div>
+            </a>
+        </div>
+        
+        <div style="background-color: #1a2234; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 40px;">
+            <h1 style="font-size: 24px; font-weight: 700; margin: 0 0 16px 0; color: #ffffff;">Validation Complete 🎉</h1>
+            <p style="font-size: 15px; color: #94A3B8; margin: 0 0 24px 0; line-height: 1.5;">
+                We successfully generated cryptographic proofs for <strong>${videoTitles.length} videos</strong> on ${date}. They are now permanently protected.
+            </p>
+            
+            <div style="background-color: #0f172a; border-radius: 12px; padding: 24px; margin-bottom: 32px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                <h3 style="margin-top: 0; color: #EAB308; font-size: 16px;">Synced Videos</h3>
+                <ul style="color: #94A3B8; font-size: 14px; padding-left: 20px; list-style-type: disc;">
+                    ${videosHtml}
+                </ul>
+            </div>
+            
+            <p style="margin-bottom: 0; font-size: 13px; color: #94A3B8; line-height: 1.5;">
+                You can review the full proofs at any time directly in your <a href="https://antiai.me/dashboard/videos" style="color: #EAB308;">creator dashboard</a>.
+            </p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 40px; font-size: 13px; color: #64748B;">
+            <p>&copy; ${new Date().getFullYear()} AntiAI.me. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+        `;
+    }
 }
