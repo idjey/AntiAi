@@ -20,12 +20,23 @@ export default function VideosPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState('')
     const [isSyncModalOpen, setIsSyncModalOpen] = useState(false)
+    const [userRole, setUserRole] = useState<string | null>(null)
 
-    const fetchVideos = async () => {
+    const fetchData = async () => {
         const token = localStorage.getItem('token')
         if (!token) return
 
         try {
+            // Fetch User Role to check for Elite Plan
+            const userRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/auth/me`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            if (userRes.ok) {
+                const userData = await userRes.json()
+                setUserRole(userData.role?.toLowerCase())
+            }
+
+            // Fetch Videos
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/videos`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
@@ -43,7 +54,7 @@ export default function VideosPage() {
     }
 
     useEffect(() => {
-        fetchVideos()
+        fetchData()
     }, [])
 
     const handleRetryProtection = async (videoId: string) => {
@@ -132,12 +143,12 @@ export default function VideosPage() {
 
     return (
         <div>
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between mb-8 gap-4">
                 <div>
                     <h1 className="text-3xl font-bold mb-2">My Videos</h1>
                     <p className="text-text-secondary">Protect and manage your content library.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                     <div className="flex bg-surface-light rounded-lg p-1 border border-white/5">
                         <button
                             onClick={() => setViewMode('grid')}
@@ -168,16 +179,18 @@ export default function VideosPage() {
                         <option value="unprotected">Unprotected First</option>
                     </select>
 
-                    <button
-                        onClick={() => setIsSyncModalOpen(true)}
-                        className="px-4 py-2 font-medium text-black bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-lg hover:opacity-90 flex items-center gap-2"
-                        title="Bulk Sync Channel (Elite Only)"
-                    >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                        Elite Sync
-                    </button>
+                    {userRole === 'elite' && (
+                        <button
+                            onClick={() => setIsSyncModalOpen(true)}
+                            className="px-4 py-2 font-medium text-black bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-lg hover:opacity-90 flex items-center gap-2"
+                            title="Bulk Sync Channel (Elite Only)"
+                        >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            Elite Sync
+                        </button>
+                    )}
 
                     <Link
                         href="/dashboard/videos/import"
@@ -194,7 +207,7 @@ export default function VideosPage() {
             <SyncChannelDialog
                 isOpen={isSyncModalOpen}
                 onClose={() => setIsSyncModalOpen(false)}
-                onSuccess={fetchVideos}
+                onSuccess={fetchData}
             />
 
             {error && (
