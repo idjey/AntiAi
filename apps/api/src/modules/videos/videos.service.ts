@@ -12,6 +12,7 @@ import { PLAN_LIMITS } from '@antiai/shared';
 import { ConfigService } from '@nestjs/config';
 import { signProof } from '@antiai/crypto';
 import { YoutubeService } from './youtube.service';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class VideosService {
@@ -20,6 +21,7 @@ export class VideosService {
         private readonly channelsService: ChannelsService,
         private readonly configService: ConfigService,
         private readonly youtubeService: YoutubeService,
+        private readonly emailService: EmailService,
     ) { }
 
     async listUserVideos(userId: string, channelId?: string) {
@@ -205,10 +207,29 @@ export class VideosService {
         const existingIds = new Set(existingVideos.map(v => v.youtubeVideoId));
         const newVideos = allVideos.filter(v => !existingIds.has(v.videoId));
 
-        // 4. Chunk & save new videos & proofs sequentially to prevent overwhelming DB pool
-        const syncedCount = newVideos.length;
+        if (dto.dryRun) {
+            return {
+                success: true,
+                videos: newVideos,
+                message: `Found ${newVideos.length} untested videos.`,
+            };
+        }
 
-        for (const v of newVideos) {
+        let videosToSync = newVideos;
+        if (dto.selectedVideoIds && dto.selectedVideoIds.length > 0) {
+            const selectedSet = new Set(dto.selectedVideoIds);
+            videosToSync = newVideos.filter(v => selectedSet.has(v.videoId));
+        }
+
+        if (videosToSync.length > 100) {
+            throw new BadRequestException('You can only sync up to 100 videos at a time to prevent server timeout.');
+        }
+
+        // 4. Chunk & save new videos & proofs sequentially to prevent overwhelming DB pool
+        const syncedCount = videosToSync.length;
+        const syncedTitles: string[] = [];
+
+        for (const v of videosToSync) {
             try {
                 // Determine 1 year expiration
                 const expiresAt = new Date();
@@ -268,16 +289,24 @@ export class VideosService {
                         },
                     });
                 });
+                syncedTitles.push(v.title);
             } catch (err) {
                 console.error(`[SyncChannel] Failed to sync individual video ${v.videoId}:`, err);
             }
         }
 
+        if (syncedTitles.length > 0) {
+            const user = await this.prisma.user.findUnique({ where: { id: userId } });
+            if (user?.email) {
+                await this.emailService.sendVerificationSummary(user.email, syncedTitles);
+            }
+        }
+
         return {
             success: true,
-            synced_count: syncedCount,
+            synced_count: syncedTitles.length,
             total_videos: allVideos.length,
-            message: `Successfully synced ${syncedCount} new videos.`
+            message: `Successfully synced ${syncedTitles.length} new videos.`
         };
     }
 
