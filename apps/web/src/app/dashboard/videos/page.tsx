@@ -20,20 +20,20 @@ export default function VideosPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState('')
     const [isSyncModalOpen, setIsSyncModalOpen] = useState(false)
-    const [userRole, setUserRole] = useState<string | null>(null)
+    const [userPlan, setUserPlan] = useState<string | null>(null)
 
     const fetchData = async () => {
         const token = localStorage.getItem('token')
         if (!token) return
 
         try {
-            // Fetch User Role to check for Elite Plan
+            // Fetch User Plan to check for Elite Tier
             const userRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/auth/me`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
             if (userRes.ok) {
                 const userData = await userRes.json()
-                setUserRole(userData.role?.toLowerCase())
+                setUserPlan(userData.subscription?.plan?.toLowerCase() || null)
             }
 
             // Fetch Videos
@@ -179,7 +179,7 @@ export default function VideosPage() {
                         <option value="unprotected">Unprotected First</option>
                     </select>
 
-                    {userRole === 'elite' && (
+                    {userPlan === 'elite' && (
                         <button
                             onClick={() => setIsSyncModalOpen(true)}
                             className="px-4 py-2 font-medium text-black bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-lg hover:opacity-90 flex items-center gap-2"
