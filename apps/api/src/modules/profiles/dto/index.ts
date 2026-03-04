@@ -133,6 +133,14 @@ export class AppearanceDto {
     card_background_gradient?: string;
 
     @IsOptional()
+    @IsNumber()
+    card_bg_opacity?: number;
+
+    @IsOptional()
+    @IsNumber()
+    card_backdrop_blur?: number;
+
+    @IsOptional()
     @IsArray()
     sponsored_products?: any[];
 
