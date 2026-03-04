@@ -84,12 +84,51 @@ export const PublicProfile = ({ creator }: Props) => {
         return `rgba(${r}, ${g}, ${b}, ${opacityPercent / 100})`;
     };
 
-    const [activeTab, setActiveTab] = useState<'links' | 'shop'>('links');
+    const [activeTab, setActiveTab] = useState<'links' | 'shop' | 'music' | 'events'>('links');
     const [isTokenRevealed, setIsTokenRevealed] = useState(false);
 
-    // Only show active products on public profile
+    // Visibility + Pinning Settings
+    const tabVisibility = appearance.tab_visibility || {
+        links: true,
+        shop: true,
+        videos: true,
+        music: true,
+        events: true
+    };
+    const pinnedItems = appearance.pinned_items || {
+        links: null,
+        shop: null,
+        videos: null,
+        music: null,
+        events: null
+    };
+
+    // Active arrays
     const activeShopProducts = (creator.sponsored_products || []).filter((p: any) => p.is_active !== false);
-    const hasShop = activeShopProducts.length > 0;
+    const hasShop = activeShopProducts.length > 0 && tabVisibility.shop;
+
+    const activeLinks = (creator.links || []).filter((l: any) => l.is_active !== false);
+    const hasLinks = activeLinks.length > 0 && tabVisibility.links;
+
+    const activeMusic = (appearance.music_links || []).filter((m: any) => m.is_active !== false);
+    const hasMusic = activeMusic.length > 0 && tabVisibility.music;
+
+    const activeEvents = (appearance.events || []).filter((e: any) => e.is_active !== false);
+    const hasEvents = activeEvents.length > 0 && tabVisibility.events;
+
+    // Helper to sort pinned items to the top
+    const sortPinnedFirst = (items: any[], pinnedId: string | null) => {
+        if (!pinnedId || !items.length) return items;
+        const pinnedList = items.filter(i => i.id === pinnedId);
+        const othersList = items.filter(i => i.id !== pinnedId);
+        return [...pinnedList, ...othersList];
+    };
+
+    const sortedLinks = sortPinnedFirst(activeLinks, pinnedItems.links);
+    const sortedShop = sortPinnedFirst(activeShopProducts, pinnedItems.shop);
+    const sortedMusic = sortPinnedFirst(activeMusic, pinnedItems.music);
+    const sortedEvents = sortPinnedFirst(activeEvents, pinnedItems.events);
+
 
     const [shopTooltipVisible, setShopTooltipVisible] = useState(false);
 
@@ -471,12 +510,12 @@ export const PublicProfile = ({ creator }: Props) => {
                             )}
                         </div>
 
-                        {/* Tab Bar: Links / Shop (only if creator has products) */}
-                        {hasShop && (
-                            <div className="flex gap-1 mb-4 p-1 rounded-full border border-white/10 bg-white/5">
+                        {/* Tab Bar: Links / Shop / Music / Events */}
+                        <div className="flex gap-1 mb-4 p-1 rounded-full border border-white/10 bg-white/5 flex-wrap overflow-hidden">
+                            {tabVisibility.links !== false && (
                                 <button
                                     onClick={() => setActiveTab('links')}
-                                    className={`flex-1 py-2 px-4 rounded-full text-sm font-semibold transition-all duration-200 ${activeTab === 'links'
+                                    className={`flex-1 min-w-[60px] py-2 px-3 rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 ${activeTab === 'links'
                                         ? 'text-black shadow-md'
                                         : `${textSecondaryColor} hover:text-white`
                                         }`}
@@ -484,9 +523,11 @@ export const PublicProfile = ({ creator }: Props) => {
                                 >
                                     Links
                                 </button>
+                            )}
+                            {hasShop && (
                                 <button
                                     onClick={() => setActiveTab('shop')}
-                                    className={`flex-1 py-2 px-4 rounded-full text-sm font-semibold transition-all duration-200 ${activeTab === 'shop'
+                                    className={`flex-1 min-w-[60px] py-2 px-3 rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 ${activeTab === 'shop'
                                         ? 'text-black shadow-md'
                                         : `${textSecondaryColor} hover:text-white`
                                         }`}
@@ -494,8 +535,32 @@ export const PublicProfile = ({ creator }: Props) => {
                                 >
                                     Shop
                                 </button>
-                            </div>
-                        )}
+                            )}
+                            {hasMusic && (
+                                <button
+                                    onClick={() => setActiveTab('music')}
+                                    className={`flex-1 min-w-[60px] py-2 px-3 rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 ${activeTab === 'music'
+                                        ? 'text-black shadow-md'
+                                        : `${textSecondaryColor} hover:text-white`
+                                        }`}
+                                    style={activeTab === 'music' ? { backgroundColor: appearance.primary_color } : {}}
+                                >
+                                    Music
+                                </button>
+                            )}
+                            {hasEvents && (
+                                <button
+                                    onClick={() => setActiveTab('events')}
+                                    className={`flex-1 min-w-[60px] py-2 px-3 rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 ${activeTab === 'events'
+                                        ? 'text-black shadow-md'
+                                        : `${textSecondaryColor} hover:text-white`
+                                        }`}
+                                    style={activeTab === 'events' ? { backgroundColor: appearance.primary_color } : {}}
+                                >
+                                    Events
+                                </button>
+                            )}
+                        </div>
 
                         {/* Tab Content Area */}
                         <div className="relative w-full">
@@ -524,79 +589,92 @@ export const PublicProfile = ({ creator }: Props) => {
                                                     appearance.link_style === 'row' ? "flex flex-wrap justify-center gap-3 w-full" :
                                                         "space-y-2 w-full"
                                             }>
-                                                {(appearance.link_style === 'row' && !isSocialExpanded && creator.links.length > 4
-                                                    ? creator.links.slice(0, 4)
-                                                    : creator.links
-                                                ).map((link: any, i: number) => (
-                                                    <a
-                                                        key={link.id}
-                                                        href={link.url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        onClick={() => trackClick(link.id, link.url)}
-                                                        className={`
+                                                {(appearance.link_style === 'row' && !isSocialExpanded && sortedLinks.length > 4
+                                                    ? sortedLinks.slice(0, 4)
+                                                    : sortedLinks
+                                                ).map((link: any, i: number) => {
+                                                    const isPinned = pinnedItems.links === link.id;
+                                                    return (
+                                                        <a
+                                                            key={link.id}
+                                                            href={link.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            onClick={() => trackClick(link.id, link.url)}
+                                                            className={`
                                                 block border ${currentShape.link} group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${appearance.card_style === 'pill' ? 'rounded-[2rem]' : ''} backdrop-blur-sm shadow-sm hover:shadow-md
                                                 ${appearance.link_style === 'row'
-                                                                ? 'p-3 w-12 h-12 flex items-center justify-center'
-                                                                : appearance.link_style === 'grid'
-                                                                    ? 'w-full p-4 flex flex-col justify-center text-center aspect-square gap-4'
-                                                                    : 'w-full p-4 flex items-center gap-4'
-                                                            }
+                                                                    ? 'p-3 w-12 h-12 flex items-center justify-center'
+                                                                    : appearance.link_style === 'grid'
+                                                                        ? 'w-full p-4 flex flex-col justify-center text-center aspect-square gap-4'
+                                                                        : 'w-full p-4 flex items-center gap-4'
+                                                                }
                                                 ${appearance.card_border_glow ? 'hover:shadow-[0_0_15px_var(--border-color)]' : ''}
+                                                ${isPinned ? 'ring-2 ring-primary border-transparent' : ''}
                                                 animate-in fade-in slide-in-from-bottom-2
                                             `}
-                                                        style={{
-                                                            backgroundColor: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.08)',
-                                                            borderColor: `${appearance.primary_color}30`,
-                                                            '--border-color': appearance.card_border_color || appearance.primary_color || '#10B981',
-                                                            animationDelay: `${i * 60}ms`,
-                                                            animationFillMode: 'backwards',
-                                                            minWidth: appearance.link_style === 'row' ? '44px' : undefined,
-                                                            minHeight: appearance.link_style === 'row' ? '44px' : undefined
-                                                        } as any}
-                                                        aria-label={link.label}
-                                                        title={appearance.link_style === 'row' ? link.label : undefined}
-                                                    >
-                                                        {/* Grid mode: faint platform logo background */}
-                                                        {appearance.link_style === 'grid' && link.url && (() => {
-                                                            try {
-                                                                const domain = new URL(link.url).hostname;
-                                                                return (
-                                                                    <img
-                                                                        src={`https://logo.clearbit.com/${domain}`}
-                                                                        alt=""
-                                                                        className="absolute inset-0 w-full h-full object-contain p-6 opacity-[0.08] pointer-events-none blur-[1px] group-hover:opacity-[0.15] transition-opacity duration-500"
-                                                                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                            style={{
+                                                                backgroundColor: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.08)',
+                                                                borderColor: isPinned ? appearance.primary_color : `${appearance.primary_color}30`,
+                                                                '--border-color': appearance.card_border_color || appearance.primary_color || '#10B981',
+                                                                animationDelay: `${i * 60}ms`,
+                                                                animationFillMode: 'backwards',
+                                                                minWidth: appearance.link_style === 'row' ? '44px' : undefined,
+                                                                minHeight: appearance.link_style === 'row' ? '44px' : undefined
+                                                            } as any}
+                                                            aria-label={link.label}
+                                                            title={appearance.link_style === 'row' ? link.label : undefined}
+                                                        >
+                                                            {/* Grid mode: faint platform logo background */}
+                                                            {appearance.link_style === 'grid' && link.url && (() => {
+                                                                try {
+                                                                    const domain = new URL(link.url).hostname;
+                                                                    return (
+                                                                        <img
+                                                                            src={`https://logo.clearbit.com/${domain}`}
+                                                                            alt=""
+                                                                            className="absolute inset-0 w-full h-full object-contain p-6 opacity-[0.08] pointer-events-none blur-[1px] group-hover:opacity-[0.15] transition-opacity duration-500"
+                                                                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                                        />
+                                                                    );
+                                                                } catch { return null; }
+                                                            })()}
+
+                                                            <div className={`absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity ${isLightMode ? 'bg-black/5' : 'bg-white/10'}`} />
+                                                            {/* Hover glow */}
+                                                            <div
+                                                                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                                                                style={{ background: `radial-gradient(circle at center, ${appearance.primary_color}15, transparent 70%)` }}
+                                                            />
+
+                                                            {isPinned && appearance.link_style !== 'row' && (
+                                                                <div className="absolute top-2 right-2 rotate-45 pointer-events-none z-20">
+                                                                    <span className="drop-shadow-md">📌</span>
+                                                                </div>
+                                                            )}
+
+                                                            <div className="relative z-10 transition-transform duration-300">
+                                                                <div className={appearance.link_style === 'grid' ? "w-8 h-8 mx-auto mb-2 flex items-center justify-center relative" : "w-6 h-6 flex items-center justify-center relative"}>
+                                                                    <SocialIcon
+                                                                        type={link.icon}
+                                                                        url={link.url}
+                                                                        variant={appearance.icon_style}
+                                                                        className={isLightMode && appearance.icon_style === 'monochrome' ? 'text-black' : ''}
                                                                     />
-                                                                );
-                                                            } catch { return null; }
-                                                        })()}
-
-                                                        <div className={`absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity ${isLightMode ? 'bg-black/5' : 'bg-white/10'}`} />
-                                                        {/* Hover glow */}
-                                                        <div
-                                                            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                                                            style={{ background: `radial-gradient(circle at center, ${appearance.primary_color}15, transparent 70%)` }}
-                                                        />
-
-                                                        <div className="relative z-10 transition-transform duration-300">
-                                                            <div className={appearance.link_style === 'grid' ? "w-8 h-8 mx-auto mb-2 flex items-center justify-center" : "w-6 h-6 flex items-center justify-center"}>
-                                                                <SocialIcon
-                                                                    type={link.icon}
-                                                                    url={link.url}
-                                                                    variant={appearance.icon_style}
-                                                                    className={isLightMode && appearance.icon_style === 'monochrome' ? 'text-black' : ''}
-                                                                />
+                                                                    {isPinned && appearance.link_style === 'row' && (
+                                                                        <div className="absolute -top-3 -right-3 rotate-45 pointer-events-none z-20 text-xs">📌</div>
+                                                                    )}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        {appearance.link_style !== 'row' && (
-                                                            <span className={`font-medium ${appearance.link_style === 'grid' ? 'text-xs' : 'text-center flex-1 pr-10'} relative z-10`}>{link.label}</span>
-                                                        )}
-                                                    </a>
-                                                ))}
+                                                            {appearance.link_style !== 'row' && (
+                                                                <span className={`font-medium ${appearance.link_style === 'grid' ? 'text-xs' : 'text-center flex-1 pr-10'} relative z-10`}>{link.label}</span>
+                                                            )}
+                                                        </a>
+                                                    );
+                                                })}
 
                                                 {/* Expand Toggle for Social Row */}
-                                                {appearance.link_style === 'row' && creator.links.length > 4 && (
+                                                {appearance.link_style === 'row' && sortedLinks.length > 4 && (
                                                     <button
                                                         onClick={() => setIsSocialExpanded(!isSocialExpanded)}
                                                         className={`
@@ -674,14 +752,16 @@ export const PublicProfile = ({ creator }: Props) => {
                                         </div>
 
                                         {/* Shop Layout Container */}
-                                        <div className={`gap-3 ${activeShopProducts.length > 4 ? 'max-h-[480px] overflow-y-auto pr-1 pb-1 -mr-1 scrollbars-hidden' : ''} ${appearance.shop_layout === 'grid' || appearance.shop_layout === 'bento' ? 'grid grid-cols-2' : 'flex flex-col'}`}>
-                                            {activeShopProducts.map((product: any, i: number) => {
+                                        <div className={`gap-3 ${sortedShop.length > 4 ? 'max-h-[480px] overflow-y-auto pr-1 pb-1 -mr-1 scrollbars-hidden' : ''} ${appearance.shop_layout === 'grid' || appearance.shop_layout === 'bento' ? 'grid grid-cols-2' : 'flex flex-col'}`}>
+                                            {sortedShop.map((product: any, i: number) => {
                                                 const isGrid = appearance.shop_layout === 'grid';
                                                 const isBentoHero = appearance.shop_layout === 'bento' && i === 0;
                                                 const isBentoThumb = appearance.shop_layout === 'bento' && i !== 0;
 
                                                 const isHorizontal = !isGrid && !isBentoThumb; // List or Bento Hero
                                                 const isVertical = isGrid || isBentoThumb;
+
+                                                const isPinned = pinnedItems.shop === product.id;
 
                                                 return (
                                                     <button
@@ -690,9 +770,10 @@ export const PublicProfile = ({ creator }: Props) => {
                                                         className={`group flex text-left rounded-2xl overflow-hidden border transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg animate-in fade-in slide-in-from-bottom-2 w-full
                                                     ${isHorizontal ? 'flex-row items-stretch' : 'flex-col'}
                                                     ${isBentoHero ? 'col-span-2' : ''}
+                                                    ${isPinned ? 'ring-2 ring-primary border-transparent' : ''}
                                                 `}
                                                         style={{
-                                                            borderColor: `${appearance.primary_color}30`,
+                                                            borderColor: isPinned ? appearance.primary_color : `${appearance.primary_color}30`,
                                                             backgroundColor: isLightMode ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.04)',
                                                             animationDelay: `${i * 60}ms`,
                                                             animationFillMode: 'backwards'
@@ -706,6 +787,11 @@ export const PublicProfile = ({ creator }: Props) => {
                                                     `}
                                                             style={{ borderColor: `${appearance.primary_color}20` }}
                                                         >
+                                                            {isPinned && (
+                                                                <div className="absolute top-1 left-1 rotate-45 pointer-events-none z-20 drop-shadow-md text-sm">
+                                                                    📌
+                                                                </div>
+                                                            )}
                                                             {product.image ? (
                                                                 <img
                                                                     src={product.image}
@@ -756,7 +842,199 @@ export const PublicProfile = ({ creator }: Props) => {
                                         </div>
                                     </motion.div>
                                 )}
-                                {activeTab === 'links' && creator.featured_video && (
+                                {/* Music Tab */}
+                                {activeTab === 'music' && hasMusic && (
+                                    <motion.div
+                                        key="music"
+                                        initial={{ opacity: 0, x: 10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 10 }}
+                                        transition={{ duration: 0.2, ease: "easeInOut" }}
+                                        className="w-full space-y-4 pt-2"
+                                    >
+                                        <div className={`gap-3 flex flex-col ${sortedMusic.length > 4 ? 'max-h-[480px] overflow-y-auto pr-1 pb-1 -mr-1 scrollbars-hidden' : ''}`}>
+                                            {sortedMusic.map((music: any, i: number) => {
+                                                const isPinned = pinnedItems.music === music.id;
+
+                                                // Extract embeds
+                                                const getSpotifyEmbed = (url: string) => {
+                                                    const match = url.match(/spotify\.com\/(track|album)\/([a-zA-Z0-9]+)/);
+                                                    if (match) return `https://open.spotify.com/embed/${match[1]}/${match[2]}?utm_source=generator`;
+                                                    return null;
+                                                };
+                                                const getAppleEmbed = (url: string) => {
+                                                    const match = url.match(/music\.apple\.com\/[a-z]{2}\/album\/[^/]+\/([0-9]+)\?i=([0-9]+)/) || url.match(/music\.apple\.com\/[a-z]{2}\/album\/[^/]+\/([0-9]+)/);
+                                                    if (match && match[2]) return `https://embed.music.apple.com/us/album/embed/${match[1]}?i=${match[2]}`;
+                                                    if (match && match[1]) return `https://embed.music.apple.com/us/album/embed/${match[1]}`;
+                                                    return null;
+                                                };
+                                                const getSoundcloudEmbed = (url: string) => {
+                                                    return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23${appearance.primary_color.replace('#', '')}&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=true`;
+                                                };
+
+                                                const platformUrl = music.url || '';
+                                                let iframeEmbed = null;
+                                                let embedHeight = 152; // Default 152
+
+                                                if (platformUrl.includes('spotify.com')) {
+                                                    iframeEmbed = getSpotifyEmbed(platformUrl);
+                                                } else if (platformUrl.includes('apple.com')) {
+                                                    iframeEmbed = getAppleEmbed(platformUrl);
+                                                    embedHeight = 150;
+                                                } else if (platformUrl.includes('soundcloud.com')) {
+                                                    iframeEmbed = getSoundcloudEmbed(platformUrl);
+                                                }
+
+                                                return (
+                                                    <div
+                                                        key={music.id || i}
+                                                        className={`group flex flex-col text-left rounded-2xl overflow-hidden border transition-all duration-300 w-full animate-in fade-in slide-in-from-bottom-2
+                                                            ${isPinned ? 'ring-2 ring-primary border-transparent' : ''}
+                                                            `}
+                                                        style={{
+                                                            borderColor: isPinned ? appearance.primary_color : `${appearance.primary_color}30`,
+                                                            backgroundColor: isLightMode ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.04)',
+                                                            animationDelay: `${i * 60}ms`,
+                                                            animationFillMode: 'backwards'
+                                                        }}
+                                                    >
+                                                        {iframeEmbed ? (
+                                                            <div className="relative w-full overflow-hidden" style={{ minHeight: `${embedHeight}px` }}>
+                                                                {isPinned && (
+                                                                    <div className="absolute top-2 right-2 rotate-45 pointer-events-none z-20 text-xl drop-shadow-md">📌</div>
+                                                                )}
+                                                                <iframe
+                                                                    src={iframeEmbed}
+                                                                    width="100%"
+                                                                    height={embedHeight}
+                                                                    frameBorder="0"
+                                                                    allowFullScreen
+                                                                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                                                                    loading="lazy"
+                                                                    className="relative z-10 w-full rounded-t-xl"
+                                                                ></iframe>
+                                                            </div>
+                                                        ) : (
+                                                            <a
+                                                                href={music.url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="p-4 flex flex-col justify-center relative min-h-[100px]"
+                                                                onClick={() => trackClick(music.id, music.url)}
+                                                            >
+                                                                {isPinned && (
+                                                                    <div className="absolute top-2 right-2 rotate-45 pointer-events-none z-20 text-xl drop-shadow-md">📌</div>
+                                                                )}
+                                                                <h3 className={`text-base font-semibold ${textColor} line-clamp-1`}>{music.title}</h3>
+                                                                <div className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest mt-2" style={{ color: appearance.primary_color }}>
+                                                                    <span className="opacity-70">{music.platform || 'Listen'}</span>
+                                                                    <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 12h14M12 5l7 7-7 7" />
+                                                                    </svg>
+                                                                </div>
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {/* Events Tab */}
+                                {activeTab === 'events' && hasEvents && (
+                                    <motion.div
+                                        key="events"
+                                        initial={{ opacity: 0, x: 10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 10 }}
+                                        transition={{ duration: 0.2, ease: "easeInOut" }}
+                                        className="w-full space-y-4 pt-2"
+                                    >
+                                        <div className={`gap-4 flex flex-col ${sortedEvents.length > 4 ? 'max-h-[480px] overflow-y-auto pr-1 pb-1 -mr-1 scrollbars-hidden' : ''}`}>
+                                            {sortedEvents.map((event: any, i: number) => {
+                                                const isPinned = pinnedItems.events === event.id;
+                                                const eventDate = event.date ? new Date(event.date) : null;
+                                                const mapEmbedUrl = event.venue_address ? `https://www.google.com/maps?q=${encodeURIComponent(event.venue_address)}&output=embed` : null;
+
+                                                return (
+                                                    <div
+                                                        key={event.id || i}
+                                                        className={`group flex flex-col text-left rounded-2xl overflow-hidden border transition-all duration-300 w-full animate-in fade-in slide-in-from-bottom-2
+                                                            ${isPinned ? 'ring-2 ring-primary border-transparent' : ''}
+                                                            `}
+                                                        style={{
+                                                            borderColor: isPinned ? appearance.primary_color : `${appearance.primary_color}30`,
+                                                            backgroundColor: isLightMode ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.04)',
+                                                            animationDelay: `${i * 60}ms`,
+                                                            animationFillMode: 'backwards'
+                                                        }}
+                                                    >
+                                                        {mapEmbedUrl && (
+                                                            <div className="relative w-full h-32 overflow-hidden bg-black/10">
+                                                                <iframe
+                                                                    width="100%"
+                                                                    height="100%"
+                                                                    frameBorder="0"
+                                                                    style={{ border: 0 }}
+                                                                    src={mapEmbedUrl}
+                                                                    allowFullScreen
+                                                                    className="opacity-70 group-hover:opacity-100 transition-opacity"
+                                                                ></iframe>
+                                                                {isPinned && (
+                                                                    <div className="absolute top-2 right-2 rotate-45 pointer-events-none z-20 text-xl drop-shadow-md">📌</div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        <div className="p-4 flex gap-4 w-full">
+                                                            {/* Date Box */}
+                                                            {eventDate && (
+                                                                <div className={`flex flex-col items-center justify-center shrink-0 w-14 h-14 rounded-xl shadow-md border`} style={{ borderColor: `${appearance.primary_color}40`, backgroundColor: isLightMode ? 'white' : 'rgba(0,0,0,0.4)' }}>
+                                                                    <span className="text-[10px] uppercase font-bold" style={{ color: appearance.primary_color }}>
+                                                                        {eventDate.toLocaleString('default', { month: 'short' })}
+                                                                    </span>
+                                                                    <span className={`text-xl font-black ${textColor}`}>
+                                                                        {eventDate.getDate()}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            {/* Content */}
+                                                            <div className="flex-1 flex flex-col min-w-0 pr-4">
+                                                                {!mapEmbedUrl && isPinned && (
+                                                                    <div className="absolute top-3 right-3 rotate-45 pointer-events-none z-20 text-lg drop-shadow-md">📌</div>
+                                                                )}
+                                                                <h3 className={`text-base font-semibold ${textColor} line-clamp-1`}>{event.title}</h3>
+                                                                {event.venue_address && (
+                                                                    <p className={`text-xs ${textSecondaryColor} mt-1 line-clamp-1`}>
+                                                                        📍 {event.venue_address}
+                                                                    </p>
+                                                                )}
+                                                                {event.ticket_url && (
+                                                                    <a
+                                                                        href={event.ticket_url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        onClick={() => trackClick(event.id, event.ticket_url)}
+                                                                        className="mt-3 inline-flex items-center gap-1 text-[10px] font-bold px-3 py-1.5 rounded-full w-fit hover:scale-105 transition-transform"
+                                                                        style={{ backgroundColor: `${appearance.primary_color}`, color: '#000' }}
+                                                                    >
+                                                                        Get Tickets
+                                                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                                                        </svg>
+                                                                    </a>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {/* Featured / Verifications ONLY on Links Tab now */}
+                                {activeTab === 'links' && creator.featured_video && tabVisibility.videos !== false && (
                                     <div className="space-y-3 pt-6 w-full">
                                         <h2 className={`text-xs font-bold ${textSecondaryColor} uppercase tracking-widest text-center opacity-70`}>Featured Verification</h2>
                                         <div
@@ -789,7 +1067,7 @@ export const PublicProfile = ({ creator }: Props) => {
                                 )}
 
                                 {/* Verified Videos Section */}
-                                {activeTab === 'links' && creator.verified_videos && creator.verified_videos.length > 0 && (
+                                {activeTab === 'links' && creator.verified_videos && creator.verified_videos.length > 0 && tabVisibility.videos !== false && (
                                     <div className="space-y-2 pt-4 w-full">
                                         <h2 className={`text-xs font-bold ${textSecondaryColor} uppercase tracking-widest text-center opacity-70`}>Verified Videos</h2>
 
