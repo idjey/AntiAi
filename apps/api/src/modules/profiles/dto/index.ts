@@ -13,6 +13,24 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
+// ==================== NESTED APPEARANCE DTOs ====================
+
+export class TabVisibilityDto {
+    @IsOptional() @IsBoolean() links?: boolean;
+    @IsOptional() @IsBoolean() shop?: boolean;
+    @IsOptional() @IsBoolean() videos?: boolean;
+    @IsOptional() @IsBoolean() music?: boolean;
+    @IsOptional() @IsBoolean() events?: boolean;
+}
+
+export class PinnedItemsDto {
+    @IsOptional() @IsString() links?: string;
+    @IsOptional() @IsString() shop?: string;
+    @IsOptional() @IsString() videos?: string;
+    @IsOptional() @IsString() music?: string;
+    @IsOptional() @IsString() events?: string;
+}
+
 // ==================== PROFILE ====================
 
 export class AppearanceDto {
@@ -146,23 +164,13 @@ export class AppearanceDto {
 
     @IsOptional()
     @ValidateNested()
-    tab_visibility?: {
-        links?: boolean;
-        shop?: boolean;
-        videos?: boolean;
-        music?: boolean;
-        events?: boolean;
-    };
+    @Type(() => TabVisibilityDto)
+    tab_visibility?: TabVisibilityDto;
 
     @IsOptional()
     @ValidateNested()
-    pinned_items?: {
-        links?: string;
-        shop?: string;
-        videos?: string;
-        music?: string;
-        events?: string;
-    };
+    @Type(() => PinnedItemsDto)
+    pinned_items?: PinnedItemsDto;
 
     @IsOptional()
     @IsArray()
