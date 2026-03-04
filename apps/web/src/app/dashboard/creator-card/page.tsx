@@ -2606,7 +2606,7 @@ export default function CreatorCardPage() {
 
                         {/* ═══ SAVE BUTTON ═══ */}
                         <button
-                            onClick={handleAppearanceSave}
+                            onClick={() => handleAppearanceSave()}
                             disabled={isSaving || isSuccess}
                             className={`btn-primary w-full mt-2 transition-all duration-300 min-w-[140px] flex items-center justify-center ${isSuccess ? 'bg-green-500 hover:bg-green-600 border-green-500 text-white shadow-[0_0_20px_rgba(34,197,94,0.4)]' : ''}`}
                         >
