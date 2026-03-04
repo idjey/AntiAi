@@ -212,11 +212,10 @@ export default function CreatorPage() {
                 {/* Section header */}
                 <header className="text-center mb-12">
                     <h2 className="section-title">
-                        Your official creator{' '}
-                        <span className="text-primary">trust page.</span>
+                        Your official <span className="text-primary">Creator Card.</span>
                     </h2>
                     <p className="section-subtitle">
-                        A Linktree-style profile that proves your authenticity. Share it everywhere.
+                        Cryptographically Secured profile card that proves your authenticity. Share it everywhere.
                     </p>
                 </header>
 
