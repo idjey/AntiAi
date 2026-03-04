@@ -647,7 +647,7 @@ export default function CreatorCardPage() {
         if (isSuccess) setIsSuccess(false);
     }, [appearance, profile?.avatar_url]);
 
-    const handleAppearanceSave = async () => {
+    const handleAppearanceSave = async (overrides?: any) => {
         setIsSaving(true);
         setIsSuccess(false);
         try {
@@ -663,7 +663,8 @@ export default function CreatorCardPage() {
                         ...appearance,
                         sponsored_products: products,
                         music_links: musicLinks,
-                        events: events
+                        events: events,
+                        ...(overrides || {})
                     },
                     avatar_url: profile?.avatar_url
                 })
@@ -1355,7 +1356,7 @@ export default function CreatorCardPage() {
                                             setIsSavingMusic(false);
 
                                             // Trigger an auto-save
-                                            handleAppearanceSave();
+                                            handleAppearanceSave({ music_links: newMusicLinks });
                                         }}
                                         className="px-6 py-2 bg-primary text-black text-sm font-semibold rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
                                     >
@@ -1395,7 +1396,7 @@ export default function CreatorCardPage() {
                                                         e.preventDefault();
                                                         const newPinnedItems: any = { ...pinnedItems, music: (pinnedItems as any)?.music === music.id ? null : music.id };
                                                         setPinnedItems(newPinnedItems);
-                                                        handleAppearanceSave();
+                                                        handleAppearanceSave({ pinned_items: newPinnedItems });
                                                     }}
                                                     className={`p-1.5 transition-colors rounded ${pinnedItems.music === music.id ? 'text-primary' : 'text-text-muted hover:text-primary hover:bg-primary/10'}`}
                                                     title={pinnedItems.music === music.id ? "Unpin track" : "Pin to top"}
@@ -1407,7 +1408,7 @@ export default function CreatorCardPage() {
                                                         e.preventDefault();
                                                         const updated = musicLinks.map(m => m.id === music.id ? { ...m, is_active: m.is_active === false ? true : false } : m);
                                                         setMusicLinks(updated);
-                                                        handleAppearanceSave();
+                                                        handleAppearanceSave({ music_links: updated });
                                                     }}
                                                     className={`p-1.5 transition-colors rounded ${music.is_active !== false ? 'text-text-muted hover:text-amber-500 hover:bg-amber-500/10' : 'text-text-muted hover:text-green-500 hover:bg-green-500/10'}`}
                                                 >
@@ -1434,12 +1435,13 @@ export default function CreatorCardPage() {
                                                         if (!confirm('Remove this track?')) return;
                                                         const updated = musicLinks.filter(m => m.id !== music.id);
                                                         setMusicLinks(updated);
-                                                        handleAppearanceSave();
+
+                                                        let newPinned = pinnedItems;
                                                         if ((pinnedItems as any)?.music === music.id) {
-                                                            const newPinnedItems = { ...(pinnedItems as any), music: null };
-                                                            (setPinnedItems as any)(newPinnedItems);
-                                                            handleAppearanceSave();
+                                                            newPinned = { ...(pinnedItems as any), music: null };
+                                                            (setPinnedItems as any)(newPinned);
                                                         }
+                                                        handleAppearanceSave({ music_links: updated, pinned_items: newPinned });
                                                     }}
                                                     className="p-1.5 text-text-muted hover:text-red-500 transition-colors rounded hover:bg-red-500/10"
                                                 >
@@ -1482,7 +1484,7 @@ export default function CreatorCardPage() {
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium text-text-secondary">Date & Time</label>
                                         <input
-                                            type="datetime-local"
+                                            type="date"
                                             value={eventDate}
                                             onChange={e => setEventDate(e.target.value)}
                                             className="w-full bg-background border border-border rounded-lg px-4 py-2 text-text-primary focus:outline-none focus:border-primary text-sm"
@@ -1542,7 +1544,7 @@ export default function CreatorCardPage() {
                                             setEditingEventId(null);
                                             setIsSavingEvent(false);
 
-                                            handleAppearanceSave();
+                                            handleAppearanceSave({ events: newEvents });
                                         }}
                                         className="px-6 py-2 bg-primary text-black text-sm font-semibold rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
                                     >
@@ -1582,7 +1584,7 @@ export default function CreatorCardPage() {
                                                         e.preventDefault();
                                                         const newPinnedItems: any = { ...pinnedItems, events: (pinnedItems as any)?.events === event.id ? null : event.id };
                                                         setPinnedItems(newPinnedItems);
-                                                        handleAppearanceSave();
+                                                        handleAppearanceSave({ pinned_items: newPinnedItems });
                                                     }}
                                                     className={`p-1.5 transition-colors rounded ${pinnedItems.events === event.id ? 'text-primary' : 'text-text-muted hover:text-primary hover:bg-primary/10'}`}
                                                     title={pinnedItems.events === event.id ? "Unpin event" : "Pin to top"}
@@ -1594,7 +1596,7 @@ export default function CreatorCardPage() {
                                                         e.preventDefault();
                                                         const updated = events.map(ev => ev.id === event.id ? { ...ev, is_active: ev.is_active === false ? true : false } : ev);
                                                         setEvents(updated);
-                                                        handleAppearanceSave();
+                                                        handleAppearanceSave({ events: updated });
                                                     }}
                                                     className={`p-1.5 transition-colors rounded ${event.is_active !== false ? 'text-text-muted hover:text-amber-500 hover:bg-amber-500/10' : 'text-text-muted hover:text-green-500 hover:bg-green-500/10'}`}
                                                 >
@@ -1624,12 +1626,13 @@ export default function CreatorCardPage() {
                                                         if (!confirm('Remove this event?')) return;
                                                         const updated = events.filter(ev => ev.id !== event.id);
                                                         setEvents(updated);
-                                                        handleAppearanceSave();
+
+                                                        let newPinned = pinnedItems;
                                                         if ((pinnedItems as any)?.events === event.id) {
-                                                            const newPinnedItems: any = { ...pinnedItems, events: null };
-                                                            setPinnedItems(newPinnedItems);
-                                                            handleAppearanceSave();
+                                                            newPinned = { ...pinnedItems, events: null };
+                                                            setPinnedItems(newPinned);
                                                         }
+                                                        handleAppearanceSave({ events: updated, pinned_items: newPinned });
                                                     }}
                                                     className="p-1.5 text-text-muted hover:text-red-500 transition-colors rounded hover:bg-red-500/10"
                                                 >
@@ -1651,7 +1654,53 @@ export default function CreatorCardPage() {
                     </div>
                 ) : (
                     <div className="space-y-6"> {/* Parent div for appearance tab content */}
-                        <Accordion type="multiple" defaultValue={['accent-colors']} className="w-full space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                        <Accordion type="multiple" defaultValue={['tab-visibility', 'accent-colors']} className="w-full space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                            {/* ═══ SECTION 0: TAB VISIBILITY ═══ */}
+                            <AccordionItem value="tab-visibility" className="bg-surface border border-border rounded-xl px-5 border-b-0 shadow-sm">
+                                <AccordionTrigger className="hover:no-underline py-5 text-sm font-bold text-text-primary uppercase tracking-wider text-left">
+                                    <div className="flex items-center gap-2">
+                                        👁️ Tab Visibility
+                                        <InfoTooltip content="Choose which tabs are visible on your public profile. You can also hide tabs temporarily." />
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pb-5 space-y-4 pt-1">
+                                    {[
+                                        { id: 'links', label: 'Links Tab', default: true },
+                                        { id: 'shop', label: 'Shop Tab', default: true },
+                                        { id: 'videos', label: 'Videos Tab', default: true },
+                                        { id: 'music', label: 'Music Tab', default: true },
+                                        { id: 'events', label: 'Events Tab', default: true },
+                                    ].map((tabConfig) => {
+                                        const isVisible = appearance.tab_visibility?.[tabConfig.id as keyof typeof appearance.tab_visibility] !== false;
+                                        return (
+                                            <div key={tabConfig.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-surface-light">
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-medium text-text-primary">{tabConfig.label}</span>
+                                                    <span className="text-xs text-text-muted">Show or hide this tab on your profile</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        const currentVis = appearance.tab_visibility || { links: true, shop: true, videos: true, music: true, events: true };
+                                                        const newVisibility = {
+                                                            ...currentVis,
+                                                            [tabConfig.id]: !isVisible
+                                                        };
+                                                        setAppearance(prev => ({
+                                                            ...prev,
+                                                            tab_visibility: newVisibility
+                                                        }));
+                                                        handleAppearanceSave({ tab_visibility: newVisibility });
+                                                    }}
+                                                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isVisible ? 'bg-primary' : 'bg-surface-dark border-border'}`}
+                                                >
+                                                    <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isVisible ? 'translate-x-4' : 'translate-x-0'}`} />
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                </AccordionContent>
+                            </AccordionItem>
+
                             {/* ═══ SECTION 3: MY COLORS ═══ */}
                             <AccordionItem value="accent-colors" className="bg-surface border border-border rounded-xl px-5 border-b-0 shadow-sm">
                                 <AccordionTrigger className="hover:no-underline py-5 text-sm font-bold text-text-primary uppercase tracking-wider text-left">

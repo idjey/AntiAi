@@ -88,12 +88,12 @@ export const PublicProfile = ({ creator }: Props) => {
     const [isTokenRevealed, setIsTokenRevealed] = useState(false);
 
     // Visibility + Pinning Settings
-    const tabVisibility = appearance.tab_visibility || {
-        links: true,
-        shop: true,
-        videos: true,
-        music: true,
-        events: true
+    const tabVisibility = {
+        links: appearance.tab_visibility?.links !== false,
+        shop: appearance.tab_visibility?.shop !== false,
+        videos: appearance.tab_visibility?.videos !== false,
+        music: appearance.tab_visibility?.music !== false,
+        events: appearance.tab_visibility?.events !== false
     };
     const pinnedItems = appearance.pinned_items || {
         links: null,
