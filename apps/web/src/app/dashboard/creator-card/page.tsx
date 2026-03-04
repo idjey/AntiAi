@@ -98,6 +98,10 @@ interface Profile {
         card_border_color?: string;
         card_border_width?: number;
         card_border_glow?: boolean;
+        tab_visibility?: { links: boolean; shop: boolean; videos: boolean; music: boolean; events: boolean };
+        pinned_items?: { links: string; shop: string; videos: string; music: string; events: string };
+        music_links?: any[];
+        events?: any[];
     };
     featured_video?: {
         id: string;
@@ -351,8 +355,28 @@ export default function CreatorCardPage() {
     const [previewOpen, setPreviewOpen] = useState(true);
 
     // Filter/Tab State
-    const [activeTab, setActiveTab] = useState<'links' | 'appearance' | 'shop'>('links');
+    const [activeTab, setActiveTab] = useState<'links' | 'appearance' | 'shop' | 'music' | 'events'>('links');
     const [isTokenRevealed, setIsTokenRevealed] = useState(false);
+
+    // Feature Toggles and Pinning
+    const [tabVisibility, setTabVisibility] = useState({
+        links: true,
+        shop: true,
+        music: true,
+        events: true
+    });
+
+    const [pinnedItems, setPinnedItems] = useState<{
+        links: string | null;
+        shop: string | null;
+        music: string | null;
+        events: string | null;
+    }>({
+        links: null,
+        shop: null,
+        music: null,
+        events: null
+    });
 
     // Sponsored Products State
     interface SponsoredProduct {
@@ -379,6 +403,39 @@ export default function CreatorCardPage() {
     } | null>(null);
     const [productLimitError, setProductLimitError] = useState<string | null>(null);
     const [planInfo, setPlanInfo] = useState<{ plan: string; cap: number } | null>(null);
+
+    // Music State
+    interface MusicLink {
+        id: string;
+        url: string;
+        title: string;
+        platform: string;
+        added_at: string;
+        is_active?: boolean;
+    }
+    const [musicLinks, setMusicLinks] = useState<MusicLink[]>([]);
+    const [musicUrl, setMusicUrl] = useState('');
+    const [musicTitle, setMusicTitle] = useState('');
+    const [editingMusicId, setEditingMusicId] = useState<string | null>(null);
+    const [isSavingMusic, setIsSavingMusic] = useState(false);
+
+    // Events State
+    interface EventItem {
+        id: string;
+        title: string;
+        date: string;
+        venue: string;
+        ticket_url: string;
+        added_at: string;
+        is_active?: boolean;
+    }
+    const [events, setEvents] = useState<EventItem[]>([]);
+    const [editingEventId, setEditingEventId] = useState<string | null>(null);
+    const [eventTitle, setEventTitle] = useState('');
+    const [eventDate, setEventDate] = useState('');
+    const [eventVenue, setEventVenue] = useState('');
+    const [eventUrl, setEventUrl] = useState('');
+    const [isSavingEvent, setIsSavingEvent] = useState(false);
 
     const isPro = profile?.plan === 'pro' || profile?.plan === 'elite';
 
@@ -432,7 +489,9 @@ export default function CreatorCardPage() {
         card_border_style: 'none' as 'none' | 'solid' | 'dashed' | 'glow',
         card_border_color: '',
         card_border_width: 1,
-        card_border_glow: false
+        card_border_glow: false,
+        tab_visibility: { links: true, shop: true, videos: true, music: true, events: true },
+        pinned_items: { links: '', shop: '', videos: '', music: '', events: '' },
     });
 
     // Scatter Pattern State
@@ -506,11 +565,20 @@ export default function CreatorCardPage() {
                 setProfile(data.profile);
                 // Initialize appearance from profile
                 if (data.profile.appearance) {
-                    setAppearance(prev => ({ ...prev, ...data.profile.appearance }));
+                    setAppearance(prev => ({
+                        ...prev,
+                        ...data.profile.appearance,
+                        tab_visibility: data.profile.appearance.tab_visibility || { links: true, shop: true, videos: true, music: true, events: true },
+                        pinned_items: data.profile.appearance.pinned_items || { links: '', shop: '', videos: '', music: '', events: '' }
+                    }));
                 }
-                // Load sponsored products from appearance
+                // Load premium data from appearance
                 const prods = data.profile.appearance?.sponsored_products || [];
                 setProducts(prods);
+                const music = data.profile.appearance?.music_links || [];
+                setMusicLinks(music);
+                const evts = data.profile.appearance?.events || [];
+                setEvents(evts);
             }
 
             // Fetch Links
@@ -591,7 +659,12 @@ export default function CreatorCardPage() {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    appearance: { ...appearance, sponsored_products: products },
+                    appearance: {
+                        ...appearance,
+                        sponsored_products: products,
+                        music_links: musicLinks,
+                        events: events
+                    },
                     avatar_url: profile?.avatar_url
                 })
             });
@@ -799,31 +872,26 @@ export default function CreatorCardPage() {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-4 border-b border-border">
-                    <button
-                        onClick={() => setActiveTab('links')}
-                        className={`pb-4 px-2 text-sm font-medium transition-colors relative ${activeTab === 'links' ? 'text-primary' : 'text-text-secondary hover:text-text-primary'}`}
-                    >
-                        Links
-                        {activeTab === 'links' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full" />}
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('shop')}
-                        className={`pb-4 px-2 text-sm font-medium transition-colors relative ${activeTab === 'shop' ? 'text-primary' : 'text-text-secondary hover:text-text-primary'}`}
-                    >
-                        Shop
-                        {products.length > 0 && (
-                            <span className="ml-1.5 text-[10px] bg-primary/20 text-primary rounded-full px-1.5 py-0.5">{products.length}</span>
-                        )}
-                        {activeTab === 'shop' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full" />}
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('appearance')}
-                        className={`pb-4 px-2 text-sm font-medium transition-colors relative ${activeTab === 'appearance' ? 'text-primary' : 'text-text-primary'}`}
-                    >
-                        Appearance
-                        {activeTab === 'appearance' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full" />}
-                    </button>
+                <div className="flex gap-4 border-b border-border overflow-x-auto scrollbar-hide">
+                    {[
+                        { id: 'links', label: 'Links' },
+                        { id: 'shop', label: 'Shop', count: products.length },
+                        { id: 'music', label: 'Music', count: musicLinks.length },
+                        { id: 'events', label: 'Events', count: events.length },
+                        { id: 'appearance', label: 'Appearance' }
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id as any)}
+                            className={`pb-4 px-2 text-sm font-medium transition-colors relative whitespace-nowrap ${activeTab === tab.id ? 'text-primary' : 'text-text-secondary hover:text-text-primary'}`}
+                        >
+                            {tab.label}
+                            {tab.count !== undefined && tab.count > 0 && (
+                                <span className="ml-1.5 text-[10px] bg-primary/20 text-primary rounded-full px-1.5 py-0.5">{tab.count}</span>
+                            )}
+                            {activeTab === tab.id && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full" />}
+                        </button>
+                    ))}
                 </div>
 
                 {activeTab === 'links' ? (
@@ -1218,6 +1286,366 @@ export default function CreatorCardPage() {
                                 <div className="text-4xl mb-3">🛍️</div>
                                 <p className="text-sm">No sponsored products yet.</p>
                                 <p className="text-xs text-text-muted mt-1">Paste a product link above to get started.</p>
+                            </div>
+                        )}
+                    </div>
+                ) : activeTab === 'music' ? (
+                    <div className="space-y-6">
+                        <div className="bg-surface border border-border rounded-xl p-5 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider">🎵 Add Music Link</h2>
+                                <span className="text-xs text-text-muted">{musicLinks.length} Tracks</span>
+                            </div>
+
+                            <div className="space-y-4 pt-2">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-text-secondary">Track / Album URL</label>
+                                    <input
+                                        type="url"
+                                        value={musicUrl}
+                                        onChange={e => setMusicUrl(e.target.value)}
+                                        className="w-full bg-background border border-border rounded-lg px-4 py-2 text-text-primary focus:outline-none focus:border-primary placeholder:text-text-muted/50 text-sm"
+                                        placeholder="https://open.spotify.com/track/..."
+                                    />
+                                    <p className="text-xs text-text-muted">Supports Spotify, Apple Music, SoundCloud, and YouTube URLs.</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-text-secondary">Display Title (Optional)</label>
+                                    <input
+                                        type="text"
+                                        value={musicTitle}
+                                        onChange={e => setMusicTitle(e.target.value)}
+                                        className="w-full bg-background border border-border rounded-lg px-4 py-2 text-text-primary focus:outline-none focus:border-primary placeholder:text-text-muted/50 text-sm"
+                                        placeholder="My new single..."
+                                    />
+                                </div>
+                                <div className="flex justify-end pt-2">
+                                    <button
+                                        onClick={async (e) => {
+                                            e.preventDefault();
+                                            if (!musicUrl) return;
+                                            setIsSavingMusic(true);
+                                            // Very basic platform guesser
+                                            let platform = 'other';
+                                            if (musicUrl.includes('spotify.com')) platform = 'spotify';
+                                            else if (musicUrl.includes('apple.com')) platform = 'apple_music';
+                                            else if (musicUrl.includes('soundcloud.com')) platform = 'soundcloud';
+                                            else if (musicUrl.includes('youtube.com') || musicUrl.includes('youtu.be')) platform = 'youtube';
+
+                                            const newMusic: MusicLink = {
+                                                id: editingMusicId || `m_${Date.now()}`,
+                                                url: musicUrl,
+                                                title: musicTitle,
+                                                platform,
+                                                added_at: new Date().toISOString(),
+                                                is_active: true
+                                            };
+
+                                            let newMusicLinks;
+                                            if (editingMusicId) {
+                                                newMusicLinks = musicLinks.map(m => m.id === editingMusicId ? newMusic : m);
+                                            } else {
+                                                newMusicLinks = [newMusic, ...musicLinks];
+                                            }
+
+                                            setMusicLinks(newMusicLinks);
+                                            setMusicUrl('');
+                                            setMusicTitle('');
+                                            setEditingMusicId(null);
+                                            setIsSavingMusic(false);
+
+                                            // Trigger an auto-save
+                                            handleAppearanceSave();
+                                        }}
+                                        className="px-6 py-2 bg-primary text-black text-sm font-semibold rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
+                                    >
+                                        {isSavingMusic ? 'Saving...' : (editingMusicId ? 'Update Music' : 'Add Music')}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Music List */}
+                        {musicLinks.length > 0 && (
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">Added Music</h3>
+                                <div className="space-y-2">
+                                    {musicLinks.map((music: any) => (
+                                        <div key={music.id} className={`bg-surface border ${pinnedItems.music === music.id ? 'border-primary' : 'border-border'} rounded-xl p-3 flex items-center justify-between group transition-all ${music.is_active === false ? 'opacity-50 hover:opacity-75' : ''}`}>
+                                            <div className="flex items-center gap-3 overflow-hidden">
+                                                <div className="w-10 h-10 rounded-lg bg-surface-light flex items-center justify-center flex-shrink-0">
+                                                    <span className="text-xl">
+                                                        {music.platform === 'spotify' ? '🟢' :
+                                                            music.platform === 'apple_music' ? '🍎' :
+                                                                music.platform === 'soundcloud' ? '☁️' :
+                                                                    music.platform === 'youtube' ? '📺' : '🎵'}
+                                                    </span>
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className={`text-sm font-medium truncate ${music.is_active === false ? 'line-through text-text-secondary' : 'text-text-primary'}`}>
+                                                        {pinnedItems.music === music.id && <span className="mr-1">📌</span>}
+                                                        {music.title || music.url}
+                                                    </p>
+                                                    <p className="text-xs text-text-muted truncate capitalize">{music.platform.replace('_', ' ')}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                                        e.preventDefault();
+                                                        const newPinnedItems: any = { ...pinnedItems, music: (pinnedItems as any)?.music === music.id ? null : music.id };
+                                                        setPinnedItems(newPinnedItems);
+                                                        handleAppearanceSave();
+                                                    }}
+                                                    className={`p-1.5 transition-colors rounded ${pinnedItems.music === music.id ? 'text-primary' : 'text-text-muted hover:text-primary hover:bg-primary/10'}`}
+                                                    title={pinnedItems.music === music.id ? "Unpin track" : "Pin to top"}
+                                                >
+                                                    📌
+                                                </button>
+                                                <button
+                                                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                                        e.preventDefault();
+                                                        const updated = musicLinks.map(m => m.id === music.id ? { ...m, is_active: m.is_active === false ? true : false } : m);
+                                                        setMusicLinks(updated);
+                                                        handleAppearanceSave();
+                                                    }}
+                                                    className={`p-1.5 transition-colors rounded ${music.is_active !== false ? 'text-text-muted hover:text-amber-500 hover:bg-amber-500/10' : 'text-text-muted hover:text-green-500 hover:bg-green-500/10'}`}
+                                                >
+                                                    {music.is_active !== false ? (
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                    ) : (
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                                                    )}
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        setEditingMusicId(music.id);
+                                                        setMusicUrl(music.url);
+                                                        setMusicTitle(music.title || '');
+                                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                    }}
+                                                    className="p-1.5 text-text-muted hover:text-primary transition-colors rounded hover:bg-primary/10"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        if (!confirm('Remove this track?')) return;
+                                                        const updated = musicLinks.filter(m => m.id !== music.id);
+                                                        setMusicLinks(updated);
+                                                        handleAppearanceSave();
+                                                        if ((pinnedItems as any)?.music === music.id) {
+                                                            const newPinnedItems = { ...(pinnedItems as any), music: null };
+                                                            (setPinnedItems as any)(newPinnedItems);
+                                                            handleAppearanceSave();
+                                                        }
+                                                    }}
+                                                    className="p-1.5 text-text-muted hover:text-red-500 transition-colors rounded hover:bg-red-500/10"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {musicLinks.length === 0 && (
+                            <div className="text-center py-8 text-text-secondary">
+                                <div className="text-4xl mb-3">🎵</div>
+                                <p className="text-sm">No music added yet.</p>
+                                <p className="text-xs text-text-muted mt-1">Paste a Spotify, Apple Music, or SoundCloud link above.</p>
+                            </div>
+                        )}
+                    </div>
+                ) : activeTab === 'events' ? (
+                    <div className="space-y-6">
+                        <div className="bg-surface border border-border rounded-xl p-5 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider">📅 Add Event</h2>
+                                <span className="text-xs text-text-muted">{events.length} Events</span>
+                            </div>
+
+                            <div className="space-y-4 pt-2">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-text-secondary">Event Title</label>
+                                    <input
+                                        type="text"
+                                        value={eventTitle}
+                                        onChange={e => setEventTitle(e.target.value)}
+                                        className="w-full bg-background border border-border rounded-lg px-4 py-2 text-text-primary focus:outline-none focus:border-primary text-sm"
+                                        placeholder="World Tour 2026..."
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-text-secondary">Date & Time</label>
+                                        <input
+                                            type="datetime-local"
+                                            value={eventDate}
+                                            onChange={e => setEventDate(e.target.value)}
+                                            className="w-full bg-background border border-border rounded-lg px-4 py-2 text-text-primary focus:outline-none focus:border-primary text-sm"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-text-secondary">Venue / Address</label>
+                                        <input
+                                            type="text"
+                                            value={eventVenue}
+                                            onChange={e => setEventVenue(e.target.value)}
+                                            className="w-full bg-background border border-border rounded-lg px-4 py-2 text-text-primary focus:outline-none focus:border-primary text-sm"
+                                            placeholder="Madison Square Garden, NY"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-text-secondary">Ticket Link (Optional)</label>
+                                    <input
+                                        type="url"
+                                        value={eventUrl}
+                                        onChange={e => setEventUrl(e.target.value)}
+                                        className="w-full bg-background border border-border rounded-lg px-4 py-2 text-text-primary focus:outline-none focus:border-primary placeholder:text-text-muted/50 text-sm"
+                                        placeholder="https://ticketmaster.com/..."
+                                    />
+                                </div>
+                                <div className="flex justify-end pt-2">
+                                    <button
+                                        disabled={!eventTitle || !eventDate || isSavingEvent}
+                                        onClick={async (e) => {
+                                            e.preventDefault();
+                                            if (!eventTitle || !eventDate) return;
+                                            setIsSavingEvent(true);
+
+                                            const newEvent = {
+                                                id: editingEventId || `e_${Date.now()}`,
+                                                title: eventTitle,
+                                                date: eventDate,
+                                                venue: eventVenue,
+                                                ticket_url: eventUrl,
+                                                added_at: new Date().toISOString(),
+                                                is_active: true
+                                            };
+
+                                            let newEvents;
+                                            if (editingEventId) {
+                                                newEvents = events.map(e => e.id === editingEventId ? newEvent : e);
+                                            } else {
+                                                newEvents = [newEvent, ...events];
+                                            }
+
+                                            setEvents(newEvents);
+                                            setEventTitle('');
+                                            setEventDate('');
+                                            setEventVenue('');
+                                            setEventUrl('');
+                                            setEditingEventId(null);
+                                            setIsSavingEvent(false);
+
+                                            handleAppearanceSave();
+                                        }}
+                                        className="px-6 py-2 bg-primary text-black text-sm font-semibold rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
+                                    >
+                                        {isSavingEvent ? 'Saving...' : (editingEventId ? 'Update Event' : 'Add Event')}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Events List */}
+                        {events.length > 0 && (
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">Upcoming Events</h3>
+                                <div className="space-y-2">
+                                    {events.map((event: any) => (
+                                        <div key={event.id} className={`bg-surface border ${pinnedItems.events === event.id ? 'border-primary' : 'border-border'} rounded-xl p-3 flex items-center justify-between group transition-all ${event.is_active === false ? 'opacity-50 hover:opacity-75' : ''}`}>
+                                            <div className="flex items-center gap-3 overflow-hidden">
+                                                <div className="w-10 h-10 rounded-lg bg-surface-light flex flex-col items-center justify-center flex-shrink-0 border border-border">
+                                                    <span className="text-[10px] font-bold text-text-primary uppercase">
+                                                        {new Date(event.date).toLocaleDateString(undefined, { month: 'short' })}
+                                                    </span>
+                                                    <span className="text-sm font-bold text-primary">
+                                                        {new Date(event.date).getDate()}
+                                                    </span>
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className={`text-sm font-medium truncate ${event.is_active === false ? 'line-through text-text-secondary' : 'text-text-primary'}`}>
+                                                        {pinnedItems.events === event.id && <span className="mr-1">📌</span>}
+                                                        {event.title}
+                                                    </p>
+                                                    <p className="text-xs text-text-muted truncate">{event.venue || 'No venue specified'}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        const newPinnedItems: any = { ...pinnedItems, events: (pinnedItems as any)?.events === event.id ? null : event.id };
+                                                        setPinnedItems(newPinnedItems);
+                                                        handleAppearanceSave();
+                                                    }}
+                                                    className={`p-1.5 transition-colors rounded ${pinnedItems.events === event.id ? 'text-primary' : 'text-text-muted hover:text-primary hover:bg-primary/10'}`}
+                                                    title={pinnedItems.events === event.id ? "Unpin event" : "Pin to top"}
+                                                >
+                                                    📌
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        const updated = events.map(ev => ev.id === event.id ? { ...ev, is_active: ev.is_active === false ? true : false } : ev);
+                                                        setEvents(updated);
+                                                        handleAppearanceSave();
+                                                    }}
+                                                    className={`p-1.5 transition-colors rounded ${event.is_active !== false ? 'text-text-muted hover:text-amber-500 hover:bg-amber-500/10' : 'text-text-muted hover:text-green-500 hover:bg-green-500/10'}`}
+                                                >
+                                                    {event.is_active !== false ? (
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                    ) : (
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                                                    )}
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        setEditingEventId(event.id);
+                                                        setEventTitle(event.title);
+                                                        setEventDate(event.date);
+                                                        setEventVenue(event.venue || '');
+                                                        setEventUrl(event.ticket_url || '');
+                                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                    }}
+                                                    className="p-1.5 text-text-muted hover:text-primary transition-colors rounded hover:bg-primary/10"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        if (!confirm('Remove this event?')) return;
+                                                        const updated = events.filter(ev => ev.id !== event.id);
+                                                        setEvents(updated);
+                                                        handleAppearanceSave();
+                                                        if ((pinnedItems as any)?.events === event.id) {
+                                                            const newPinnedItems: any = { ...pinnedItems, events: null };
+                                                            setPinnedItems(newPinnedItems);
+                                                            handleAppearanceSave();
+                                                        }
+                                                    }}
+                                                    className="p-1.5 text-text-muted hover:text-red-500 transition-colors rounded hover:bg-red-500/10"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {events.length === 0 && (
+                            <div className="text-center py-8 text-text-secondary">
+                                <div className="text-4xl mb-3">📅</div>
+                                <p className="text-sm">No events added yet.</p>
+                                <p className="text-xs text-text-muted mt-1">Add your upcoming shows, meet & greets, or live streams.</p>
                             </div>
                         )}
                     </div>
@@ -2155,95 +2583,96 @@ export default function CreatorCardPage() {
             </div>
 
             {/* Right: Preview */}
-            {previewOpen && (
-                <div className="hidden lg:flex flex-col items-center justify-center p-8 min-h-screen sticky top-0 h-screen w-[450px]">
-                    <div className="mb-4 text-center">
-                        <h3 className="text-sm font-bold text-text-secondary uppercase tracking-wider">Live Preview</h3>
-                        <p className="text-xs text-text-muted">Changes update in real-time</p>
-                    </div>
+            {
+                previewOpen && (
+                    <div className="hidden lg:flex flex-col items-center justify-center p-8 min-h-screen sticky top-0 h-screen w-[450px]">
+                        <div className="mb-4 text-center">
+                            <h3 className="text-sm font-bold text-text-secondary uppercase tracking-wider">Live Preview</h3>
+                            <p className="text-xs text-text-muted">Changes update in real-time</p>
+                        </div>
 
-                    {/* Mobile Frame */}
-                    <div className="relative w-[340px] h-[680px] bg-black rounded-[3rem] shadow-2xl border-[8px] border-surface-dark overflow-hidden ring-4 ring-black/20">
-                        {/* Screen Content */}
-                        <div
-                            className="w-full h-full overflow-y-auto scrollbar-hide relative transition-colors duration-500"
-                            style={{
-                                background: appearance.card_background_type === 'image' && appearance.background_image
-                                    ? `url(${appearance.background_image}) center/cover no-repeat`
-                                    : appearance.card_background_type === 'gradient' && appearance.card_background_gradient
-                                        ? appearance.card_background_gradient
-                                        : hexToRgba(appearance.background_color || '#000000', cardBgOpacity),
-                                backdropFilter: cardBackdropBlur > 0 ? `blur(${cardBackdropBlur}px)` : 'none',
-                                // For Safari support
-                                WebkitBackdropFilter: cardBackdropBlur > 0 ? `blur(${cardBackdropBlur}px)` : 'none',
-                                color: dynamicTextColor,
-                                boxShadow: `0 40px 80px -12px rgba(0, 0, 0, 0.6)${cardGlow > 0 ? `, 0 0 ${cardGlow * 40}px ${appearance.primary_color}50` : ''}`,
-                                borderStyle: appearance.card_border_style && appearance.card_border_style !== 'none' && appearance.card_border_style !== 'glow' ? appearance.card_border_style : appearance.card_border_style === 'glow' ? 'solid' : 'solid',
-                                borderWidth: appearance.card_border_style && appearance.card_border_style !== 'none' ? `${appearance.card_border_width || 1}px` : '1px',
-                                borderColor: appearance.card_border_style && appearance.card_border_style !== 'none' ? (appearance.card_border_color || appearance.primary_color || '#10b981') : 'rgba(255,255,255,0.1)',
-                                '--border-color': appearance.card_border_color || appearance.primary_color || '#10b981'
-                            } as React.CSSProperties}
-                        >
-                            {/* Emoji Background */}
-                            {appearance.public_background_type === 'emoji' && Boolean(appearance.public_background_emojis) && (
-                                <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40 -z-10">
-                                    {(() => {
-                                        const pattern = appearance.public_background_emoji_pattern || 'scatter';
-                                        const emojisArr = Array.from(appearance.public_background_emojis!);
-                                        if (emojisArr.length === 0) return null;
-                                        if (pattern === 'grid') {
-                                            return (
-                                                <div className="w-full h-full flex flex-wrap justify-center content-start py-8 gap-x-12 gap-y-12" style={{ transform: 'scale(1.2)' }}>
-                                                    {Array.from({ length: 48 }).map((_, i) => (
-                                                        <div key={`emoji-${i}`} className="text-4xl filter blur-[1px]">
-                                                            {emojisArr[i % emojisArr.length]}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            );
-                                        } else if (pattern === 'floating') {
-                                            const direction = appearance.public_background_emoji_direction || 'up';
-                                            return (
-                                                <div className="relative w-full h-full">
-                                                    {Array.from({ length: 24 }).map((_, i) => {
-                                                        let style: any = {
-                                                            animationDelay: `-${Math.random() * 10}s`,
-                                                            animationDuration: `${10 + Math.random() * 10}s`,
-                                                        };
-                                                        if (direction === 'up' || direction === 'down') {
-                                                            style.left = `${Math.random() * 100}%`;
-                                                            style['--float-x-start'] = `${(Math.random() - 0.5) * 50}px`;
-                                                            style['--float-x-end'] = `${(Math.random() - 0.5) * 100}px`;
-                                                            if (direction === 'up') {
-                                                                style.bottom = '-10%';
-                                                                style['--float-y-start'] = '10vh';
-                                                                style['--float-y-end'] = '-120vh';
-                                                            } else {
-                                                                style.top = '-10%';
-                                                                style['--float-y-start'] = '-10vh';
-                                                                style['--float-y-end'] = '120vh';
-                                                            }
-                                                        } else {
-                                                            style.top = `${Math.random() * 100}%`;
-                                                            style['--float-y-start'] = `${(Math.random() - 0.5) * 50}px`;
-                                                            style['--float-y-end'] = `${(Math.random() - 0.5) * 100}px`;
-                                                            if (direction === 'left') {
-                                                                style.right = '-10%';
-                                                                style['--float-x-start'] = '10vw';
-                                                                style['--float-x-end'] = '-120vw';
-                                                            } else {
-                                                                style.left = '-10%';
-                                                                style['--float-x-start'] = '-10vw';
-                                                                style['--float-x-end'] = '120vw';
-                                                            }
-                                                        }
-                                                        return (
-                                                            <div key={`floating-emoji-${i}`} className="absolute text-5xl filter blur-[1px] animate-[float_10s_linear_infinite]" style={style}>
+                        {/* Mobile Frame */}
+                        <div className="relative w-[340px] h-[680px] bg-black rounded-[3rem] shadow-2xl border-[8px] border-surface-dark overflow-hidden ring-4 ring-black/20">
+                            {/* Screen Content */}
+                            <div
+                                className="w-full h-full overflow-y-auto scrollbar-hide relative transition-colors duration-500"
+                                style={{
+                                    background: appearance.card_background_type === 'image' && appearance.background_image
+                                        ? `url(${appearance.background_image}) center/cover no-repeat`
+                                        : appearance.card_background_type === 'gradient' && appearance.card_background_gradient
+                                            ? appearance.card_background_gradient
+                                            : hexToRgba(appearance.background_color || '#000000', cardBgOpacity),
+                                    backdropFilter: cardBackdropBlur > 0 ? `blur(${cardBackdropBlur}px)` : 'none',
+                                    // For Safari support
+                                    WebkitBackdropFilter: cardBackdropBlur > 0 ? `blur(${cardBackdropBlur}px)` : 'none',
+                                    color: dynamicTextColor,
+                                    boxShadow: `0 40px 80px -12px rgba(0, 0, 0, 0.6)${cardGlow > 0 ? `, 0 0 ${cardGlow * 40}px ${appearance.primary_color}50` : ''}`,
+                                    borderStyle: appearance.card_border_style && appearance.card_border_style !== 'none' && appearance.card_border_style !== 'glow' ? appearance.card_border_style : appearance.card_border_style === 'glow' ? 'solid' : 'solid',
+                                    borderWidth: appearance.card_border_style && appearance.card_border_style !== 'none' ? `${appearance.card_border_width || 1}px` : '1px',
+                                    borderColor: appearance.card_border_style && appearance.card_border_style !== 'none' ? (appearance.card_border_color || appearance.primary_color || '#10b981') : 'rgba(255,255,255,0.1)',
+                                    '--border-color': appearance.card_border_color || appearance.primary_color || '#10b981'
+                                } as React.CSSProperties}
+                            >
+                                {/* Emoji Background */}
+                                {appearance.public_background_type === 'emoji' && Boolean(appearance.public_background_emojis) && (
+                                    <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40 -z-10">
+                                        {(() => {
+                                            const pattern = appearance.public_background_emoji_pattern || 'scatter';
+                                            const emojisArr = Array.from(appearance.public_background_emojis!);
+                                            if (emojisArr.length === 0) return null;
+                                            if (pattern === 'grid') {
+                                                return (
+                                                    <div className="w-full h-full flex flex-wrap justify-center content-start py-8 gap-x-12 gap-y-12" style={{ transform: 'scale(1.2)' }}>
+                                                        {Array.from({ length: 48 }).map((_, i) => (
+                                                            <div key={`emoji-${i}`} className="text-4xl filter blur-[1px]">
                                                                 {emojisArr[i % emojisArr.length]}
                                                             </div>
-                                                        );
-                                                    })}
-                                                    <style>{`
+                                                        ))}
+                                                    </div>
+                                                );
+                                            } else if (pattern === 'floating') {
+                                                const direction = appearance.public_background_emoji_direction || 'up';
+                                                return (
+                                                    <div className="relative w-full h-full">
+                                                        {Array.from({ length: 24 }).map((_, i) => {
+                                                            let style: any = {
+                                                                animationDelay: `-${Math.random() * 10}s`,
+                                                                animationDuration: `${10 + Math.random() * 10}s`,
+                                                            };
+                                                            if (direction === 'up' || direction === 'down') {
+                                                                style.left = `${Math.random() * 100}%`;
+                                                                style['--float-x-start'] = `${(Math.random() - 0.5) * 50}px`;
+                                                                style['--float-x-end'] = `${(Math.random() - 0.5) * 100}px`;
+                                                                if (direction === 'up') {
+                                                                    style.bottom = '-10%';
+                                                                    style['--float-y-start'] = '10vh';
+                                                                    style['--float-y-end'] = '-120vh';
+                                                                } else {
+                                                                    style.top = '-10%';
+                                                                    style['--float-y-start'] = '-10vh';
+                                                                    style['--float-y-end'] = '120vh';
+                                                                }
+                                                            } else {
+                                                                style.top = `${Math.random() * 100}%`;
+                                                                style['--float-y-start'] = `${(Math.random() - 0.5) * 50}px`;
+                                                                style['--float-y-end'] = `${(Math.random() - 0.5) * 100}px`;
+                                                                if (direction === 'left') {
+                                                                    style.right = '-10%';
+                                                                    style['--float-x-start'] = '10vw';
+                                                                    style['--float-x-end'] = '-120vw';
+                                                                } else {
+                                                                    style.left = '-10%';
+                                                                    style['--float-x-start'] = '-10vw';
+                                                                    style['--float-x-end'] = '120vw';
+                                                                }
+                                                            }
+                                                            return (
+                                                                <div key={`floating-emoji-${i}`} className="absolute text-5xl filter blur-[1px] animate-[float_10s_linear_infinite]" style={style}>
+                                                                    {emojisArr[i % emojisArr.length]}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                        <style>{`
                                                     @keyframes float {
                                                         0% { transform: translate(var(--float-x-start), var(--float-y-start)) rotate(0deg); opacity: 0; }
                                                         10% { opacity: 1; }
@@ -2251,223 +2680,224 @@ export default function CreatorCardPage() {
                                                         100% { transform: translate(var(--float-x-end), var(--float-y-end)) rotate(360deg); opacity: 0; }
                                                     }
                                                 `}</style>
-                                                </div>
-                                            );
-                                        } else {
-                                            return (
-                                                <div className="w-full h-full flex flex-wrap justify-center content-start py-8 gap-x-14 gap-y-16" style={{ transform: 'scale(1.2)' }}>
-                                                    {Array.from({ length: 42 }).map((_, i) => {
-                                                        const rotation = (i * 47) % 360;
-                                                        const offset = (i % 3 === 0) ? 'translate-y-8' : (i % 2 === 0) ? '-translate-x-6' : 'translate-x-4';
-                                                        return (
-                                                            <div key={`emoji-${i}`} className={`text-4xl filter blur-[1px] ${offset}`} style={{ transform: `rotate(${rotation}deg)` }}>
-                                                                {emojisArr[i % emojisArr.length]}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            );
-                                        }
-                                    })()}
-                                </div>
-                            )}
-                            {/* Overlays */}
-                            {appearance.public_background_type === 'image' && (
-                                <>
-                                    {appearance.public_background_overlay > 0 && <div className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-300" style={{ opacity: appearance.public_background_overlay / 100 }} />}
-                                    {appearance.public_background_blur > 0 && <div className="absolute inset-0 backdrop-blur-[var(--blur)] pointer-events-none transition-all duration-300" style={{ '--blur': `${appearance.public_background_blur}px` } as any} />}
-                                </>
-                            )}
-                            {appearance.public_background_vignette > 0 && <div className="absolute inset-0 pointer-events-none transition-opacity duration-300" style={{ background: `radial-gradient(circle, transparent 50%, rgba(0,0,0, ${appearance.public_background_vignette / 100}))` }} />}
-                            {appearance.public_background_grain > 0 && <div className="absolute inset-0 opacity-[var(--grain)] pointer-events-none mix-blend-overlay transition-opacity duration-300" style={{ backgroundImage: 'url("/grain.png")', '--grain': appearance.public_background_grain / 100 } as any} />}
+                                                    </div>
+                                                );
+                                            } else {
+                                                return (
+                                                    <div className="w-full h-full flex flex-wrap justify-center content-start py-8 gap-x-14 gap-y-16" style={{ transform: 'scale(1.2)' }}>
+                                                        {Array.from({ length: 42 }).map((_, i) => {
+                                                            const rotation = (i * 47) % 360;
+                                                            const offset = (i % 3 === 0) ? 'translate-y-8' : (i % 2 === 0) ? '-translate-x-6' : 'translate-x-4';
+                                                            return (
+                                                                <div key={`emoji-${i}`} className={`text-4xl filter blur-[1px] ${offset}`} style={{ transform: `rotate(${rotation}deg)` }}>
+                                                                    {emojisArr[i % emojisArr.length]}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                );
+                                            }
+                                        })()}
+                                    </div>
+                                )}
+                                {/* Overlays */}
+                                {appearance.public_background_type === 'image' && (
+                                    <>
+                                        {appearance.public_background_overlay > 0 && <div className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-300" style={{ opacity: appearance.public_background_overlay / 100 }} />}
+                                        {appearance.public_background_blur > 0 && <div className="absolute inset-0 backdrop-blur-[var(--blur)] pointer-events-none transition-all duration-300" style={{ '--blur': `${appearance.public_background_blur}px` } as any} />}
+                                    </>
+                                )}
+                                {appearance.public_background_vignette > 0 && <div className="absolute inset-0 pointer-events-none transition-opacity duration-300" style={{ background: `radial-gradient(circle, transparent 50%, rgba(0,0,0, ${appearance.public_background_vignette / 100}))` }} />}
+                                {appearance.public_background_grain > 0 && <div className="absolute inset-0 opacity-[var(--grain)] pointer-events-none mix-blend-overlay transition-opacity duration-300" style={{ backgroundImage: 'url("/grain.png")', '--grain': appearance.public_background_grain / 100 } as any} />}
 
-                            {/* Logo Scatter */}
-                            {appearance.logo_position === 'scatter' && (
-                                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                                    {scatterPositions.map((pos, i) => (
+                                {/* Logo Scatter */}
+                                {appearance.logo_position === 'scatter' && (
+                                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                                        {scatterPositions.map((pos, i) => (
+                                            <img
+                                                key={i}
+                                                src={appearance.logo_url || '/logo.png'}
+                                                className="absolute w-8 h-8 opacity-[var(--op)] transition-all duration-1000"
+                                                style={{ top: `${pos.top}%`, left: `${pos.left}%`, transform: `rotate(${pos.rotate}deg)`, '--op': appearance.logo_opacity } as any}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Main Content */}
+                                <div className="relative z-10 px-6 py-12 flex flex-col items-center gap-6 min-h-full">
+                                    {/* Logo — top row positions */}
+                                    {(appearance.logo_position === 'center_top' || appearance.logo_position === 'top_left' || appearance.logo_position === 'top_right') && Boolean(appearance.logo_url) && (
                                         <img
-                                            key={i}
-                                            src={appearance.logo_url || '/logo.png'}
-                                            className="absolute w-8 h-8 opacity-[var(--op)] transition-all duration-1000"
-                                            style={{ top: `${pos.top}%`, left: `${pos.left}%`, transform: `rotate(${pos.rotate}deg)`, '--op': appearance.logo_opacity } as any}
+                                            src={appearance.logo_url}
+                                            style={{ height: `${appearance.logo_size || 32}px` }}
+                                            className={`w-auto absolute top-6 transition-all duration-500 ${appearance.logo_position === 'top_left' ? 'left-6' : appearance.logo_position === 'top_right' ? 'right-6' : 'left-1/2 -translate-x-1/2'}`}
                                         />
-                                    ))}
-                                </div>
-                            )}
+                                    )}
 
-                            {/* Main Content */}
-                            <div className="relative z-10 px-6 py-12 flex flex-col items-center gap-6 min-h-full">
-                                {/* Logo — top row positions */}
-                                {(appearance.logo_position === 'center_top' || appearance.logo_position === 'top_left' || appearance.logo_position === 'top_right') && Boolean(appearance.logo_url) && (
-                                    <img
-                                        src={appearance.logo_url}
-                                        style={{ height: `${appearance.logo_size || 32}px` }}
-                                        className={`w-auto absolute top-6 transition-all duration-500 ${appearance.logo_position === 'top_left' ? 'left-6' : appearance.logo_position === 'top_right' ? 'right-6' : 'left-1/2 -translate-x-1/2'}`}
-                                    />
-                                )}
+                                    {/* Logo — center hero (watermark) */}
+                                    {appearance.logo_position === 'center' && Boolean(appearance.logo_url) && (
+                                        <img
+                                            src={appearance.logo_url}
+                                            style={{ height: `${Math.max(appearance.logo_size || 32, 64)}px` }}
+                                            className="w-auto absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-500 z-0 opacity-20 pointer-events-none blur-[0.5px]"
+                                        />
+                                    )}
 
-                                {/* Logo — center hero (watermark) */}
-                                {appearance.logo_position === 'center' && Boolean(appearance.logo_url) && (
-                                    <img
-                                        src={appearance.logo_url}
-                                        style={{ height: `${Math.max(appearance.logo_size || 32, 64)}px` }}
-                                        className="w-auto absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-500 z-0 opacity-20 pointer-events-none blur-[0.5px]"
-                                    />
-                                )}
+                                    {/* Logo — bottom corners */}
+                                    {(appearance.logo_position === 'bottom_left' || appearance.logo_position === 'bottom_right') && Boolean(appearance.logo_url) && (
+                                        <img
+                                            src={appearance.logo_url}
+                                            style={{ height: `${appearance.logo_size || 32}px` }}
+                                            className={`w-auto absolute bottom-6 transition-all duration-500 ${appearance.logo_position === 'bottom_left' ? 'left-6' : 'right-6'}`}
+                                        />
+                                    )}
 
-                                {/* Logo — bottom corners */}
-                                {(appearance.logo_position === 'bottom_left' || appearance.logo_position === 'bottom_right') && Boolean(appearance.logo_url) && (
-                                    <img
-                                        src={appearance.logo_url}
-                                        style={{ height: `${appearance.logo_size || 32}px` }}
-                                        className={`w-auto absolute bottom-6 transition-all duration-500 ${appearance.logo_position === 'bottom_left' ? 'left-6' : 'right-6'}`}
-                                    />
-                                )}
-
-                                <div className="relative mt-8 group">
-                                    <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-white/20 shadow-xl relative z-10 bg-surface transition-transform duration-300 group-hover:scale-105">
-                                        {profile?.avatar_url ? (
-                                            <img src={profile.avatar_url} className="w-full h-full object-cover relative z-10" />
-                                        ) : (
-                                            <div className="w-full h-full bg-primary/20 flex items-center justify-center text-xl font-bold relative z-10">{profile?.display_name?.charAt(0)}</div>
+                                    <div className="relative mt-8 group">
+                                        <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-white/20 shadow-xl relative z-10 bg-surface transition-transform duration-300 group-hover:scale-105">
+                                            {profile?.avatar_url ? (
+                                                <img src={profile.avatar_url} className="w-full h-full object-cover relative z-10" />
+                                            ) : (
+                                                <div className="w-full h-full bg-primary/20 flex items-center justify-center text-xl font-bold relative z-10">{profile?.display_name?.charAt(0)}</div>
+                                            )}
+                                        </div>
+                                        <div className="absolute inset-0 bg-primary/30 blur-xl rounded-full scale-110 -z-0 transition-colors duration-300 pointer-events-none" style={{ backgroundColor: appearance.primary_color }} />
+                                        {appearance.avatar_aura === 'solid' && (
+                                            <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md pointer-events-none" style={{ backgroundColor: appearance.primary_color, transform: 'scale(1.3)' }} />
+                                        )}
+                                        {appearance.avatar_aura === 'rainbow' && (
+                                            <div className="absolute -inset-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-lg pointer-events-none animate-spin-slow" style={{ background: 'conic-gradient(from 0deg, #ff0000, #ff8000, #ffff00, #00ff00, #0000ff, #4b0082, #ee82ee, #ff0000)' }} />
+                                        )}
+                                        {appearance.avatar_aura === 'pulse' && (
+                                            <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-500 blur-sm pointer-events-none" style={{ backgroundColor: appearance.primary_color }} />
                                         )}
                                     </div>
-                                    <div className="absolute inset-0 bg-primary/30 blur-xl rounded-full scale-110 -z-0 transition-colors duration-300 pointer-events-none" style={{ backgroundColor: appearance.primary_color }} />
-                                    {appearance.avatar_aura === 'solid' && (
-                                        <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md pointer-events-none" style={{ backgroundColor: appearance.primary_color, transform: 'scale(1.3)' }} />
-                                    )}
-                                    {appearance.avatar_aura === 'rainbow' && (
-                                        <div className="absolute -inset-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-lg pointer-events-none animate-spin-slow" style={{ background: 'conic-gradient(from 0deg, #ff0000, #ff8000, #ffff00, #00ff00, #0000ff, #4b0082, #ee82ee, #ff0000)' }} />
-                                    )}
-                                    {appearance.avatar_aura === 'pulse' && (
-                                        <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-500 blur-sm pointer-events-none" style={{ backgroundColor: appearance.primary_color }} />
-                                    )}
-                                </div>
 
-                                <div className="text-center space-y-1">
-                                    <h1 className="text-xl font-bold tracking-tight">{profile?.display_name || 'Your Name'}</h1>
-                                    <p className="text-sm opacity-70">@{profile?.handle || 'username'}</p>
-                                </div>
+                                    <div className="text-center space-y-1">
+                                        <h1 className="text-xl font-bold tracking-tight">{profile?.display_name || 'Your Name'}</h1>
+                                        <p className="text-sm opacity-70">@{profile?.handle || 'username'}</p>
+                                    </div>
 
-                                <div className={`w-full gap-3 ${appearance.link_style === 'grid' ? 'grid grid-cols-2' : appearance.link_style === 'row' ? 'flex flex-wrap justify-center' : 'grid grid-cols-1'}`}>
-                                    {links.filter(l => l.is_active).map(link => (
-                                        <a
-                                            key={link.id}
-                                            href="#"
-                                            onClick={e => e.preventDefault()}
-                                            className={`group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${appearance.card_style === 'pill' ? 'rounded-[2rem]' : appearance.card_style === 'modern' ? 'rounded-xl' : appearance.card_style === 'sharp' ? 'rounded-none' : 'rounded-lg'} ${appearance.link_style === 'row' ? 'w-12 h-12 flex items-center justify-center bg-white/10 backdrop-blur-md' : 'w-full p-3 flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/5'} ${appearance.public_card_glow > 0 ? 'shadow-[0_0_var(--glow)_rgba(255,255,255,0.1)]' : ''} ${appearance.card_border_glow ? 'hover:shadow-[0_0_15px_var(--border-color)]' : ''}`}
-                                            style={{ backgroundColor: appearance.public_card_theme === 'light' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)', borderColor: appearance.public_card_theme === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)', color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff', '--glow': `${appearance.public_card_glow}px`, '--border-color': appearance.card_border_color || appearance.primary_color || '#10B981' } as any}
-                                        >
-                                            {appearance.link_style === 'grid' && Boolean(link.custom_image_url) && (
-                                                <div className="absolute inset-0 z-0">
-                                                    <img src={link.custom_image_url} className="w-full h-full object-cover opacity-50 transition-transform duration-700 group-hover:scale-110" />
-                                                    <div className="absolute inset-0 bg-black/40" />
-                                                </div>
-                                            )}
-                                            {appearance.link_style === 'row' ? (
-                                                <div style={{ color: appearance.icon_style === 'color' ? undefined : 'currentColor' }}>
-                                                    <SocialIcon type={link.icon} variant={appearance.icon_style === 'monochrome' ? 'monochrome' : undefined} className="w-6 h-6 relative z-10" />
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <div className={`w-8 h-8 flex items-center justify-center shrink-0 ${appearance.icon_style === 'color' ? '' : 'text-current'}`}>
+                                    <div className={`w-full gap-3 ${appearance.link_style === 'grid' ? 'grid grid-cols-2' : appearance.link_style === 'row' ? 'flex flex-wrap justify-center' : 'grid grid-cols-1'}`}>
+                                        {links.filter(l => l.is_active).map(link => (
+                                            <a
+                                                key={link.id}
+                                                href="#"
+                                                onClick={e => e.preventDefault()}
+                                                className={`group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${appearance.card_style === 'pill' ? 'rounded-[2rem]' : appearance.card_style === 'modern' ? 'rounded-xl' : appearance.card_style === 'sharp' ? 'rounded-none' : 'rounded-lg'} ${appearance.link_style === 'row' ? 'w-12 h-12 flex items-center justify-center bg-white/10 backdrop-blur-md' : 'w-full p-3 flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/5'} ${appearance.public_card_glow > 0 ? 'shadow-[0_0_var(--glow)_rgba(255,255,255,0.1)]' : ''} ${appearance.card_border_glow ? 'hover:shadow-[0_0_15px_var(--border-color)]' : ''}`}
+                                                style={{ backgroundColor: appearance.public_card_theme === 'light' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)', borderColor: appearance.public_card_theme === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)', color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff', '--glow': `${appearance.public_card_glow}px`, '--border-color': appearance.card_border_color || appearance.primary_color || '#10B981' } as any}
+                                            >
+                                                {appearance.link_style === 'grid' && Boolean(link.custom_image_url) && (
+                                                    <div className="absolute inset-0 z-0">
+                                                        <img src={link.custom_image_url} className="w-full h-full object-cover opacity-50 transition-transform duration-700 group-hover:scale-110" />
+                                                        <div className="absolute inset-0 bg-black/40" />
+                                                    </div>
+                                                )}
+                                                {appearance.link_style === 'row' ? (
+                                                    <div style={{ color: appearance.icon_style === 'color' ? undefined : 'currentColor' }}>
                                                         <SocialIcon type={link.icon} variant={appearance.icon_style === 'monochrome' ? 'monochrome' : undefined} className="w-6 h-6 relative z-10" />
                                                     </div>
-                                                    <span className={`font-medium text-sm truncate relative z-10 flex-1 ${appearance.link_style === 'grid' ? 'text-center' : 'text-left'}`}>{link.label}</span>
-                                                    {appearance.link_style === 'list' && (
-                                                        <svg className="w-4 h-4 opacity-50 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                                                    )}
-                                                </>
-                                            )}
-                                        </a>
-                                    ))}
-                                    {links.filter(l => l.is_active).length === 0 && (
-                                        <div className="col-span-full text-center py-8 opacity-50 text-xs">
-                                            <p>Add active links to see them here</p>
+                                                ) : (
+                                                    <>
+                                                        <div className={`w-8 h-8 flex items-center justify-center shrink-0 ${appearance.icon_style === 'color' ? '' : 'text-current'}`}>
+                                                            <SocialIcon type={link.icon} variant={appearance.icon_style === 'monochrome' ? 'monochrome' : undefined} className="w-6 h-6 relative z-10" />
+                                                        </div>
+                                                        <span className={`font-medium text-sm truncate relative z-10 flex-1 ${appearance.link_style === 'grid' ? 'text-center' : 'text-left'}`}>{link.label}</span>
+                                                        {appearance.link_style === 'list' && (
+                                                            <svg className="w-4 h-4 opacity-50 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </a>
+                                        ))}
+                                        {links.filter(l => l.is_active).length === 0 && (
+                                            <div className="col-span-full text-center py-8 opacity-50 text-xs">
+                                                <p>Add active links to see them here</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Sponsored Products (Live Preview) */}
+                                    {products.length > 0 && (
+                                        <div className="w-full space-y-3 pt-4 border-t border-white/10">
+                                            <h3 className="text-xs font-bold opacity-70 uppercase tracking-wider text-center" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>Featured Products</h3>
+                                            <div className={`w-full gap-3 ${appearance.shop_layout === 'grid' || appearance.shop_layout === 'bento' ? 'grid grid-cols-2' : 'flex flex-col'}`}>
+                                                {products.filter(p => p.is_active !== false).map(product => (
+                                                    <a
+                                                        key={product.id}
+                                                        href="#"
+                                                        onClick={e => e.preventDefault()}
+                                                        className={`group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${appearance.card_style === 'pill' ? 'rounded-[2rem]' : appearance.card_style === 'modern' ? 'rounded-xl' : appearance.card_style === 'sharp' ? 'rounded-none' : 'rounded-lg'} bg-white/10 backdrop-blur-md border border-white/5 ${appearance.public_card_glow > 0 ? 'shadow-[0_0_var(--glow)_rgba(255,255,255,0.1)]' : ''} flex ${appearance.shop_layout === 'grid' || appearance.shop_layout === 'bento' ? 'flex-col aspect-square' : 'items-center p-3 gap-3'}`}
+                                                        style={{ backgroundColor: appearance.public_card_theme === 'light' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)', borderColor: appearance.public_card_theme === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)', color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff', '--glow': `${appearance.public_card_glow}px` } as any}
+                                                    >
+                                                        <div className={`${appearance.shop_layout === 'grid' || appearance.shop_layout === 'bento' ? 'w-full h-2/3 border-b border-white/10' : 'w-12 h-12 rounded-lg flex-shrink-0 border border-white/10'} bg-black/20 overflow-hidden relative`}>
+                                                            {product.image ? (
+                                                                <img src={product.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center opacity-50">
+                                                                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                                                                </div>
+                                                            )}
+                                                            <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
+                                                        </div>
+                                                        <div className={`${appearance.shop_layout === 'grid' || appearance.shop_layout === 'bento' ? 'p-2 flex-1 flex flex-col justify-center' : 'flex-1 min-w-0'} flex flex-col overflow-hidden`}>
+                                                            <span className="font-bold text-xs truncate leading-tight w-full" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>{product.title}</span>
+                                                            {product.site_name && (
+                                                                <span className="text-[9px] opacity-70 truncate mt-0.5" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>{product.site_name}</span>
+                                                            )}
+                                                        </div>
+                                                    </a>
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
-                                </div>
 
-                                {/* Sponsored Products (Live Preview) */}
-                                {products.length > 0 && (
-                                    <div className="w-full space-y-3 pt-4 border-t border-white/10">
-                                        <h3 className="text-xs font-bold opacity-70 uppercase tracking-wider text-center" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>Featured Products</h3>
-                                        <div className={`w-full gap-3 ${appearance.shop_layout === 'grid' || appearance.shop_layout === 'bento' ? 'grid grid-cols-2' : 'flex flex-col'}`}>
-                                            {products.filter(p => p.is_active !== false).map(product => (
-                                                <a
-                                                    key={product.id}
-                                                    href="#"
-                                                    onClick={e => e.preventDefault()}
-                                                    className={`group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${appearance.card_style === 'pill' ? 'rounded-[2rem]' : appearance.card_style === 'modern' ? 'rounded-xl' : appearance.card_style === 'sharp' ? 'rounded-none' : 'rounded-lg'} bg-white/10 backdrop-blur-md border border-white/5 ${appearance.public_card_glow > 0 ? 'shadow-[0_0_var(--glow)_rgba(255,255,255,0.1)]' : ''} flex ${appearance.shop_layout === 'grid' || appearance.shop_layout === 'bento' ? 'flex-col aspect-square' : 'items-center p-3 gap-3'}`}
-                                                    style={{ backgroundColor: appearance.public_card_theme === 'light' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)', borderColor: appearance.public_card_theme === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)', color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff', '--glow': `${appearance.public_card_glow}px` } as any}
-                                                >
-                                                    <div className={`${appearance.shop_layout === 'grid' || appearance.shop_layout === 'bento' ? 'w-full h-2/3 border-b border-white/10' : 'w-12 h-12 rounded-lg flex-shrink-0 border border-white/10'} bg-black/20 overflow-hidden relative`}>
-                                                        {product.image ? (
-                                                            <img src={product.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center opacity-50">
-                                                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                                    {profile?.verified_videos && profile.verified_videos.length > 0 && (
+                                        <div className="w-full space-y-3 pt-4 border-t border-white/10">
+                                            <h3 className="text-xs font-bold opacity-70 uppercase tracking-wider text-center" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>Verified Videos</h3>
+                                            <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide snap-x w-full">
+                                                {profile.verified_videos.map(video => (
+                                                    <a key={video.id} href={`https://youtube.com/watch?v=${video.youtube_video_id}`} target="_blank" className="min-w-[160px] max-w-[160px] snap-center rounded-lg overflow-hidden border border-white/10 group relative flex-shrink-0" style={{ backgroundColor: appearance.public_card_theme === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)' }}>
+                                                        <div className="aspect-video relative">
+                                                            <img src={video.thumbnail_url} className="w-full h-full object-cover" />
+                                                            <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
+                                                            <div className="absolute top-1.5 right-1.5 bg-green-500 text-black text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                                                                <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                                                VERIFIED
                                                             </div>
-                                                        )}
-                                                        <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
-                                                    </div>
-                                                    <div className={`${appearance.shop_layout === 'grid' || appearance.shop_layout === 'bento' ? 'p-2 flex-1 flex flex-col justify-center' : 'flex-1 min-w-0'} flex flex-col overflow-hidden`}>
-                                                        <span className="font-bold text-xs truncate leading-tight w-full" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>{product.title}</span>
-                                                        {product.site_name && (
-                                                            <span className="text-[9px] opacity-70 truncate mt-0.5" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>{product.site_name}</span>
-                                                        )}
-                                                    </div>
-                                                </a>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {profile?.verified_videos && profile.verified_videos.length > 0 && (
-                                    <div className="w-full space-y-3 pt-4 border-t border-white/10">
-                                        <h3 className="text-xs font-bold opacity-70 uppercase tracking-wider text-center" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>Verified Videos</h3>
-                                        <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide snap-x w-full">
-                                            {profile.verified_videos.map(video => (
-                                                <a key={video.id} href={`https://youtube.com/watch?v=${video.youtube_video_id}`} target="_blank" className="min-w-[160px] max-w-[160px] snap-center rounded-lg overflow-hidden border border-white/10 group relative flex-shrink-0" style={{ backgroundColor: appearance.public_card_theme === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)' }}>
-                                                    <div className="aspect-video relative">
-                                                        <img src={video.thumbnail_url} className="w-full h-full object-cover" />
-                                                        <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
-                                                        <div className="absolute top-1.5 right-1.5 bg-green-500 text-black text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
-                                                            <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                                                            VERIFIED
                                                         </div>
-                                                    </div>
-                                                    <div className="p-2">
-                                                        <h4 className="text-[10px] font-medium truncate leading-tight mb-1" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>{video.title}</h4>
-                                                        <span className="text-[9px] opacity-60" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>{new Date(video.published_at).toLocaleDateString()}</span>
-                                                    </div>
-                                                </a>
-                                            ))}
+                                                        <div className="p-2">
+                                                            <h4 className="text-[10px] font-medium truncate leading-tight mb-1" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>{video.title}</h4>
+                                                            <span className="text-[9px] opacity-60" style={{ color: appearance.public_card_theme === 'light' ? '#000000' : '#ffffff' }}>{new Date(video.published_at).toLocaleDateString()}</span>
+                                                        </div>
+                                                    </a>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
 
-                                <div className="mt-8 pt-6 border-t border-white/10 flex flex-col items-center gap-2 opacity-60 hover:opacity-100 transition-opacity group/badge cursor-help" title="This card is cryptographically signed and verified by AntiAI">
-                                    <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-bold" style={{ color: appearance.primary_color }}>
-                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                                        Securely Signed
-                                    </div>
-                                    <div className="flex items-center gap-2 font-mono text-[9px] text-white/50 cursor-pointer select-none" onMouseDown={() => setIsTokenRevealed(true)} onMouseUp={() => setIsTokenRevealed(false)} onMouseLeave={() => setIsTokenRevealed(false)} onTouchStart={() => setIsTokenRevealed(true)} onTouchEnd={() => setIsTokenRevealed(false)}>
-                                        <span>hash:</span>
-                                        <span className={`transition-colors ${isTokenRevealed ? 'text-white' : 'text-white/70 group-hover/badge:text-white'}`}>
-                                            {isTokenRevealed
-                                                ? (profile?.verification_token || profile?.id || 'preview-id')
-                                                : (profile?.verification_token
-                                                    ? `${profile.verification_token.substring(0, 12)}...${profile.verification_token.substring(profile.verification_token.length - 8)}`
-                                                    : `0x${(profile?.id || 'preview-id').split('-')[0]}...${(profile?.id || 'preview-id').split('-').pop()}`)}
-                                        </span>
+                                    <div className="mt-8 pt-6 border-t border-white/10 flex flex-col items-center gap-2 opacity-60 hover:opacity-100 transition-opacity group/badge cursor-help" title="This card is cryptographically signed and verified by AntiAI">
+                                        <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-bold" style={{ color: appearance.primary_color }}>
+                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                                            Securely Signed
+                                        </div>
+                                        <div className="flex items-center gap-2 font-mono text-[9px] text-white/50 cursor-pointer select-none" onMouseDown={() => setIsTokenRevealed(true)} onMouseUp={() => setIsTokenRevealed(false)} onMouseLeave={() => setIsTokenRevealed(false)} onTouchStart={() => setIsTokenRevealed(true)} onTouchEnd={() => setIsTokenRevealed(false)}>
+                                            <span>hash:</span>
+                                            <span className={`transition-colors ${isTokenRevealed ? 'text-white' : 'text-white/70 group-hover/badge:text-white'}`}>
+                                                {isTokenRevealed
+                                                    ? (profile?.verification_token || profile?.id || 'preview-id')
+                                                    : (profile?.verification_token
+                                                        ? `${profile.verification_token.substring(0, 12)}...${profile.verification_token.substring(profile.verification_token.length - 8)}`
+                                                        : `0x${(profile?.id || 'preview-id').split('-')[0]}...${(profile?.id || 'preview-id').split('-').pop()}`)}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }

@@ -145,6 +145,34 @@ export class AppearanceDto {
     sponsored_products?: any[];
 
     @IsOptional()
+    @ValidateNested()
+    tab_visibility?: {
+        links?: boolean;
+        shop?: boolean;
+        videos?: boolean;
+        music?: boolean;
+        events?: boolean;
+    };
+
+    @IsOptional()
+    @ValidateNested()
+    pinned_items?: {
+        links?: string;
+        shop?: string;
+        videos?: string;
+        music?: string;
+        events?: string;
+    };
+
+    @IsOptional()
+    @IsArray()
+    music_links?: any[];
+
+    @IsOptional()
+    @IsArray()
+    events?: any[];
+
+    @IsOptional()
     @IsString()
     shop_layout?: 'list' | 'grid' | 'bento';
 
