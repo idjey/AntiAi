@@ -209,13 +209,25 @@ export default function CreatorPage() {
     return (
         <section id="creators" className="section group overflow-hidden">
             <div className="container-custom">
-                {/* Section header */}
-                <header className="text-center mb-12">
-                    <h2 className="section-title">
-                        Your official <span className="text-primary">Creator Card.</span>
+                <header className="text-center mb-12 flex flex-col items-center">
+                    {/* Trust Badge */}
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-6 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium">
+                        <span>✦</span>
+                        <span>Cryptographically Verified</span>
+                    </div>
+
+                    <h2 className="section-title flex items-center justify-center gap-2 flex-wrap">
+                        Claim your official{' '}
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary flex items-center gap-2">
+                            Creator Card.
+                            {/* Verified Icon */}
+                            <svg className="w-8 h-8 text-primary shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 0121 12z" />
+                            </svg>
+                        </span>
                     </h2>
-                    <p className="section-subtitle">
-                        Cryptographically Secured profile card that proves your authenticity. Share it everywhere.
+                    <p className="section-subtitle max-w-2xl mx-auto mt-4">
+                        A cryptographically secured profile that proves authenticity across the web. One link for everything.
                     </p>
                 </header>
 
