@@ -237,6 +237,103 @@ const PRESET_THEMES = [
             icon_style: 'monochrome',
             avatar_aura: 'none'
         }
+    },
+    {
+        id: 'emerald_forest',
+        name: 'Emerald Forest',
+        colors: ['#064e3b', '#10b981', '#a7f3d0'],
+        appearance: {
+            theme: 'modern_dark',
+            primary_color: '#10b981',
+            background_color: '#022c22',
+            public_background_type: 'image',
+            public_background_image: 'https://images.unsplash.com/photo-1511497584788-876760111969?q=80&w=2064&auto=format&fit=crop',
+            public_background_overlay: 50,
+            public_background_blur: 4,
+            card_background_type: 'color',
+            card_bg_opacity: 30,
+            card_backdrop_blur: 16,
+            card_border_style: 'solid',
+            card_border_color: '#10b981',
+            card_border_glow: true,
+            card_style: 'modern',
+            link_style: 'grid',
+            icon_style: 'colorful',
+            avatar_aura: 'pulse'
+        }
+    },
+    {
+        id: 'neon_sunset',
+        name: 'Neon Sunset',
+        colors: ['#4c1d95', '#db2777', '#f97316'],
+        appearance: {
+            theme: 'modern_dark',
+            primary_color: '#f97316',
+            background_color: '#2e1065',
+            public_background_type: 'image',
+            public_background_image: 'https://images.unsplash.com/photo-1555448248-2571daf6344b?q=80&w=2070&auto=format&fit=crop',
+            public_background_overlay: 30,
+            public_background_blur: 8,
+            card_background_type: 'gradient',
+            card_background_gradient: 'linear-gradient(135deg, rgba(76,29,149,0.5) 0%, rgba(219,39,119,0.5) 100%)',
+            card_bg_opacity: 40,
+            card_backdrop_blur: 30,
+            card_border_style: 'glow',
+            card_border_color: '#f97316',
+            card_border_glow: true,
+            card_style: 'pill',
+            link_style: 'row',
+            icon_style: 'colorful',
+            avatar_aura: 'solid'
+        }
+    },
+    {
+        id: 'deep_ocean',
+        name: 'Deep Ocean',
+        colors: ['#082f49', '#0284c7', '#38bdf8', '#7dd3fc'],
+        appearance: {
+            theme: 'modern_dark',
+            primary_color: '#38bdf8',
+            background_color: '#082f49',
+            public_background_type: 'image',
+            public_background_image: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=2070&auto=format&fit=crop',
+            public_background_overlay: 70,
+            public_background_blur: 15,
+            card_background_type: 'color',
+            card_bg_opacity: 10,
+            card_backdrop_blur: 40,
+            card_border_style: 'dashed',
+            card_border_color: '#38bdf8',
+            card_border_glow: false,
+            card_style: 'sharp',
+            link_style: 'list',
+            icon_style: 'monochrome',
+            avatar_aura: 'pulse'
+        }
+    },
+    {
+        id: 'crimson_shadow',
+        name: 'Crimson Shadow',
+        colors: ['#450a0a', '#991b1b', '#ef4444', '#fca5a5'],
+        appearance: {
+            theme: 'modern_dark',
+            primary_color: '#ef4444',
+            background_color: '#000000',
+            public_background_type: 'gradient',
+            public_background_gradient: 'radial-gradient(circle at center, #450a0a 0%, #000000 100%)',
+            public_background_overlay: 0,
+            public_background_blur: 0,
+            card_background_type: 'color',
+            card_bg_opacity: 90,
+            card_backdrop_blur: 5,
+            card_border_style: 'solid',
+            card_border_color: '#ef4444',
+            card_border_glow: true,
+            card_style: 'classic',
+            link_style: 'grid',
+            icon_style: 'colorful',
+            avatar_aura: 'none'
+        }
     }
 ];
 
