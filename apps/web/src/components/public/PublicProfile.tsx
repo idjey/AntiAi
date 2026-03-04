@@ -68,6 +68,22 @@ export const PublicProfile = ({ creator }: Props) => {
     // Text Colors
     const cardBgColor = appearance.background_color || '#000000';
     const dynamicTextColor = appearance.card_background_type === 'color' ? getContrastYIQ(cardBgColor) : isLightMode ? '#000000' : '#ffffff';
+
+    // Premium Features
+    const cardBgOpacity = appearance.card_bg_opacity !== undefined ? appearance.card_bg_opacity : 100;
+    const cardBackdropBlur = appearance.card_backdrop_blur || 0;
+
+    // Helper function to convert Hex + Opacity into rgba
+    const hexToRgba = (hex: string, opacityPercent: number) => {
+        if (!hex) return `rgba(0,0,0,${opacityPercent / 100})`;
+        const cleanHex = hex.replace('#', '');
+        if (cleanHex.length !== 6) return `rgba(0,0,0,${opacityPercent / 100})`;
+        const r = parseInt(cleanHex.substring(0, 2), 16);
+        const g = parseInt(cleanHex.substring(2, 2), 16);
+        const b = parseInt(cleanHex.substring(4, 2), 16);
+        return `rgba(${r}, ${g}, ${b}, ${opacityPercent / 100})`;
+    };
+
     const [activeTab, setActiveTab] = useState<'links' | 'shop'>('links');
     const [isTokenRevealed, setIsTokenRevealed] = useState(false);
 
@@ -332,7 +348,9 @@ export const PublicProfile = ({ creator }: Props) => {
                             ? `url(${appearance.background_image}) center/cover no-repeat`
                             : appearance.card_background_type === 'gradient' && appearance.card_background_gradient
                                 ? appearance.card_background_gradient
-                                : (appearance.background_color || '#000000'),
+                                : hexToRgba(appearance.background_color || '#000000', cardBgOpacity),
+                        backdropFilter: cardBackdropBlur > 0 ? `blur(${cardBackdropBlur}px)` : 'none',
+                        WebkitBackdropFilter: cardBackdropBlur > 0 ? `blur(${cardBackdropBlur}px)` : 'none',
                         color: dynamicTextColor,
                         boxShadow: `0 40px 80px -12px rgba(0, 0, 0, 0.6)${cardGlow > 0 ? `, 0 0 ${cardGlow * 40}px ${appearance.primary_color}50` : ''}`,
                         borderStyle: appearance.card_border_style && appearance.card_border_style !== 'none' && appearance.card_border_style !== 'glow' ? appearance.card_border_style : appearance.card_border_style === 'glow' ? 'solid' : 'solid',

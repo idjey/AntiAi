@@ -116,6 +116,130 @@ interface Profile {
     }[];
 }
 
+// ======= ONE-CLICK ARTIST THEMES (PREMIUM) =======
+const PRESET_THEMES = [
+    {
+        id: 'cyberpunk',
+        name: 'Cyberpunk',
+        colors: ['#0f172a', '#3b82f6', '#ec4899', '#8b5cf6'],
+        appearance: {
+            theme: 'modern_dark',
+            primary_color: '#00ffcc',
+            background_color: '#000000',
+            public_background_type: 'image',
+            public_background_image: 'https://images.unsplash.com/photo-1555680202-c86f0e12f086?q=80&w=2070&auto=format&fit=crop',
+            public_background_overlay: 60,
+            public_background_blur: 5,
+            card_background_type: 'color',
+            card_bg_opacity: 20,
+            card_backdrop_blur: 24,
+            card_border_style: 'glow',
+            card_border_color: '#ec4899',
+            card_border_glow: true,
+            card_style: 'sharp',
+            link_style: 'grid',
+            icon_style: 'colorful',
+            avatar_aura: 'pulse'
+        }
+    },
+    {
+        id: 'frosted_glass',
+        name: 'Frosted Glass',
+        colors: ['#e2e8f0', '#94a3b8', '#ffffff'],
+        appearance: {
+            theme: 'modern_light',
+            primary_color: '#ffffff',
+            background_color: '#ffffff',
+            public_background_type: 'gradient',
+            public_background_gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+            public_background_overlay: 0,
+            public_background_blur: 0,
+            card_background_type: 'color',
+            card_bg_opacity: 15,
+            card_backdrop_blur: 35,
+            card_border_style: 'solid',
+            card_border_color: '#ffffff',
+            card_border_glow: false,
+            card_style: 'modern',
+            link_style: 'list',
+            icon_style: 'monochrome',
+            avatar_aura: 'solid'
+        }
+    },
+    {
+        id: 'midnight_gold',
+        name: 'Midnight Gold',
+        colors: ['#000000', '#1a1a1a', '#fbbf24'],
+        appearance: {
+            theme: 'modern_dark',
+            primary_color: '#fbbf24',
+            background_color: '#050505',
+            public_background_type: 'image',
+            public_background_image: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop',
+            public_background_overlay: 80,
+            public_background_blur: 2,
+            card_background_type: 'gradient',
+            card_background_gradient: 'linear-gradient(to bottom, #111111, #000000)',
+            card_bg_opacity: 90,
+            card_backdrop_blur: 10,
+            card_border_style: 'solid',
+            card_border_color: '#fbbf24',
+            card_border_glow: true,
+            card_style: 'classic',
+            link_style: 'list',
+            icon_style: 'colorful',
+            avatar_aura: 'none'
+        }
+    },
+    {
+        id: 'sakura',
+        name: 'Sakura Pink',
+        colors: ['#fdf2f8', '#fce7f3', '#db2777'],
+        appearance: {
+            theme: 'modern_light',
+            primary_color: '#db2777',
+            background_color: '#fff1f2',
+            public_background_type: 'image',
+            public_background_image: 'https://images.unsplash.com/photo-1522383225653-ed111181a951?q=80&w=2076&auto=format&fit=crop',
+            public_background_overlay: 20,
+            public_background_blur: 10,
+            card_background_type: 'color',
+            card_bg_opacity: 40,
+            card_backdrop_blur: 20,
+            card_border_style: 'solid',
+            card_border_color: '#fbcfe8',
+            card_border_glow: false,
+            card_style: 'pill',
+            link_style: 'row',
+            icon_style: 'monochrome',
+            avatar_aura: 'rainbow'
+        }
+    },
+    {
+        id: 'monochrome',
+        name: 'Pure Mono',
+        colors: ['#ffffff', '#888888', '#000000'],
+        appearance: {
+            theme: 'modern_dark',
+            primary_color: '#ffffff',
+            background_color: '#000000',
+            public_background_type: 'color',
+            public_background_color: '#0a0a0a',
+            public_background_overlay: 0,
+            public_background_blur: 0,
+            card_background_type: 'color',
+            card_bg_opacity: 100,
+            card_backdrop_blur: 0,
+            card_border_style: 'none',
+            card_border_glow: false,
+            card_style: 'sharp',
+            link_style: 'list',
+            icon_style: 'monochrome',
+            avatar_aura: 'none'
+        }
+    }
+];
+
 export default function CreatorCardPage() {
     const [links, setLinks] = useState<CreatorLink[]>([]);
     const [profile, setProfile] = useState<Profile | null>(null);
@@ -161,6 +285,19 @@ export default function CreatorCardPage() {
 
     const isPro = profile?.plan === 'pro' || profile?.plan === 'elite';
 
+    // Helper function to convert Hex + Opacity into rgba
+    const hexToRgba = (hex: string, opacityPercent: number) => {
+        if (!hex) return `rgba(0,0,0,${opacityPercent / 100})`;
+        const cleanHex = hex.replace('#', '');
+        if (cleanHex.length !== 6) return `rgba(0,0,0,${opacityPercent / 100})`;
+        const r = parseInt(cleanHex.substring(0, 2), 16);
+        const g = parseInt(cleanHex.substring(2, 2), 16);
+        const b = parseInt(cleanHex.substring(4, 2), 16);
+        return `rgba(${r}, ${g}, ${b}, ${opacityPercent / 100})`;
+    };
+
+    // Track Premium user status
+    const [isPremium, setIsPremium] = useState(false);
     const [appearance, setAppearance] = useState({
         theme: 'modern_dark',
         primary_color: '#10b981',
@@ -193,6 +330,8 @@ export default function CreatorCardPage() {
         public_card_glow: 0,
         card_background_type: 'color' as 'color' | 'gradient' | 'image',
         card_background_gradient: '',
+        card_bg_opacity: 100,
+        card_backdrop_blur: 0,
         card_border_style: 'none' as 'none' | 'solid' | 'dashed' | 'glow',
         card_border_color: '',
         card_border_width: 1,
@@ -505,6 +644,24 @@ export default function CreatorCardPage() {
         pill: { card: 'rounded-[3rem]', link: 'rounded-full' }
     };
     const currentShape = shapeClasses[cardStyle as keyof typeof shapeClasses] || shapeClasses.modern;
+
+    // Helper for contrast text color
+    const getContrastYIQ = (hexcolor: string) => {
+        if (!hexcolor) return '#ffffff';
+        const r = parseInt(hexcolor.substring(1, 3), 16);
+        const g = parseInt(hexcolor.substring(3, 5), 16);
+        const b = parseInt(hexcolor.substring(5, 7), 16);
+        const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+        return (yiq >= 128) ? '#000000' : '#ffffff';
+    };
+
+    const isLightMode = appearance.public_card_theme === 'light';
+    const cardBgColor = appearance.background_color || '#000000';
+    const dynamicTextColor = appearance.card_background_type === 'color' ? getContrastYIQ(cardBgColor) : isLightMode ? '#000000' : '#ffffff';
+    const cardBgOpacity = appearance.card_bg_opacity !== undefined ? appearance.card_bg_opacity : 100;
+    const cardBackdropBlur = appearance.card_backdrop_blur || 0;
+    const cardGlow = appearance.public_card_glow || 0;
+
 
     return (
         <div className="max-w-[2000px] mx-auto h-[calc(100vh-100px)] flex gap-8 px-6">
@@ -1046,7 +1203,7 @@ export default function CreatorCardPage() {
                                                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                                 </svg>
                                                             ) : profile?.avatar_url ? (
-                                                                <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                                                                <img src={profile.avatar_url} className="w-full h-full object-cover relative z-10" />
                                                             ) : (
                                                                 <span className="text-xl font-bold text-text-secondary">{profile?.display_name?.substring(0, 2).toUpperCase()}</span>
                                                             )}
@@ -1822,15 +1979,21 @@ export default function CreatorCardPage() {
                         <div
                             className="w-full h-full overflow-y-auto scrollbar-hide relative transition-colors duration-500"
                             style={{
-                                background: appearance.public_background_type === 'image' && appearance.public_background_image
-                                    ? `url(${appearance.public_background_image}) center/cover no-repeat`
-                                    : appearance.public_background_type === 'gradient' && appearance.public_background_gradient
-                                        ? appearance.public_background_gradient
-                                        : appearance.public_background_type === 'emoji'
-                                            ? (appearance.public_background_color || '#000000')
-                                            : (appearance.public_background_color || '#000000'),
-                                boxShadow: `0 40px 80px -12px rgba(0, 0, 0, 0.6)${appearance.public_card_glow > 0 ? `, 0 0 ${appearance.public_card_glow * 40}px ${appearance.primary_color}50` : ''}`
-                            }}
+                                background: appearance.card_background_type === 'image' && appearance.background_image
+                                    ? `url(${appearance.background_image}) center/cover no-repeat`
+                                    : appearance.card_background_type === 'gradient' && appearance.card_background_gradient
+                                        ? appearance.card_background_gradient
+                                        : hexToRgba(appearance.background_color || '#000000', cardBgOpacity),
+                                backdropFilter: cardBackdropBlur > 0 ? `blur(${cardBackdropBlur}px)` : 'none',
+                                // For Safari support
+                                WebkitBackdropFilter: cardBackdropBlur > 0 ? `blur(${cardBackdropBlur}px)` : 'none',
+                                color: dynamicTextColor,
+                                boxShadow: `0 40px 80px -12px rgba(0, 0, 0, 0.6)${cardGlow > 0 ? `, 0 0 ${cardGlow * 40}px ${appearance.primary_color}50` : ''}`,
+                                borderStyle: appearance.card_border_style && appearance.card_border_style !== 'none' && appearance.card_border_style !== 'glow' ? appearance.card_border_style : appearance.card_border_style === 'glow' ? 'solid' : 'solid',
+                                borderWidth: appearance.card_border_style && appearance.card_border_style !== 'none' ? `${appearance.card_border_width || 1}px` : '1px',
+                                borderColor: appearance.card_border_style && appearance.card_border_style !== 'none' ? (appearance.card_border_color || appearance.primary_color || '#10b981') : 'rgba(255,255,255,0.1)',
+                                '--border-color': appearance.card_border_color || appearance.primary_color || '#10b981'
+                            } as React.CSSProperties}
                         >
                             {/* Emoji Background */}
                             {appearance.public_background_type === 'emoji' && Boolean(appearance.public_background_emojis) && (
