@@ -131,6 +131,7 @@ export const PublicProfile = ({ creator }: Props) => {
 
 
     const [shopTooltipVisible, setShopTooltipVisible] = useState(false);
+    const [expandedMapId, setExpandedMapId] = useState<string | null>(null);
 
     // Analytics Tracking
     useEffect(() => {
@@ -970,8 +971,8 @@ export const PublicProfile = ({ creator }: Props) => {
                                                             animationFillMode: 'backwards'
                                                         }}
                                                     >
-                                                        {mapEmbedUrl && (
-                                                            <div className="relative w-full h-32 overflow-hidden bg-black/10">
+                                                        {mapEmbedUrl && expandedMapId === event.id && (
+                                                            <div className="relative w-full h-48 overflow-hidden bg-black/10 border-b border-black/5 animate-in slide-in-from-top-2">
                                                                 <iframe
                                                                     width="100%"
                                                                     height="100%"
@@ -979,14 +980,23 @@ export const PublicProfile = ({ creator }: Props) => {
                                                                     style={{ border: 0 }}
                                                                     src={mapEmbedUrl}
                                                                     allowFullScreen
-                                                                    className="opacity-70 group-hover:opacity-100 transition-opacity"
+                                                                    className="opacity-80 group-hover:opacity-100 transition-opacity"
                                                                 ></iframe>
-                                                                {isPinned && (
-                                                                    <div className="absolute top-2 right-2 rotate-45 pointer-events-none z-20 text-xl drop-shadow-md">📌</div>
-                                                                )}
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.preventDefault();
+                                                                        setExpandedMapId(null);
+                                                                    }}
+                                                                    className="absolute top-2 right-2 bg-black/50 hover:bg-black/80 text-white rounded-full p-1.5 backdrop-blur-sm transition-colors text-xs z-30"
+                                                                >
+                                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                                                </button>
                                                             </div>
                                                         )}
-                                                        <div className="p-4 flex gap-4 w-full">
+                                                        <div className="p-4 flex gap-4 w-full relative">
+                                                            {isPinned && (!mapEmbedUrl || expandedMapId !== event.id) && (
+                                                                <div className="absolute top-3 right-3 rotate-45 pointer-events-none z-20 text-lg drop-shadow-md">📌</div>
+                                                            )}
                                                             {/* Date Box */}
                                                             {eventDate && (
                                                                 <div className={`flex flex-col items-center justify-center shrink-0 w-14 h-14 rounded-xl shadow-md border`} style={{ borderColor: `${appearance.primary_color}40`, backgroundColor: isLightMode ? 'white' : 'rgba(0,0,0,0.4)' }}>
@@ -1000,30 +1010,43 @@ export const PublicProfile = ({ creator }: Props) => {
                                                             )}
                                                             {/* Content */}
                                                             <div className="flex-1 flex flex-col min-w-0 pr-4">
-                                                                {!mapEmbedUrl && isPinned && (
-                                                                    <div className="absolute top-3 right-3 rotate-45 pointer-events-none z-20 text-lg drop-shadow-md">📌</div>
-                                                                )}
-                                                                <h3 className={`text-base font-semibold ${textColor} line-clamp-1`}>{event.title}</h3>
-                                                                {event.venue_address && (
-                                                                    <p className={`text-xs ${textSecondaryColor} mt-1 line-clamp-1`}>
-                                                                        📍 {event.venue_address}
-                                                                    </p>
-                                                                )}
-                                                                {event.ticket_url && (
-                                                                    <a
-                                                                        href={event.ticket_url}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        onClick={() => trackClick(event.id, event.ticket_url)}
-                                                                        className="mt-3 inline-flex items-center gap-1 text-[10px] font-bold px-3 py-1.5 rounded-full w-fit hover:scale-105 transition-transform"
-                                                                        style={{ backgroundColor: `${appearance.primary_color}`, color: '#000' }}
-                                                                    >
-                                                                        Get Tickets
-                                                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                                                        </svg>
-                                                                    </a>
-                                                                )}
+                                                                <div className="flex flex-wrap items-center gap-2 mt-3">
+                                                                    {event.ticket_url && (
+                                                                        <a
+                                                                            href={event.ticket_url}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            onClick={() => trackClick(event.id, event.ticket_url)}
+                                                                            className="inline-flex items-center gap-1 text-[10px] font-bold px-3 py-1.5 rounded-full w-fit hover:scale-105 transition-transform shadow-sm hover:shadow-md"
+                                                                            style={{ backgroundColor: `${appearance.primary_color}`, color: '#000' }}
+                                                                        >
+                                                                            Get Tickets
+                                                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                                                            </svg>
+                                                                        </a>
+                                                                    )}
+                                                                    {mapEmbedUrl && (
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                setExpandedMapId(expandedMapId === event.id ? null : event.id);
+                                                                            }}
+                                                                            className="inline-flex items-center gap-1 text-[10px] font-bold px-3 py-1.5 rounded-full w-fit hover:scale-105 transition-all shadow-sm hover:shadow-md border"
+                                                                            style={{
+                                                                                borderColor: expandedMapId === event.id ? appearance.primary_color : `${appearance.primary_color}40`,
+                                                                                backgroundColor: expandedMapId === event.id ? `${appearance.primary_color}20` : isLightMode ? 'white' : 'rgba(0,0,0,0.2)',
+                                                                                color: expandedMapId === event.id ? appearance.primary_color : textColor
+                                                                            }}
+                                                                        >
+                                                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.242-4.243a8 8 0 1111.314 0z" />
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                            </svg>
+                                                                            {expandedMapId === event.id ? 'Hide Map' : 'Location'}
+                                                                        </button>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
