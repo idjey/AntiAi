@@ -1853,6 +1853,98 @@ export default function CreatorCardPage() {
                                         <div className="flex justify-between text-xs text-text-secondary"><span>Card Glow</span><span>{appearance.public_card_glow}</span></div>
                                         <input type="range" min="0" max="100" step="5" value={appearance.public_card_glow} onChange={e => setAppearance(prev => ({ ...prev, public_card_glow: parseInt(e.target.value) }))} className="w-full accent-primary h-1.5 bg-surface-light rounded-lg appearance-none cursor-pointer" />
                                     </div>
+
+                                    {/* PRESET THEMES (PREMIUM) */}
+                                    <div className="pt-4 border-t border-white/5 space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-sm font-semibold text-text-primary">Artist Themes</h3>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-[#fbbf24] bg-[#fbbf24]/10 px-2 py-1 rounded-md">Pro</span>
+                                        </div>
+                                        <div className="relative w-full overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                                            {!isPro && (
+                                                <div className="absolute inset-0 z-10 bg-black/60 backdrop-blur-[2px] rounded-xl flex items-center justify-center m-1">
+                                                    <a href="/dashboard/settings" className="text-xs font-bold text-black bg-[#fbbf24] px-4 py-2 rounded-lg hover:scale-105 transition-transform shadow-lg shadow-[#fbbf24]/20 flex items-center gap-2">
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                                        Upgrade to Unlock Themes
+                                                    </a>
+                                                </div>
+                                            )}
+                                            <div className="flex gap-3 px-1" style={{ width: 'max-content' }}>
+                                                {PRESET_THEMES.map((theme) => (
+                                                    <button
+                                                        key={theme.id}
+                                                        onClick={() => {
+                                                            if (isPro) setAppearance(prev => ({ ...prev, ...(theme.appearance as any) }));
+                                                        }}
+                                                        className={`group relative w-32 h-24 rounded-xl overflow-hidden border-2 transition-all hover:scale-105 shadow-md ${appearance.primary_color === theme.appearance.primary_color && appearance.theme === theme.appearance.theme ? 'border-primary shadow-primary/20 scale-105' : 'border-white/10 hover:border-white/30'}`}
+                                                    >
+                                                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-black/80 to-black/40 z-10">
+                                                            <div className="flex -space-x-1">
+                                                                {theme.colors.map(c => (
+                                                                    <div key={c} className="w-4 h-4 rounded-full border border-black shadow-sm" style={{ backgroundColor: c }} />
+                                                                ))}
+                                                            </div>
+                                                            <span className="text-[11px] font-bold text-white drop-shadow-md">{theme.name}</span>
+                                                        </div>
+                                                        <div className="absolute inset-0 opacity-50 bg-cover bg-center transition-opacity group-hover:opacity-100" style={theme.appearance.public_background_type === 'image' ? { backgroundImage: `url(${theme.appearance.public_background_image})` } : { background: theme.colors[0] }} />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* GLASSMORPHISM SETTINGS (PREMIUM) */}
+                                    <div className="pt-4 border-t border-white/5 space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h3 className="text-sm font-semibold text-text-primary">Glass Effect</h3>
+                                                <p className="text-xs text-text-secondary mt-1">Make your card translucent.</p>
+                                            </div>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-[#fbbf24] bg-[#fbbf24]/10 px-2 py-1 rounded-md">Pro</span>
+                                        </div>
+
+                                        <div className="relative space-y-5 rounded-xl border border-white/5 p-4 bg-white/5">
+                                            {!isPro && (
+                                                <div className="absolute inset-0 z-10 bg-black/60 backdrop-blur-[2px] rounded-xl flex flex-col items-center justify-center p-4 text-center">
+                                                    <svg className="w-6 h-6 text-[#fbbf24] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                                    <p className="text-xs text-white/70 mb-3">Glassmorphism is a Pro feature.</p>
+                                                    <a href="/dashboard/settings" className="text-[11px] font-bold text-black bg-[#fbbf24] px-3 py-1.5 rounded-lg hover:scale-105 transition-transform shadow-lg shadow-[#fbbf24]/20">
+                                                        Upgrade Plan
+                                                    </a>
+                                                </div>
+                                            )}
+
+                                            <div className="space-y-3">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-xs font-medium text-text-secondary">Card Opacity</span>
+                                                    <span className="text-xs font-mono text-primary">{appearance.card_bg_opacity ?? 100}%</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min="0"
+                                                    max="100"
+                                                    value={appearance.card_bg_opacity ?? 100}
+                                                    onChange={e => { if (isPro) setAppearance(prev => ({ ...prev, card_bg_opacity: parseInt(e.target.value) })) }}
+                                                    className="w-full accent-primary h-2 bg-surface-light rounded-lg appearance-none cursor-pointer"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-xs font-medium text-text-secondary">Backdrop Blur</span>
+                                                    <span className="text-xs font-mono text-primary">{appearance.card_backdrop_blur ?? 0}px</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min="0"
+                                                    max="40"
+                                                    value={appearance.card_backdrop_blur ?? 0}
+                                                    onChange={e => { if (isPro) setAppearance(prev => ({ ...prev, card_backdrop_blur: parseInt(e.target.value) })) }}
+                                                    className="w-full accent-primary h-2 bg-surface-light rounded-lg appearance-none cursor-pointer"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
                                 </AccordionContent>
                             </AccordionItem>
 
