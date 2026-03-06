@@ -6,11 +6,9 @@ export default function Footer() {
             { label: 'Pricing', href: '#pricing' },
             { label: 'How it works', href: '#how-it-works' },
             { label: 'Browser Extension', href: '/extension' },
-            { label: 'API Docs', href: '/docs' },
         ],
         company: [
             { label: 'About', href: '/about' },
-            { label: 'Blog', href: '/blog' },
             { label: 'Creator Directory', href: '/creators' },
             { label: 'Contact', href: '/contact' },
         ],
