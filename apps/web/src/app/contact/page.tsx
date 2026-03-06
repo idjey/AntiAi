@@ -1,8 +1,8 @@
 'use client'
 
-import React from 'react'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Mail, MessageSquare, ShieldAlert } from 'lucide-react'
+import { Mail, MessageSquare, ShieldAlert, ArrowLeft } from 'lucide-react'
 
 // Contact Options Data
 const contactOptions = [
@@ -73,14 +73,30 @@ export default function ContactPage() {
             {/* Background Glow */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
 
-            <div className="container-custom max-w-5xl relative z-10 w-full px-4 text-center">
+            <div className="container-custom max-w-5xl relative z-10 w-full px-4 text-center mt-12 sm:mt-0">
+
+                {/* Back Button */}
+                <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.1 }}
+                    className="absolute top-0 left-4 sm:left-0 -mt-16 sm:-mt-20"
+                >
+                    <Link
+                        href="/"
+                        className="inline-flex items-center text-sm font-medium text-text-secondary hover:text-text-primary transition-colors group"
+                    >
+                        <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+                        Back to Home
+                    </Link>
+                </motion.div>
 
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, ease: 'easeOut' }}
-                    className="mb-16 sm:mb-24"
+                    className="mb-16 sm:mb-24 mt-8 sm:mt-0"
                 >
                     <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-text-primary tracking-tight mb-6">
                         How can we <span className="text-primary">help?</span>
