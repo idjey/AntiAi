@@ -3,6 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
+const AVAILABLE_CATEGORIES = [
+    'Technology', 'Design', 'Lifestyle', 'Gaming', 'Education',
+    'Comedy', 'Business', 'Art', 'Music', 'Fitness',
+    'Finance', 'Food', 'Travel', 'Science', 'Sports'
+]
+
 export default function SettingsPage() {
     const router = useRouter()
     const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile')
@@ -17,6 +23,7 @@ export default function SettingsPage() {
         bio: '',
         avatarUrl: '',
         isPublic: false,
+        categories: [] as string[],
         plan: 'free',
         lastHandleChange: null as string | null,
         customDomain: null as string | null
@@ -63,6 +70,7 @@ export default function SettingsPage() {
                         displayName: data.profile.display_name || '',
                         handle: data.profile.handle || '',
                         bio: data.profile.bio || '',
+                        categories: data.profile.categories || [],
                         avatarUrl: data.profile.avatar_url || '',
                         isPublic: data.profile.is_public || false,
                         plan: data.profile.plan || 'free',
@@ -98,6 +106,7 @@ export default function SettingsPage() {
                     display_name: profile.displayName,
                     handle: profile.handle,
                     bio: profile.bio,
+                    categories: profile.categories,
                     avatar_url: profile.avatarUrl,
                     is_public: profile.isPublic
                 })
@@ -360,6 +369,45 @@ export default function SettingsPage() {
                             className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-text-primary focus:outline-none focus:border-primary transition-colors resize-none"
                             placeholder="Tell us about yourself..."
                         />
+                    </div>
+
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-baseline">
+                            <label className="block text-sm font-medium text-text-secondary">Categories</label>
+                            <span className="text-xs text-text-muted">{profile.categories.length}/3 Selected</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {AVAILABLE_CATEGORIES.map(category => {
+                                const isSelected = profile.categories.includes(category)
+                                const isDisabled = !isSelected && profile.categories.length >= 3
+
+                                return (
+                                    <button
+                                        type="button"
+                                        key={category}
+                                        disabled={isDisabled}
+                                        onClick={() => {
+                                            setProfile(prev => ({
+                                                ...prev,
+                                                categories: isSelected
+                                                    ? prev.categories.filter(c => c !== category)
+                                                    : [...prev.categories, category]
+                                            }))
+                                        }}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border
+                                            ${isSelected
+                                                ? 'bg-primary border-primary text-black scale-105 shadow-[0_0_10px_rgba(255,255,255,0.3)]'
+                                                : isDisabled
+                                                    ? 'bg-surface border-border text-text-muted opacity-50 cursor-not-allowed'
+                                                    : 'bg-surface border-border text-text-secondary hover:border-text-muted hover:text-text-primary'
+                                            }
+                                        `}
+                                    >
+                                        {category}
+                                    </button>
+                                )
+                            })}
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-3 p-4 bg-surface rounded-lg border border-border">

@@ -85,4 +85,14 @@ export class AdminService {
         if (!user) throw new Error('User not found');
         return user;
     }
+
+    async featureProfile(profileId: string, isFeatured: boolean): Promise<any> {
+        const profile = await this.prisma.creatorProfile.findUnique({ where: { id: profileId } });
+        if (!profile) throw new Error('Profile not found');
+
+        return this.prisma.creatorProfile.update({
+            where: { id: profileId },
+            data: { isFeatured }
+        });
+    }
 }

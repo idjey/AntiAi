@@ -10,6 +10,7 @@ import {
     Matches,
     IsNumber,
     ValidateNested,
+    ArrayMaxSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -234,6 +235,12 @@ export class CreateProfileDto {
     featured_video_id?: string;
 
     @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    @ArrayMaxSize(3, { message: 'You can select a maximum of 3 categories' })
+    categories?: string[];
+
+    @IsOptional()
     @ValidateNested()
     @Type(() => AppearanceDto)
     appearance?: AppearanceDto;
@@ -274,6 +281,12 @@ export class UpdateProfileDto {
     @IsOptional()
     @IsBoolean()
     is_public?: boolean;
+
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    @ArrayMaxSize(3, { message: 'You can select a maximum of 3 categories' })
+    categories?: string[];
 
     @IsOptional()
     @ValidateNested()

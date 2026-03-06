@@ -222,6 +222,141 @@ export class PublicService {
         return this.formatProfileResponse(profile);
     }
 
+    /**
+     * Get Creator Directory (Trending and Recent)
+     * GET /public/creators
+     */
+    async getCreatorDirectory(): Promise<any> {
+        // 1. Recently Verified (The Grid)
+        // Find creators who have at least one verified channel, ordered by the channel's verifiedAt descending.
+        const recentProfiles = await this.prisma.creatorProfile.findMany({
+            where: {
+                isPublic: true,
+                user: {
+                    channels: {
+                        some: { verificationStatus: 'verified' }
+                    }
+                }
+            },
+            include: {
+                user: {
+                    include: {
+                        channels: {
+                            where: { verificationStatus: 'verified' },
+                            orderBy: { verifiedAt: 'desc' },
+                            take: 1
+                        }
+                    }
+                }
+            },
+            take: 20
+        });
+
+        // Map them into the expected format and sort them in memory by the actual verifiedAt 
+        const recent = recentProfiles
+            .map(p => ({
+                id: p.id,
+                name: p.displayName || p.handle,
+                handle: p.handle,
+                avatar: p.avatarUrl,
+                categories: p.categories,
+                bio: p.bio,
+                followers: '0', // We don't have real follower counts yet
+                verifiedDate: p.user.channels[0]?.verifiedAt?.toISOString() || p.createdAt.toISOString(),
+                featured: false
+            }))
+            .sort((a, b) => new Date(b.verifiedDate).getTime() - new Date(a.verifiedDate).getTime())
+            .slice(0, 12);
+
+        // 2. Trending Authentic Profiles (The Featured List)
+        // 14-day lookback for views
+        const fourteenDaysAgo = new Date();
+        fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+        // Get view counts
+        const viewCounts = await this.prisma.analyticsEvent.groupBy({
+            by: ['creatorId'],
+            where: {
+                type: 'view',
+                createdAt: { gte: fourteenDaysAgo }
+            },
+            _count: {
+                _all: true
+            }
+        });
+
+        const viewCountMap = new Map(viewCounts.map(v => [v.creatorId, v._count._all]));
+
+        // Fetch candidates for trending (either featured OR have had views)
+        const trendingCandidates = await this.prisma.creatorProfile.findMany({
+            where: {
+                isPublic: true,
+                OR: [
+                    { isFeatured: true },
+                    { id: { in: Array.from(viewCountMap.keys()) } }
+                ]
+            }
+        });
+
+        // Sort candidates:
+        // 1. isFeatured always on top
+        // 2. Highest view count
+        // 3. Fallback to createdAt 
+        const trending = trendingCandidates
+            .sort((a, b) => {
+                if (a.isFeatured && !b.isFeatured) return -1;
+                if (!a.isFeatured && b.isFeatured) return 1;
+
+                const viewsA = viewCountMap.get(a.id) || 0;
+                const viewsB = viewCountMap.get(b.id) || 0;
+                if (viewsA !== viewsB) return viewsB - viewsA;
+
+                return b.createdAt.getTime() - a.createdAt.getTime();
+            })
+            .slice(0, 6)
+            .map(p => ({
+                id: p.id,
+                name: p.displayName || p.handle,
+                handle: p.handle,
+                avatar: p.avatarUrl,
+                categories: p.categories,
+                bio: p.bio,
+                followers: '0',
+                verifiedDate: p.createdAt.toISOString(),
+                featured: true
+            }));
+
+        // If we don't have enough trending, pad with the newest profiles
+        if (trending.length < 6) {
+            const excludeIds = trending.map(t => t.id);
+            const fallbackProfiles = await this.prisma.creatorProfile.findMany({
+                where: {
+                    isPublic: true,
+                    id: { notIn: excludeIds }
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 6 - trending.length
+            });
+
+            trending.push(...fallbackProfiles.map(p => ({
+                id: p.id,
+                name: p.displayName || p.handle,
+                handle: p.handle,
+                avatar: p.avatarUrl,
+                categories: p.categories,
+                bio: p.bio,
+                followers: '0',
+                verifiedDate: p.createdAt.toISOString(),
+                featured: true
+            })));
+        }
+
+        return {
+            trending,
+            recent
+        };
+    }
+
     private async formatProfileResponse(profile: any) {
         // Get recent verified videos from all channels
         const channelIds = profile.user.channels.map((c: any) => c.id);

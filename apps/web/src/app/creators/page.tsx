@@ -1,82 +1,14 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, ShieldCheck, CheckCircle2, TrendingUp, Sparkles, Filter, X } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
 // --- Mock Data for UI Design ---
-const categories = ['All', 'Technology', 'Design', 'Lifestyle', 'Gaming', 'Education']
+const ALL_CATEGORIES = ['All', 'Technology', 'Design', 'Lifestyle', 'Gaming', 'Education', 'Comedy', 'Business', 'Art', 'Music', 'Fitness', 'Finance', 'Food', 'Travel', 'Science', 'Sports']
 
-const mockCreators = [
-    {
-        id: '1',
-        name: 'Alex Rivera',
-        handle: 'arivera',
-        avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026024d',
-        category: 'Technology',
-        verifiedDate: '2023-11-15',
-        bio: 'Software Engineer & AI Researcher. Building the future of open source.',
-        followers: '124K',
-        featured: true,
-    },
-    {
-        id: '2',
-        name: 'Sarah Chen',
-        handle: 'sarahcodes',
-        avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704d',
-        category: 'Design',
-        verifiedDate: '2024-01-05',
-        bio: 'Digital artist creating surreal landscapes and teaching UI/UX design daily.',
-        followers: '89K',
-        featured: true,
-    },
-    {
-        id: '3',
-        name: 'Marcus Johnson',
-        handle: 'marcus_j',
-        avatar: 'https://i.pravatar.cc/150?u=a04258114e29026702d',
-        category: 'Lifestyle',
-        verifiedDate: '2023-09-22',
-        bio: 'Documenting minimal living and sustainable habits across the globe.',
-        followers: '210K',
-        featured: false,
-    },
-    {
-        id: '4',
-        name: 'Elena Rostova',
-        handle: 'elena_plays',
-        avatar: 'https://i.pravatar.cc/150?u=a048581f4e29026701d',
-        category: 'Gaming',
-        verifiedDate: '2024-02-14',
-        bio: 'Pro competitive player & variety streamer. Welcome to the community!',
-        followers: '450K',
-        featured: true,
-    },
-    {
-        id: '5',
-        name: 'Dr. James Wilson',
-        handle: 'jwilson_phd',
-        avatar: 'https://i.pravatar.cc/150?u=a04258a2462d826712d',
-        category: 'Education',
-        verifiedDate: '2023-12-01',
-        bio: 'Making complex physics simple. Weekly deep dives into the universe.',
-        followers: '55K',
-        featured: false,
-    },
-    {
-        id: '6',
-        name: 'Mia Wong',
-        handle: 'miawong',
-        avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026705d',
-        category: 'Design',
-        verifiedDate: '2024-03-02',
-        bio: 'Typography nerd and brand strategist helping startups find their voice.',
-        followers: '32K',
-        featured: false,
-    },
-]
 
 // --- Animations ---
 const containerVariants = {
@@ -102,17 +34,47 @@ export default function CreatorsDirectoryPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [activeCategory, setActiveCategory] = useState('All')
     const [isFilterOpen, setIsFilterOpen] = useState(false)
+    const [trendingCreators, setTrendingCreators] = useState<any[]>([])
+    const [recentCreators, setRecentCreators] = useState<any[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+
+    useEffect(() => {
+        const fetchCreators = async () => {
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/public/creators`)
+                if (res.ok) {
+                    const data = await res.json()
+                    setTrendingCreators(data.trending || [])
+                    setRecentCreators(data.recent || [])
+                }
+            } catch (err) {
+                console.error("Failed to fetch creators:", err)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        fetchCreators()
+    }, [])
 
     // Filter Logic
-    const filteredCreators = mockCreators.filter((creator) => {
-        const matchesSearch = creator.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            creator.handle.toLowerCase().includes(searchQuery.toLowerCase())
-        const matchesCategory = activeCategory === 'All' || creator.category === activeCategory
+    const filterList = (list: any[]) => list.filter((creator) => {
+        const matchesSearch = creator.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            creator.handle?.toLowerCase().includes(searchQuery.toLowerCase())
+        const matchesCategory = activeCategory === 'All' || (creator.categories && creator.categories.includes(activeCategory))
         return matchesSearch && matchesCategory
     })
 
-    const featuredCreators = filteredCreators.filter(c => c.featured)
-    const regularCreators = filteredCreators.filter(c => !c.featured)
+    const filteredTrending = filterList(trendingCreators)
+    const filteredRecent = filterList(recentCreators)
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center space-y-4">
+                <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                <p className="text-text-secondary animate-pulse">Loading Authentic Creators...</p>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen bg-background relative overflow-hidden pb-24">
@@ -162,14 +124,14 @@ export default function CreatorsDirectoryPage() {
                     </div>
 
                     {/* Desktop Category Pills */}
-                    <div className="hidden md:flex flex-wrap gap-2 items-center justify-end">
-                        {categories.map((category) => (
+                    <div className="hidden md:flex flex-nowrap overflow-x-auto gap-2 items-center justify-start pb-2 sm:pb-0 scrollbar-hide w-full sm:w-auto mask-fade-edges">
+                        {ALL_CATEGORIES.map((category) => (
                             <button
                                 key={category}
                                 onClick={() => setActiveCategory(category)}
                                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${activeCategory === category
-                                        ? 'bg-primary text-background shadow-lg shadow-primary/25'
-                                        : 'bg-white/5 text-text-secondary hover:bg-white/10 hover:text-text-primary border border-transparent hover:border-white/10'
+                                    ? 'bg-primary text-background shadow-lg shadow-primary/25'
+                                    : 'bg-white/5 text-text-secondary hover:bg-white/10 hover:text-text-primary border border-transparent hover:border-white/10'
                                     }`}
                             >
                                 {category}
@@ -197,7 +159,7 @@ export default function CreatorsDirectoryPage() {
                             className="md:hidden overflow-hidden bg-white/[0.02] border-t border-white/5 mt-4"
                         >
                             <div className="container-custom px-4 py-4 flex flex-wrap gap-2">
-                                {categories.map((category) => (
+                                {ALL_CATEGORIES.map((category) => (
                                     <button
                                         key={category}
                                         onClick={() => {
@@ -205,8 +167,8 @@ export default function CreatorsDirectoryPage() {
                                             setIsFilterOpen(false)
                                         }}
                                         className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeCategory === category
-                                                ? 'bg-primary text-background'
-                                                : 'bg-white/5 text-text-secondary'
+                                            ? 'bg-primary text-background'
+                                            : 'bg-white/5 text-text-secondary'
                                             }`}
                                     >
                                         {category}
@@ -221,7 +183,7 @@ export default function CreatorsDirectoryPage() {
             {/* --- Main Content Grid --- */}
             <div className="container-custom max-w-6xl px-4 relative z-10">
 
-                {filteredCreators.length === 0 ? (
+                {filteredTrending.length === 0 && filteredRecent.length === 0 ? (
                     <motion.div
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                         className="text-center py-20"
@@ -242,7 +204,7 @@ export default function CreatorsDirectoryPage() {
                     <div className="space-y-16">
 
                         {/* Featured Section */}
-                        {featuredCreators.length > 0 && (
+                        {filteredTrending.length > 0 && (
                             <motion.section
                                 variants={containerVariants}
                                 initial="hidden"
@@ -256,7 +218,7 @@ export default function CreatorsDirectoryPage() {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {featuredCreators.map(creator => (
+                                    {filteredTrending.map(creator => (
                                         <CreatorCard key={creator.id} creator={creator} featured />
                                     ))}
                                 </div>
@@ -264,7 +226,7 @@ export default function CreatorsDirectoryPage() {
                         )}
 
                         {/* Regular Grid */}
-                        {regularCreators.length > 0 && (
+                        {filteredRecent.length > 0 && (
                             <motion.section
                                 variants={containerVariants}
                                 initial="hidden"
@@ -278,7 +240,7 @@ export default function CreatorsDirectoryPage() {
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    {regularCreators.map(creator => (
+                                    {filteredRecent.map(creator => (
                                         <CreatorCard key={creator.id} creator={creator} compact />
                                     ))}
                                 </div>
@@ -340,9 +302,22 @@ function CreatorCard({ creator, featured = false, compact = false }: { creator: 
 
                     {/* Footer Stats / Category */}
                     <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
-                        <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-white/5 text-text-secondary border border-white/5">
-                            {creator.category}
-                        </span>
+                        <div className="flex flex-wrap gap-1.5 flex-1">
+                            {creator.categories?.map((cat: string, index: number) => {
+                                // Only show up to 2 categories to save space, and a "+X" pill if more
+                                if (index > 1) return null;
+                                return (
+                                    <span key={cat} className="text-xs font-semibold px-2.5 py-1 rounded-md bg-white/5 text-text-secondary border border-white/5">
+                                        {cat}
+                                    </span>
+                                )
+                            })}
+                            {creator.categories?.length > 2 && (
+                                <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-white/5 text-text-secondary border border-white/5 opacity-70">
+                                    +{creator.categories.length - 2}
+                                </span>
+                            )}
+                        </div>
 
                         {featured && (
                             <div className="flex items-center gap-1.5 text-xs font-medium text-text-muted">
