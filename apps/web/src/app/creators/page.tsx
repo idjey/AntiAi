@@ -276,8 +276,8 @@ function CreatorCard({ creator, featured = false, compact = false }: { creator: 
                             <div className="absolute inset-0 rounded-full border-2 border-primary/30 group-hover:border-primary transition-colors duration-500 scale-105" />
                             <div className={`relative rounded-full overflow-hidden ${featured ? 'w-20 h-20' : 'w-16 h-16'}`}>
                                 <Image
-                                    src={creator.avatar}
-                                    alt={creator.name}
+                                    src={creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || creator.handle || 'Creator')}&background=random`}
+                                    alt={creator.name || `@${creator.handle}`}
                                     fill
                                     className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                                 />
