@@ -853,7 +853,7 @@ export const PublicProfile = ({ creator }: Props) => {
                                         transition={{ duration: 0.2, ease: "easeInOut" }}
                                         className="w-full space-y-4 pt-2"
                                     >
-                                        <div className={`gap-3 flex flex-col ${sortedMusic.length > 4 ? 'max-h-[480px] overflow-y-auto pr-1 pb-1 -mr-1 scrollbars-hidden' : ''}`}>
+                                        <div className={`gap-3 flex flex-col ${sortedMusic.length > 3 ? 'max-h-[480px] overflow-y-auto pr-1 pb-1 -mr-1 scrollbars-hidden' : ''}`}>
                                             {sortedMusic.map((music: any, i: number) => {
                                                 const isPinned = pinnedItems.music === music.id;
 
