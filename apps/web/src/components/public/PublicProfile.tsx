@@ -460,9 +460,17 @@ export const PublicProfile = ({ creator }: Props) => {
                     <div className="relative z-10 flex flex-col p-6 pb-8">
 
                         {/* Avatar & Info */}
-                        <div className="text-center space-y-4 mb-6">
+                        <motion.div
+                            initial="hidden"
+                            animate="visible"
+                            variants={{
+                                hidden: { opacity: 0 },
+                                visible: { opacity: 1, transition: { staggerChildren: 0.15 } }
+                            }}
+                            className="text-center space-y-4 mb-6"
+                        >
                             {/* Avatar */}
-                            <div className="relative mx-auto w-28 h-28 mt-4 mb-6 group">
+                            <motion.div variants={{ hidden: { scale: 0.8, opacity: 0 }, visible: { scale: 1, opacity: 1, transition: { type: "spring", bounce: 0.4 } } }} className="relative mx-auto w-28 h-28 mt-4 mb-6 group">
                                 <div className="w-full h-full rounded-full overflow-hidden border-2 border-white/20 shadow-xl relative z-10 transition-transform duration-300 group-hover:scale-105" style={{ backgroundColor: appearance.background_color }}>
                                     {creator.avatar_url ? (
                                         <img src={creator.avatar_url} alt={creator.display_name} className="w-full h-full object-cover relative z-10" />
@@ -492,74 +500,110 @@ export const PublicProfile = ({ creator }: Props) => {
                                 {appearance.avatar_aura === 'pulse' && (
                                     <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-500 blur-sm pointer-events-none" style={{ backgroundColor: appearance.primary_color }} />
                                 )}
-                            </div>
+                            </motion.div>
 
                             {/* Name & Handle */}
-                            <div>
+                            <motion.div variants={{ hidden: { y: 10, opacity: 0 }, visible: { y: 0, opacity: 1 } }}>
                                 <h1 className="text-2xl font-bold flex items-center justify-center gap-2 drop-shadow-lg leading-tight">
                                     {creator.display_name}
                                     <svg className="w-5 h-5 flex-shrink-0" style={{ color: appearance.primary_color }} fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
                                 </h1>
                                 <p className={`text-sm ${textSecondaryColor} mt-1 font-medium opacity-80`}>@{creator.handle}</p>
-                            </div>
+                            </motion.div>
 
                             {/* Bio */}
                             {creator.bio && (
-                                <p className={`${textSecondaryColor} px-2 text-sm leading-relaxed whitespace-pre-wrap opacity-90`}>
+                                <motion.p variants={{ hidden: { y: 10, opacity: 0 }, visible: { y: 0, opacity: 1 } }} className={`${textSecondaryColor} px-2 text-sm leading-relaxed whitespace-pre-wrap opacity-90`}>
                                     {creator.bio}
-                                </p>
+                                </motion.p>
                             )}
-                        </div>
+                        </motion.div>
 
                         {/* Tab Bar: Links / Shop / Music / Events */}
                         <div className="flex gap-1 mb-4 p-1 rounded-full border border-white/10 bg-white/5 flex-wrap overflow-hidden">
                             {tabVisibility.links !== false && (
-                                <button
+                                <motion.button
+                                    key="tab-links"
+                                    whileTap={{ scale: 0.95 }}
                                     onClick={() => setActiveTab('links')}
-                                    className={`flex-1 min-w-[60px] py-2 px-3 rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 ${activeTab === 'links'
-                                        ? 'text-black shadow-md'
+                                    className={`relative flex-1 min-w-[60px] py-2 px-3 rounded-full text-xs sm:text-sm font-semibold transition-colors duration-200 ${activeTab === 'links'
+                                        ? 'text-black'
                                         : `${textSecondaryColor} hover:text-white`
                                         }`}
-                                    style={activeTab === 'links' ? { backgroundColor: appearance.primary_color } : {}}
                                 >
-                                    Links
-                                </button>
+                                    {activeTab === 'links' && (
+                                        <motion.div
+                                            layoutId="activeTab"
+                                            className="absolute inset-0 rounded-full shadow-md z-0"
+                                            style={{ backgroundColor: appearance.primary_color }}
+                                            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                        />
+                                    )}
+                                    <span className="relative z-10">Links</span>
+                                </motion.button>
                             )}
                             {hasShop && (
-                                <button
+                                <motion.button
+                                    key="tab-shop"
+                                    whileTap={{ scale: 0.95 }}
                                     onClick={() => setActiveTab('shop')}
-                                    className={`flex-1 min-w-[60px] py-2 px-3 rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 ${activeTab === 'shop'
-                                        ? 'text-black shadow-md'
+                                    className={`relative flex-1 min-w-[60px] py-2 px-3 rounded-full text-xs sm:text-sm font-semibold transition-colors duration-200 ${activeTab === 'shop'
+                                        ? 'text-black'
                                         : `${textSecondaryColor} hover:text-white`
                                         }`}
-                                    style={activeTab === 'shop' ? { backgroundColor: appearance.primary_color } : {}}
                                 >
-                                    Shop
-                                </button>
+                                    {activeTab === 'shop' && (
+                                        <motion.div
+                                            layoutId="activeTab"
+                                            className="absolute inset-0 rounded-full shadow-md z-0"
+                                            style={{ backgroundColor: appearance.primary_color }}
+                                            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                        />
+                                    )}
+                                    <span className="relative z-10">Shop</span>
+                                </motion.button>
                             )}
                             {hasMusic && (
-                                <button
+                                <motion.button
+                                    key="tab-music"
+                                    whileTap={{ scale: 0.95 }}
                                     onClick={() => setActiveTab('music')}
-                                    className={`flex-1 min-w-[60px] py-2 px-3 rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 ${activeTab === 'music'
-                                        ? 'text-black shadow-md'
+                                    className={`relative flex-1 min-w-[60px] py-2 px-3 rounded-full text-xs sm:text-sm font-semibold transition-colors duration-200 ${activeTab === 'music'
+                                        ? 'text-black'
                                         : `${textSecondaryColor} hover:text-white`
                                         }`}
-                                    style={activeTab === 'music' ? { backgroundColor: appearance.primary_color } : {}}
                                 >
-                                    Music
-                                </button>
+                                    {activeTab === 'music' && (
+                                        <motion.div
+                                            layoutId="activeTab"
+                                            className="absolute inset-0 rounded-full shadow-md z-0"
+                                            style={{ backgroundColor: appearance.primary_color }}
+                                            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                        />
+                                    )}
+                                    <span className="relative z-10">Music</span>
+                                </motion.button>
                             )}
                             {hasEvents && (
-                                <button
+                                <motion.button
+                                    key="tab-events"
+                                    whileTap={{ scale: 0.95 }}
                                     onClick={() => setActiveTab('events')}
-                                    className={`flex-1 min-w-[60px] py-2 px-3 rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 ${activeTab === 'events'
-                                        ? 'text-black shadow-md'
+                                    className={`relative flex-1 min-w-[60px] py-2 px-3 rounded-full text-xs sm:text-sm font-semibold transition-colors duration-200 ${activeTab === 'events'
+                                        ? 'text-black'
                                         : `${textSecondaryColor} hover:text-white`
                                         }`}
-                                    style={activeTab === 'events' ? { backgroundColor: appearance.primary_color } : {}}
                                 >
-                                    Events
-                                </button>
+                                    {activeTab === 'events' && (
+                                        <motion.div
+                                            layoutId="activeTab"
+                                            className="absolute inset-0 rounded-full shadow-md z-0"
+                                            style={{ backgroundColor: appearance.primary_color }}
+                                            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                        />
+                                    )}
+                                    <span className="relative z-10">Events</span>
+                                </motion.button>
                             )}
                         </div>
 
@@ -585,25 +629,39 @@ export const PublicProfile = ({ creator }: Props) => {
                                                     : undefined
                                             }}
                                         >
-                                            <div className={
-                                                appearance.link_style === 'grid' ? "grid grid-cols-2 gap-2 w-full" :
-                                                    appearance.link_style === 'row' ? "flex flex-wrap justify-center gap-3 w-full" :
-                                                        "space-y-2 w-full"
-                                            }>
+                                            <motion.div
+                                                className={
+                                                    appearance.link_style === 'grid' ? "grid grid-cols-2 gap-2 w-full" :
+                                                        appearance.link_style === 'row' ? "flex flex-wrap justify-center gap-3 w-full" :
+                                                            "space-y-2 w-full"
+                                                }
+                                                initial="hidden"
+                                                animate="visible"
+                                                variants={{
+                                                    hidden: {},
+                                                    visible: { transition: { staggerChildren: 0.1 } }
+                                                }}
+                                            >
                                                 {(appearance.link_style === 'row' && !isSocialExpanded && sortedLinks.length > 4
                                                     ? sortedLinks.slice(0, 4)
                                                     : sortedLinks
                                                 ).map((link: any, i: number) => {
                                                     const isPinned = pinnedItems.links === link.id;
                                                     return (
-                                                        <a
+                                                        <motion.a
                                                             key={link.id}
+                                                            variants={{
+                                                                hidden: { opacity: 0, y: 15 },
+                                                                visible: { opacity: 1, y: 0, transition: { type: "spring", bounce: 0.4 } }
+                                                            }}
+                                                            whileHover={{ scale: 1.02 }}
+                                                            whileTap={{ scale: 0.97 }}
                                                             href={link.url}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             onClick={() => trackClick(link.id, link.url)}
                                                             className={`
-                                                block border ${currentShape.link} group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${appearance.card_style === 'pill' ? 'rounded-[2rem]' : ''} backdrop-blur-sm shadow-sm hover:shadow-md
+                                                block border ${currentShape.link} group relative overflow-hidden transition-all duration-300 ${appearance.card_style === 'pill' ? 'rounded-[2rem]' : ''} backdrop-blur-sm shadow-sm hover:shadow-md
                                                 ${appearance.link_style === 'row'
                                                                     ? 'p-3 w-12 h-12 flex items-center justify-center'
                                                                     : appearance.link_style === 'grid'
@@ -612,14 +670,11 @@ export const PublicProfile = ({ creator }: Props) => {
                                                                 }
                                                 ${appearance.card_border_glow ? 'hover:shadow-[0_0_15px_var(--border-color)]' : ''}
                                                 ${isPinned ? 'ring-2 ring-primary border-transparent' : ''}
-                                                animate-in fade-in slide-in-from-bottom-2
                                             `}
                                                             style={{
                                                                 backgroundColor: isLightMode ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.08)',
                                                                 borderColor: isPinned ? appearance.primary_color : `${appearance.primary_color}30`,
                                                                 '--border-color': appearance.card_border_color || appearance.primary_color || '#10B981',
-                                                                animationDelay: `${i * 60}ms`,
-                                                                animationFillMode: 'backwards',
                                                                 minWidth: appearance.link_style === 'row' ? '44px' : undefined,
                                                                 minHeight: appearance.link_style === 'row' ? '44px' : undefined
                                                             } as any}
@@ -670,13 +725,14 @@ export const PublicProfile = ({ creator }: Props) => {
                                                             {appearance.link_style !== 'row' && (
                                                                 <span className={`font-medium ${appearance.link_style === 'grid' ? 'text-xs' : 'text-center flex-1 pr-10'} relative z-10`}>{link.label}</span>
                                                             )}
-                                                        </a>
+                                                        </motion.a>
                                                     );
                                                 })}
 
                                                 {/* Expand Toggle for Social Row */}
                                                 {appearance.link_style === 'row' && sortedLinks.length > 4 && (
-                                                    <button
+                                                    <motion.button
+                                                        whileTap={{ scale: 0.95 }}
                                                         onClick={() => setIsSocialExpanded(!isSocialExpanded)}
                                                         className={`
                                                 border ${currentShape.link} transition-all hover:scale-105 active:scale-90 group backdrop-blur-sm relative overflow-hidden shadow-sm hover:shadow-md
@@ -698,14 +754,14 @@ export const PublicProfile = ({ creator }: Props) => {
                                                         >
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                                         </svg>
-                                                    </button>
+                                                    </motion.button>
                                                 )}
                                                 {creator.links.length === 0 && (
                                                     <div className={`col-span-full text-center text-sm ${textSecondaryColor} py-4 opacity-50`}>
                                                         No links available.
                                                     </div>
                                                 )}
-                                            </div>
+                                            </motion.div>
                                         </div>
 
                                         {/* Gradient fade hint when scrollable */}
@@ -753,9 +809,15 @@ export const PublicProfile = ({ creator }: Props) => {
                                         </div>
 
                                         {/* Shop Layout Container */}
-                                        <div
+                                        <motion.div
                                             className={`gap-3 ${sortedShop.length > 4 ? 'overflow-y-auto pr-1 pb-1 -mr-1 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent' : ''} ${appearance.shop_layout === 'grid' || appearance.shop_layout === 'bento' ? 'grid grid-cols-2' : 'flex flex-col'}`}
                                             style={{ maxHeight: sortedShop.length > 4 ? '480px' : undefined }}
+                                            initial="hidden"
+                                            animate="visible"
+                                            variants={{
+                                                hidden: {},
+                                                visible: { transition: { staggerChildren: 0.1 } }
+                                            }}
                                         >
                                             {sortedShop.map((product: any, i: number) => {
                                                 const isGrid = appearance.shop_layout === 'grid';
@@ -768,19 +830,23 @@ export const PublicProfile = ({ creator }: Props) => {
                                                 const isPinned = pinnedItems.shop === product.id;
 
                                                 return (
-                                                    <button
+                                                    <motion.button
                                                         key={product.id || i}
+                                                        variants={{
+                                                            hidden: { opacity: 0, y: 15 },
+                                                            visible: { opacity: 1, y: 0, transition: { type: "spring", bounce: 0.4 } }
+                                                        }}
+                                                        whileHover={{ scale: 1.02 }}
+                                                        whileTap={{ scale: 0.97 }}
                                                         onClick={() => trackProductClick(product.id, product.url)}
-                                                        className={`group flex text-left rounded-2xl overflow-hidden border transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg animate-in fade-in slide-in-from-bottom-2 w-full
+                                                        className={`group flex text-left rounded-2xl overflow-hidden border transition-all duration-300 hover:shadow-lg w-full
                                                     ${isHorizontal ? 'flex-row items-stretch' : 'flex-col'}
                                                     ${isBentoHero ? 'col-span-2' : ''}
                                                     ${isPinned ? 'ring-2 ring-primary border-transparent' : ''}
                                                 `}
                                                         style={{
                                                             borderColor: isPinned ? appearance.primary_color : `${appearance.primary_color}30`,
-                                                            backgroundColor: isLightMode ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.04)',
-                                                            animationDelay: `${i * 60}ms`,
-                                                            animationFillMode: 'backwards'
+                                                            backgroundColor: isLightMode ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.04)'
                                                         }}
                                                         aria-label={`Shop: ${product.title}`}
                                                     >
@@ -840,10 +906,10 @@ export const PublicProfile = ({ creator }: Props) => {
                                                                 </svg>
                                                             </div>
                                                         </div>
-                                                    </button>
+                                                    </motion.button>
                                                 );
                                             })}
-                                        </div>
+                                        </motion.div>
                                     </motion.div>
                                 )}
                                 {/* Music Tab */}
@@ -856,9 +922,15 @@ export const PublicProfile = ({ creator }: Props) => {
                                         transition={{ duration: 0.2, ease: "easeInOut" }}
                                         className="w-full space-y-4 pt-2"
                                     >
-                                        <div
+                                        <motion.div
                                             className={`gap-3 flex flex-col ${sortedMusic.length > 3 ? 'overflow-y-auto pr-1 pb-1 -mr-1 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent' : ''}`}
                                             style={{ maxHeight: sortedMusic.length > 3 ? '480px' : undefined }}
+                                            initial="hidden"
+                                            animate="visible"
+                                            variants={{
+                                                hidden: {},
+                                                visible: { transition: { staggerChildren: 0.1 } }
+                                            }}
                                         >
                                             {sortedMusic.map((music: any, i: number) => {
                                                 const isPinned = pinnedItems.music === music.id;
@@ -893,16 +965,20 @@ export const PublicProfile = ({ creator }: Props) => {
                                                 }
 
                                                 return (
-                                                    <div
+                                                    <motion.div
                                                         key={music.id || i}
-                                                        className={`group flex flex-col text-left rounded-2xl overflow-hidden border transition-all duration-300 w-full animate-in fade-in slide-in-from-bottom-2
+                                                        variants={{
+                                                            hidden: { opacity: 0, y: 15 },
+                                                            visible: { opacity: 1, y: 0, transition: { type: "spring", bounce: 0.4 } }
+                                                        }}
+                                                        whileHover={{ scale: 1.02 }}
+                                                        whileTap={!iframeEmbed ? { scale: 0.97 } : {}}
+                                                        className={`group flex flex-col text-left rounded-2xl overflow-hidden border transition-all duration-300 w-full hover:shadow-lg
                                                             ${isPinned ? 'ring-2 ring-primary border-transparent' : ''}
                                                             `}
                                                         style={{
                                                             borderColor: isPinned ? appearance.primary_color : `${appearance.primary_color}30`,
-                                                            backgroundColor: isLightMode ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.04)',
-                                                            animationDelay: `${i * 60}ms`,
-                                                            animationFillMode: 'backwards'
+                                                            backgroundColor: isLightMode ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.04)'
                                                         }}
                                                     >
                                                         {iframeEmbed ? (
@@ -941,10 +1017,10 @@ export const PublicProfile = ({ creator }: Props) => {
                                                                 </div>
                                                             </a>
                                                         )}
-                                                    </div>
+                                                    </motion.div>
                                                 );
                                             })}
-                                        </div>
+                                        </motion.div>
                                     </motion.div>
                                 )}
 
@@ -958,9 +1034,15 @@ export const PublicProfile = ({ creator }: Props) => {
                                         transition={{ duration: 0.2, ease: "easeInOut" }}
                                         className="w-full space-y-4 pt-2"
                                     >
-                                        <div
+                                        <motion.div
                                             className={`gap-4 flex flex-col ${sortedEvents.length > 4 ? 'overflow-y-auto pr-1 pb-1 -mr-1 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent' : ''}`}
                                             style={{ maxHeight: sortedEvents.length > 4 ? '480px' : undefined }}
+                                            initial="hidden"
+                                            animate="visible"
+                                            variants={{
+                                                hidden: {},
+                                                visible: { transition: { staggerChildren: 0.1 } }
+                                            }}
                                         >
                                             {sortedEvents.map((event: any, i: number) => {
                                                 const isPinned = pinnedItems.events === event.id;
@@ -968,16 +1050,18 @@ export const PublicProfile = ({ creator }: Props) => {
                                                 const mapEmbedUrl = event.venue ? `https://www.google.com/maps?q=${encodeURIComponent(event.venue)}&output=embed` : null;
 
                                                 return (
-                                                    <div
+                                                    <motion.div
                                                         key={event.id || i}
-                                                        className={`group flex flex-col text-left rounded-2xl overflow-hidden border transition-all duration-300 w-full animate-in fade-in slide-in-from-bottom-2
+                                                        variants={{
+                                                            hidden: { opacity: 0, y: 15 },
+                                                            visible: { opacity: 1, y: 0, transition: { type: "spring", bounce: 0.4 } }
+                                                        }}
+                                                        className={`group flex flex-col text-left rounded-2xl overflow-hidden border transition-all duration-300 w-full hover:shadow-lg
                                                             ${isPinned ? 'ring-2 ring-primary border-transparent' : ''}
                                                             `}
                                                         style={{
                                                             borderColor: isPinned ? appearance.primary_color : `${appearance.primary_color}30`,
-                                                            backgroundColor: isLightMode ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.04)',
-                                                            animationDelay: `${i * 60}ms`,
-                                                            animationFillMode: 'backwards'
+                                                            backgroundColor: isLightMode ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.04)'
                                                         }}
                                                     >
                                                         {mapEmbedUrl && expandedMapId === event.id && (
@@ -1058,10 +1142,10 @@ export const PublicProfile = ({ creator }: Props) => {
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
+                                                    </motion.div>
                                                 );
                                             })}
-                                        </div>
+                                        </motion.div>
                                     </motion.div>
                                 )}
 
@@ -1229,6 +1313,6 @@ export const PublicProfile = ({ creator }: Props) => {
                     </a>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
