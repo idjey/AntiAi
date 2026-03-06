@@ -1,5 +1,5 @@
 
-import { Controller, Get, Post, Body, Param, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, UseGuards, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { UserRole } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -85,5 +85,12 @@ export class AdminController {
         // In a real implementation, this would generate a token.
         // For now, we'll just return the user to confirm permissions.
         return this.adminService.impersonateUser(id);
+    }
+
+    @UseGuards(AuthGuard('jwt'), RolesGuard)
+    @Roles(UserRole.admin)
+    @Patch('profiles/:id/feature')
+    async featureProfile(@Param('id') id: string, @Body('isFeatured') isFeatured: boolean) {
+        return this.adminService.featureProfile(id, isFeatured);
     }
 }

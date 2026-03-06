@@ -50,6 +50,15 @@ export class PublicController {
     }
 
     /**
+     * Get Creator Directory (Trending and Recent)
+     * GET /public/creators
+     */
+    @Get('creators')
+    async getCreatorDirectory() {
+        return this.publicService.getCreatorDirectory();
+    }
+
+    /**
      * Get public creator profile by handle (Linktree-style page)
      * GET /public/creators/:handle
      */

@@ -112,6 +112,7 @@ export class ProfilesService {
                 avatarUrl: dto.avatar_url,
                 bannerUrl: dto.banner_url,
                 featuredVideoId: dto.featured_video_id,
+                categories: dto.categories || [],
                 appearance: (dto.appearance ?? {}) as any,
             },
         });
@@ -175,6 +176,7 @@ export class ProfilesService {
                 bannerUrl: dto.banner_url,
                 featuredVideoId: dto.featured_video_id,
                 isPublic: dto.is_public,
+                categories: dto.categories,
                 appearance: dto.appearance as any,
             },
             include: {
@@ -772,6 +774,7 @@ export class ProfilesService {
             handle: profile.handle,
             display_name: profile.displayName,
             bio: profile.bio,
+            categories: profile.categories || [],
             avatar_url: profile.avatarUrl,
             banner_url: profile.bannerUrl,
             appearance: profile.appearance,

@@ -102,12 +102,14 @@ model CreatorProfile {
   id              String   @id @default(uuid()) @db.Uuid
   userId          String   @unique @map("user_id") @db.Uuid
   handle          String   @unique @db.Citext // Custom vanity URL: antiai.me/creators/{handle}
+  categories      String[] @default([]) // Selected categories for directory filtering
   displayName     String?  @map("display_name")
   bio             String?  @db.Text
   avatarUrl       String?  @map("avatar_url")
   bannerUrl       String?  @map("banner_url")
   featuredVideoId String?  @map("featured_video_id") @db.Uuid
   isPublic        Boolean  @default(true) @map("is_public")
+  isFeatured      Boolean  @default(false) @map("is_featured") // Admin override for "Trending Authentic Profiles"
   appearance      Json?    @default("{}") // { theme, primaryColor, backgroundColor, backgroundImageUrl, ... }
   lastHandleChange DateTime? @map("last_handle_change")
   customDomain    String?  @unique @map("custom_domain")
