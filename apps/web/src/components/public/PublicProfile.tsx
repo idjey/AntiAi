@@ -753,7 +753,10 @@ export const PublicProfile = ({ creator }: Props) => {
                                         </div>
 
                                         {/* Shop Layout Container */}
-                                        <div className={`gap-3 ${sortedShop.length > 4 ? 'max-h-[480px] overflow-y-auto pr-1 pb-1 -mr-1 scrollbars-hidden' : ''} ${appearance.shop_layout === 'grid' || appearance.shop_layout === 'bento' ? 'grid grid-cols-2' : 'flex flex-col'}`}>
+                                        <div
+                                            className={`gap-3 ${sortedShop.length > 4 ? 'overflow-y-auto pr-1 pb-1 -mr-1 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent' : ''} ${appearance.shop_layout === 'grid' || appearance.shop_layout === 'bento' ? 'grid grid-cols-2' : 'flex flex-col'}`}
+                                            style={{ maxHeight: sortedShop.length > 4 ? '480px' : undefined }}
+                                        >
                                             {sortedShop.map((product: any, i: number) => {
                                                 const isGrid = appearance.shop_layout === 'grid';
                                                 const isBentoHero = appearance.shop_layout === 'bento' && i === 0;
@@ -853,7 +856,10 @@ export const PublicProfile = ({ creator }: Props) => {
                                         transition={{ duration: 0.2, ease: "easeInOut" }}
                                         className="w-full space-y-4 pt-2"
                                     >
-                                        <div className={`gap-3 flex flex-col ${sortedMusic.length > 3 ? 'max-h-[480px] overflow-y-auto pr-1 pb-1 -mr-1 scrollbars-hidden' : ''}`}>
+                                        <div
+                                            className={`gap-3 flex flex-col ${sortedMusic.length > 3 ? 'overflow-y-auto pr-1 pb-1 -mr-1 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent' : ''}`}
+                                            style={{ maxHeight: sortedMusic.length > 3 ? '480px' : undefined }}
+                                        >
                                             {sortedMusic.map((music: any, i: number) => {
                                                 const isPinned = pinnedItems.music === music.id;
 
@@ -952,7 +958,10 @@ export const PublicProfile = ({ creator }: Props) => {
                                         transition={{ duration: 0.2, ease: "easeInOut" }}
                                         className="w-full space-y-4 pt-2"
                                     >
-                                        <div className={`gap-4 flex flex-col ${sortedEvents.length > 4 ? 'max-h-[480px] overflow-y-auto pr-1 pb-1 -mr-1 scrollbars-hidden' : ''}`}>
+                                        <div
+                                            className={`gap-4 flex flex-col ${sortedEvents.length > 4 ? 'overflow-y-auto pr-1 pb-1 -mr-1 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent' : ''}`}
+                                            style={{ maxHeight: sortedEvents.length > 4 ? '480px' : undefined }}
+                                        >
                                             {sortedEvents.map((event: any, i: number) => {
                                                 const isPinned = pinnedItems.events === event.id;
                                                 const eventDate = event.date ? new Date(event.date) : null;
