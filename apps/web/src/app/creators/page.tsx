@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, ShieldCheck, CheckCircle2, TrendingUp, Sparkles, Filter, X } from 'lucide-react'
 import Link from 'next/link'
-import Image from 'next/image'
 
 // --- Mock Data for UI Design ---
 const ALL_CATEGORIES = ['All', 'Technology', 'Design', 'Lifestyle', 'Gaming', 'Education', 'Comedy', 'Business', 'Art', 'Music', 'Fitness', 'Finance', 'Food', 'Travel', 'Science', 'Sports']
@@ -275,11 +274,10 @@ function CreatorCard({ creator, featured = false, compact = false }: { creator: 
                         <div className="relative">
                             <div className="absolute inset-0 rounded-full border-2 border-primary/30 group-hover:border-primary transition-colors duration-500 scale-105" />
                             <div className={`relative rounded-full overflow-hidden ${featured ? 'w-20 h-20' : 'w-16 h-16'}`}>
-                                <Image
+                                <img
                                     src={creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || creator.handle || 'Creator')}&background=random`}
                                     alt={creator.name || `@${creator.handle}`}
-                                    fill
-                                    className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                                 />
                             </div>
                             <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5">
