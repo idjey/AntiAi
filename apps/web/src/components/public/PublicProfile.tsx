@@ -965,7 +965,7 @@ export const PublicProfile = ({ creator }: Props) => {
                                             {sortedEvents.map((event: any, i: number) => {
                                                 const isPinned = pinnedItems.events === event.id;
                                                 const eventDate = event.date ? new Date(event.date) : null;
-                                                const mapEmbedUrl = event.venue_address ? `https://www.google.com/maps?q=${encodeURIComponent(event.venue_address)}&output=embed` : null;
+                                                const mapEmbedUrl = event.venue ? `https://www.google.com/maps?q=${encodeURIComponent(event.venue)}&output=embed` : null;
 
                                                 return (
                                                     <div
