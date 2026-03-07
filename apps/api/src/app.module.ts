@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core'; // Import APP_GUARD if needed, but string injection works too. actually APP_GUARD is from @nestjs/core
 import { PrismaModule } from './prisma/prisma.module';
@@ -25,6 +26,7 @@ import { HealthController } from './health.controller';
             isGlobal: true,
             envFilePath: ['.env', '../../.env'],
         }),
+        ScheduleModule.forRoot(),
 
         // Serve Static Files (Uploads) — explicitly enabled for Railway containers
         ServeStaticModule.forRoot({

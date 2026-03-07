@@ -503,3 +503,20 @@ model SystemSetting {
 
   @@map("system_settings")
 }
+
+// ==================== SYSTEM OBSERVABILITY ====================
+
+model SystemAlert {
+  id         String    @id @default(uuid()) @db.Uuid
+  type       String    // e.g. 'VIRAL_VELOCITY'
+  severity   String    // 'info', 'warning', 'critical'
+  message    String    
+  data       Json?     // { creatorId: "...", baseline: 5, current: 80 }
+  
+  readAt     DateTime? @map("read_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([type, createdAt(sort: Desc)])
+  @@index([readAt])
+  @@map("system_alerts")
+}
