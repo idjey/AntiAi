@@ -54,7 +54,7 @@ export default function AdminOverviewPage() {
                 const token = localStorage.getItem('token')
                 const headers = { 'Authorization': `Bearer ${token}` }
                 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-                const res = await fetch(`${API}/admin/analytics/top-creators?days=${timeframe}&skip=${creatorsPage * 10}&take=10`, { headers })
+                const res = await fetch(`${API}/admin/analytics/top-creators?days=${timeframe}&skip=${creatorsPage * 20}&take=20`, { headers })
                 const data = await res.json()
                 setCreatorsData({ ...data, isLoading: false })
             } catch (error) {
@@ -73,7 +73,7 @@ export default function AdminOverviewPage() {
                 const token = localStorage.getItem('token')
                 const headers = { 'Authorization': `Bearer ${token}` }
                 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-                const res = await fetch(`${API}/admin/analytics/recent-events?skip=${eventsPage * 50}&take=50`, { headers })
+                const res = await fetch(`${API}/admin/analytics/recent-events?skip=${eventsPage * 20}&take=20`, { headers })
                 const data = await res.json()
                 setEventsData({ ...data, isLoading: false })
             } catch (error) {
