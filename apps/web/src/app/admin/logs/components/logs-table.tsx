@@ -45,7 +45,15 @@ export function LogsTable({ logs }: LogsTableProps) {
                     {logs.map((log) => (
                         <TableRow key={log.id}>
                             <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground">
-                                {format(new Date(log.createdAt), 'MMM d, HH:mm:ss')}
+                                {log.createdAt ? (
+                                    (() => {
+                                        try {
+                                            return format(new Date(log.createdAt), 'MMM d, HH:mm:ss');
+                                        } catch (e) {
+                                            return String(log.createdAt);
+                                        }
+                                    })()
+                                ) : 'Unknown Date'}
                             </TableCell>
                             <TableCell>
                                 <Badge variant="outline" className="font-mono">
