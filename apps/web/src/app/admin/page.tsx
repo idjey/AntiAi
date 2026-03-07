@@ -6,7 +6,8 @@ import {
     PieChart, Pie, Cell, Legend,
     BarChart, Bar
 } from 'recharts'
-import { Activity, MousePointerClick, Users, TrendingUp, RefreshCcw } from 'lucide-react'
+import { Activity, MousePointerClick, Users, TrendingUp, RefreshCcw, Radio } from 'lucide-react'
+import { io } from 'socket.io-client'
 
 // Brand Colors
 const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6']
@@ -22,6 +23,9 @@ export default function AdminOverviewPage() {
     const [eventsPage, setEventsPage] = useState(0)
     const [eventsData, setEventsData] = useState({ data: [], hasMore: false, isLoading: true })
     const [refreshTrigger, setRefreshTrigger] = useState(0)
+
+    // Real-Time Socket State
+    const [liveUsers, setLiveUsers] = useState<number>(0)
 
     // Fetch Core Stats
     useEffect(() => {
@@ -85,6 +89,25 @@ export default function AdminOverviewPage() {
         fetchEvents()
     }, [eventsPage, refreshTrigger])
 
+    // Establish WebSocket Connection for Live Pulse
+    useEffect(() => {
+        const socket = io(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/analytics`, {
+            transports: ['websocket', 'polling']
+        })
+
+        socket.on('liveUsersCount', (data: { count: number }) => {
+            setLiveUsers(data.count)
+        })
+
+        socket.on('connect_error', (error) => {
+            console.warn('Dashboard socket error:', error.message)
+        })
+
+        return () => {
+            socket.disconnect()
+        }
+    }, [])
+
     if (isLoading || !stats) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-pulse">
@@ -134,7 +157,23 @@ export default function AdminOverviewPage() {
             </div>
 
             {/* KPI Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                {/* Live Users Card (Special Treatment) */}
+                <div className="p-6 rounded-xl bg-surface border border-red-500/30 hover:border-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.15)] transition-all group relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 blur-3xl rounded-full translate-x-10 -translate-y-10 group-hover:bg-red-500/20 transition-all"></div>
+                    <div className="flex justify-between items-start mb-4 relative z-10">
+                        <span className="p-3 rounded-xl bg-red-500/20 text-red-500 group-hover:scale-110 transition-transform">
+                            <Radio className="w-6 h-6 animate-pulse" />
+                        </span>
+                        <div className="flex items-center gap-2 px-2 py-1 bg-red-500/10 border border-red-500/20 rounded-md">
+                            <div className="w-2 h-2 rounded-full bg-red-500 animate-ping"></div>
+                            <span className="text-[10px] uppercase font-bold text-red-500 tracking-wider">LIVE</span>
+                        </div>
+                    </div>
+                    <h3 className="text-4xl font-bold text-text-primary mb-1 font-mono tracking-tight relative z-10">{liveUsers.toLocaleString()}</h3>
+                    <p className="text-sm font-medium text-text-secondary relative z-10">Active Right Now</p>
+                </div>
+
                 {kpiCards.map((card, i) => (
                     <div key={i} className="p-6 rounded-xl bg-surface border border-white/10 hover:border-white/20 transition-all group">
                         <div className="flex justify-between items-start mb-4">
