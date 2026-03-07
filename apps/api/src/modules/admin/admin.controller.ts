@@ -93,4 +93,19 @@ export class AdminController {
     async featureProfile(@Param('id') id: string, @Body('isFeatured') isFeatured: boolean) {
         return this.adminService.featureProfile(id, isFeatured);
     }
+
+    @Get('analytics/overview')
+    async getAnalyticsOverview(@Query('days') days?: string) {
+        return this.adminService.getPlatformOverview(days ? parseInt(days) : 30);
+    }
+
+    @Get('analytics/devices')
+    async getAnalyticsDevices(@Query('days') days?: string) {
+        return this.adminService.getDeviceMarketShare(days ? parseInt(days) : 30);
+    }
+
+    @Get('analytics/traffic-sources')
+    async getAnalyticsTrafficSources(@Query('days') days?: string) {
+        return this.adminService.getTrafficSources(days ? parseInt(days) : 30);
+    }
 }

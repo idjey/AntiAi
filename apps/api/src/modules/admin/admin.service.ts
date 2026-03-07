@@ -95,4 +95,102 @@ export class AdminService {
             data: { isFeatured }
         });
     }
+
+    async getPlatformOverview(days = 30): Promise<any> {
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+
+        const [totalViews, totalClicks, activeCreators] = await Promise.all([
+            this.prisma.analyticsEvent.count({
+                where: { type: 'view', createdAt: { gte: startDate } }
+            }),
+            this.prisma.analyticsEvent.count({
+                where: { type: 'click', createdAt: { gte: startDate } }
+            }),
+            this.prisma.user.count({
+                where: { role: 'creator', isSuspended: false }
+            })
+        ]);
+
+        const ctr = totalViews > 0 ? (totalClicks / totalViews) * 100 : 0;
+
+        return {
+            totalViews,
+            totalClicks,
+            ctr: parseFloat(ctr.toFixed(2)),
+            activeCreators
+        };
+    }
+
+    async getDeviceMarketShare(days = 30): Promise<any> {
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+
+        const events = await this.prisma.analyticsEvent.findMany({
+            where: {
+                type: 'view',
+                createdAt: { gte: startDate }
+            },
+            select: { device: true, os: true, browser: true }
+        });
+
+        const devicesMap = new Map<string, number>();
+        const osMap = new Map<string, number>();
+        const browserMap = new Map<string, number>();
+
+        events.forEach(e => {
+            if (e.device) devicesMap.set(e.device, (devicesMap.get(e.device) || 0) + 1);
+            if (e.os) osMap.set(e.os, (osMap.get(e.os) || 0) + 1);
+            if (e.browser) browserMap.set(e.browser, (browserMap.get(e.browser) || 0) + 1);
+        });
+
+        const formatMap = (map: Map<string, number>) => Array.from(map.entries())
+            .map(([name, value]) => ({ name, value }))
+            .sort((a, b) => b.value - a.value);
+
+        return {
+            devices: formatMap(devicesMap),
+            os: formatMap(osMap),
+            browsers: formatMap(browserMap)
+        };
+    }
+
+    async getTrafficSources(days = 30): Promise<any> {
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+
+        const events = await this.prisma.analyticsEvent.findMany({
+            where: {
+                type: 'view',
+                createdAt: { gte: startDate },
+                referer: { not: null }
+            },
+            select: { referer: true }
+        });
+
+        const refererMap = new Map<string, number>();
+
+        events.forEach(e => {
+            if (e.referer) {
+                // Try to extract hostname to group by domains
+                let hostname = e.referer;
+                try {
+                    if (e.referer.startsWith('http')) {
+                        const url = new URL(e.referer);
+                        hostname = url.hostname.replace('www.', '');
+                    }
+                } catch (err) {
+                    // Invalid URL, just use string
+                }
+                refererMap.set(hostname, (refererMap.get(hostname) || 0) + 1);
+            }
+        });
+
+        const topSources = Array.from(refererMap.entries())
+            .map(([name, value]) => ({ name, value }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 10);
+
+        return topSources;
+    }
 }
