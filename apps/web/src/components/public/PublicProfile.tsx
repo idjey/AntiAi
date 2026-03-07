@@ -146,7 +146,9 @@ export const PublicProfile = ({ creator }: Props) => {
                     body: JSON.stringify({
                         creatorId: creator.id,
                         type: 'view',
-                        entityId: creator.id
+                        entityId: creator.id,
+                        userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : '',
+                        referer: typeof document !== 'undefined' ? document.referrer : ''
                     })
                 });
             } catch (e) {
@@ -165,7 +167,9 @@ export const PublicProfile = ({ creator }: Props) => {
                 body: JSON.stringify({
                     creatorId: creator.id,
                     type: 'click',
-                    entityId: linkId
+                    entityId: linkId,
+                    userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : '',
+                    referer: typeof document !== 'undefined' ? document.referrer : ''
                 })
             });
         } catch (e) {
@@ -180,7 +184,9 @@ export const PublicProfile = ({ creator }: Props) => {
                 body: JSON.stringify({
                     creatorId: creator.id,
                     type: 'click',
-                    entityId: productId
+                    entityId: productId,
+                    userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : '',
+                    referer: typeof document !== 'undefined' ? document.referrer : ''
                 })
             });
         } catch (e) {
