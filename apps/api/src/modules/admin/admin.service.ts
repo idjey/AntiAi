@@ -143,7 +143,6 @@ export class AdminService {
             if (e.os) osMap.set(e.os, (osMap.get(e.os) || 0) + 1);
             if (e.browser) browserMap.set(e.browser, (browserMap.get(e.browser) || 0) + 1);
         });
-
         const formatMap = (map: Map<string, number>) => Array.from(map.entries())
             .map(([name, value]) => ({ name, value }))
             .sort((a, b) => b.value - a.value);
@@ -192,5 +191,46 @@ export class AdminService {
             .slice(0, 10);
 
         return topSources;
+    }
+
+    async getTopCreators(days = 30): Promise<any[]> {
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+
+        const topCreatorsData = await this.prisma.analyticsEvent.groupBy({
+            by: ['creatorId'],
+            where: {
+                type: 'view',
+                createdAt: { gte: startDate }
+            },
+            _count: { id: true },
+            orderBy: { _count: { id: 'desc' } },
+            take: 10
+        });
+
+        const creatorIds = topCreatorsData.map(c => c.creatorId);
+        const users = await this.prisma.user.findMany({
+            where: { id: { in: creatorIds } },
+            include: { profile: true }
+        });
+
+        const userMap = new Map(users.map(u => [u.id, u]));
+
+        return topCreatorsData.map(c => {
+            const user = userMap.get(c.creatorId);
+            return {
+                creatorId: c.creatorId,
+                views: c._count.id,
+                handle: user?.profile?.handle || user?.email || 'Unknown',
+                avatar: user?.profile?.avatarUrl || null
+            };
+        });
+    }
+
+    async getRecentEvents(take = 50): Promise<any[]> {
+        return this.prisma.analyticsEvent.findMany({
+            orderBy: { createdAt: 'desc' },
+            take
+        });
     }
 }

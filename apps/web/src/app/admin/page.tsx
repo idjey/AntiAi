@@ -24,21 +24,27 @@ export default function AdminOverviewPage() {
                 const headers = { 'Authorization': `Bearer ${token}` }
                 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
-                // Fetch all 3 aggregation endpoints concurrently
-                const [overviewRes, devicesRes, trafficRes] = await Promise.all([
+                // Fetch all 5 aggregation endpoints concurrently
+                const [overviewRes, devicesRes, trafficRes, creatorsRes, eventsRes] = await Promise.all([
                     fetch(`${API}/admin/analytics/overview?days=${timeframe}`, { headers }),
                     fetch(`${API}/admin/analytics/devices?days=${timeframe}`, { headers }),
-                    fetch(`${API}/admin/analytics/traffic-sources?days=${timeframe}`, { headers })
+                    fetch(`${API}/admin/analytics/traffic-sources?days=${timeframe}`, { headers }),
+                    fetch(`${API}/admin/analytics/top-creators?days=${timeframe}`, { headers }),
+                    fetch(`${API}/admin/analytics/recent-events?take=50`, { headers })
                 ])
 
                 const overview = await overviewRes.json()
                 const devices = await devicesRes.json()
                 const traffic = await trafficRes.json()
+                const topCreators = await creatorsRes.json()
+                const recentEvents = await eventsRes.json()
 
                 setStats({
                     overview,
                     devices,
-                    traffic
+                    traffic,
+                    topCreators,
+                    recentEvents
                 })
             } catch (error) {
                 console.error("Failed to fetch analytics:", error)
@@ -59,7 +65,7 @@ export default function AdminOverviewPage() {
         )
     }
 
-    const { overview, devices, traffic } = stats
+    const { overview, devices, traffic, topCreators, recentEvents } = stats
 
     const kpiCards = [
         { label: 'Platform Views', value: overview.totalViews?.toLocaleString() || 0, icon: <Activity className="w-6 h-6" />, color: 'text-blue-500', bg: 'bg-blue-500/10' },
@@ -170,6 +176,94 @@ export default function AdminOverviewPage() {
                                 <p className="text-text-muted text-sm font-mono">Gathering Device Data</p>
                             </div>
                         )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Detailed Reporting */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+                {/* Top Creators Leaderboard */}
+                <div className="p-6 rounded-xl bg-surface border border-white/10 flex flex-col">
+                    <h2 className="text-lg font-bold mb-1 font-mono tracking-tight">Top Performing Creators</h2>
+                    <p className="text-sm text-text-muted mb-6">Leaderboard by organic views</p>
+                    <div className="flex-1 overflow-auto rounded-lg border border-white/5 h-[400px]">
+                        <table className="w-full text-sm text-left">
+                            <thead className="text-xs text-text-muted bg-white/5 uppercase sticky top-0 z-10 backdrop-blur-md">
+                                <tr>
+                                    <th className="px-6 py-3">Creator</th>
+                                    <th className="px-6 py-3 text-right">Views</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {topCreators?.length > 0 ? topCreators.map((creator: any, i: number) => (
+                                    <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                        <td className="px-6 py-4 flex items-center gap-3">
+                                            {creator.avatar ? (
+                                                <img src={creator.avatar} alt={creator.handle} className="w-8 h-8 rounded-full" />
+                                            ) : (
+                                                <div className="w-8 h-8 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center font-bold">
+                                                    {creator.handle?.charAt(0)?.toUpperCase()}
+                                                </div>
+                                            )}
+                                            <span className="font-medium text-text-primary">@{creator.handle}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right font-mono text-text-primary">
+                                            {creator.views?.toLocaleString()}
+                                        </td>
+                                    </tr>
+                                )) : (
+                                    <tr>
+                                        <td colSpan={2} className="px-6 py-8 text-center text-text-muted font-mono">
+                                            No creator data found
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Recent Events Stream */}
+                <div className="p-6 rounded-xl bg-surface border border-white/10 flex flex-col">
+                    <h2 className="text-lg font-bold mb-1 font-mono tracking-tight">Raw Telemetry Stream</h2>
+                    <p className="text-sm text-text-muted mb-6">Real-time deep analytics capture</p>
+                    <div className="flex-1 overflow-auto rounded-lg border border-white/5 h-[400px]">
+                        <table className="w-full text-sm text-left whitespace-nowrap">
+                            <thead className="text-xs text-text-muted bg-white/5 uppercase sticky top-0 z-10 backdrop-blur-md">
+                                <tr>
+                                    <th className="px-4 py-3">Event</th>
+                                    <th className="px-4 py-3">Device/OS</th>
+                                    <th className="px-4 py-3">Location</th>
+                                    <th className="px-4 py-3">Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {recentEvents?.length > 0 ? recentEvents.map((event: any, i: number) => (
+                                    <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                        <td className="px-4 py-3">
+                                            <span className={`px-2 py-1 text-xs rounded-md ${event.type === 'view' ? 'bg-blue-500/10 text-blue-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                                {event.type.toUpperCase()}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-text-primary">
+                                            {event.device || 'Unknown'} <span className="text-text-muted">/</span> {event.os || 'Unknown'}
+                                        </td>
+                                        <td className="px-4 py-3 text-text-primary">
+                                            {event.city || event.country ? `${event.city || ''}${event.city && event.country ? ', ' : ''}${event.country || ''}` : 'Hidden'}
+                                        </td>
+                                        <td className="px-4 py-3 text-text-muted font-mono text-xs">
+                                            {new Date(event.createdAt).toLocaleString()}
+                                        </td>
+                                    </tr>
+                                )) : (
+                                    <tr>
+                                        <td colSpan={4} className="px-4 py-8 text-center text-text-muted font-mono">
+                                            No recent events
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
