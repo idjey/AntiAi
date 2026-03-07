@@ -9,6 +9,7 @@ import {
 import { Activity, MousePointerClick, Users, TrendingUp, RefreshCcw, Radio } from 'lucide-react'
 import { io } from 'socket.io-client'
 import { WorldMap } from '@/components/admin/WorldMap'
+import { Toaster, toast } from 'sonner'
 
 // Brand Colors
 const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6']
@@ -105,6 +106,14 @@ export default function AdminOverviewPage() {
             setLiveUsers(data.count)
         })
 
+        socket.on('admin_alert', (alert: any) => {
+            if (alert.type === 'VIRAL_VELOCITY') {
+                toast.error(alert.message, {
+                    description: `Spike detected! Traffic jumped from ${alert.data.baseline}/10m up to ${alert.data.current}/10m! 🚀`
+                })
+            }
+        })
+
         socket.on('connect_error', (error) => {
             console.warn('Dashboard socket error:', error.message)
         })
@@ -137,6 +146,7 @@ export default function AdminOverviewPage() {
 
     return (
         <div className="space-y-8">
+            <Toaster theme="dark" position="top-right" richColors />
             <div className="flex justify-between items-center bg-surface p-6 rounded-xl border border-white/10">
                 <div>
                     <h1 className="text-3xl font-bold font-mono tracking-tight text-white">Analytics <span className="text-red-500 opacity-80">God Mode</span></h1>
