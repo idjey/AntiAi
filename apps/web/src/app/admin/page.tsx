@@ -6,7 +6,7 @@ import {
     PieChart, Pie, Cell, Legend,
     BarChart, Bar
 } from 'recharts'
-import { Activity, MousePointerClick, Users, TrendingUp } from 'lucide-react'
+import { Activity, MousePointerClick, Users, TrendingUp, RefreshCcw } from 'lucide-react'
 
 // Brand Colors
 const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6']
@@ -21,6 +21,7 @@ export default function AdminOverviewPage() {
     const [creatorsData, setCreatorsData] = useState({ data: [], hasMore: false, isLoading: true })
     const [eventsPage, setEventsPage] = useState(0)
     const [eventsData, setEventsData] = useState({ data: [], hasMore: false, isLoading: true })
+    const [refreshTrigger, setRefreshTrigger] = useState(0)
 
     // Fetch Core Stats
     useEffect(() => {
@@ -44,7 +45,7 @@ export default function AdminOverviewPage() {
             finally { setIsLoading(false) }
         }
         fetchCoreStats()
-    }, [timeframe])
+    }, [timeframe, refreshTrigger])
 
     // Fetch Creators Pagination
     useEffect(() => {
@@ -63,7 +64,7 @@ export default function AdminOverviewPage() {
             }
         }
         fetchCreators()
-    }, [timeframe, creatorsPage])
+    }, [timeframe, creatorsPage, refreshTrigger])
 
     // Fetch Events Pagination
     useEffect(() => {
@@ -82,7 +83,7 @@ export default function AdminOverviewPage() {
             }
         }
         fetchEvents()
-    }, [eventsPage])
+    }, [eventsPage, refreshTrigger])
 
     if (isLoading || !stats) {
         return (
@@ -107,20 +108,29 @@ export default function AdminOverviewPage() {
 
     return (
         <div className="space-y-8">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center bg-surface p-6 rounded-xl border border-white/10">
                 <div>
-                    <h1 className="text-3xl font-bold font-mono tracking-tight">Analytics <span className="text-red-500 opacity-60">God Mode</span></h1>
-                    <p className="text-muted-foreground mt-1">Global platform telemetry and traffic aggregation</p>
+                    <h1 className="text-3xl font-bold font-mono tracking-tight text-white">Analytics <span className="text-red-500 opacity-80">God Mode</span></h1>
+                    <p className="text-muted-foreground mt-1 font-mono text-sm text-white/50">Global platform telemetry and traffic aggregation</p>
                 </div>
-                <select
-                    value={timeframe}
-                    onChange={(e) => setTimeframe(Number(e.target.value))}
-                    className="bg-surface border border-white/10 rounded-lg px-4 py-2 text-sm text-text-primary focus:outline-none focus:border-red-500/50 cursor-pointer"
-                >
-                    <option value={7}>Last 7 Days</option>
-                    <option value={30}>Last 30 Days</option>
-                    <option value={90}>Last 90 Days</option>
-                </select>
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => setRefreshTrigger(prev => prev + 1)}
+                        className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg px-4 py-2 text-sm text-text-primary transition-colors focus:outline-none"
+                    >
+                        <RefreshCcw className="w-4 h-4" />
+                        Refresh Data
+                    </button>
+                    <select
+                        value={timeframe}
+                        onChange={(e) => setTimeframe(Number(e.target.value))}
+                        className="bg-surface border border-white/10 rounded-lg px-4 py-2 text-sm text-text-primary focus:outline-none focus:border-red-500/50 cursor-pointer"
+                    >
+                        <option value={7}>Last 7 Days</option>
+                        <option value={30}>Last 30 Days</option>
+                        <option value={90}>Last 90 Days</option>
+                    </select>
+                </div>
             </div>
 
             {/* KPI Grid */}
@@ -280,7 +290,7 @@ export default function AdminOverviewPage() {
                         <table className="w-full text-sm text-left whitespace-nowrap">
                             <thead className="text-xs text-text-muted bg-white/5 uppercase sticky top-0 z-10 backdrop-blur-md">
                                 <tr>
-                                    <th className="px-4 py-3">Event</th>
+                                    <th className="px-4 py-3">Creator / Event</th>
                                     <th className="px-4 py-3">Device/OS</th>
                                     <th className="px-4 py-3">Location</th>
                                     <th className="px-4 py-3">Time</th>
@@ -289,9 +299,10 @@ export default function AdminOverviewPage() {
                             <tbody>
                                 {recentEvents?.length > 0 ? recentEvents.map((event: any, i: number) => (
                                     <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                                        <td className="px-4 py-3">
-                                            <span className={`px-2 py-1 text-xs rounded-md ${event.type === 'view' ? 'bg-blue-500/10 text-blue-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                                                {event.type.toUpperCase()}
+                                        <td className="px-4 py-3 flex items-center gap-2">
+                                            <span className="font-mono text-text-primary">@{event.handle}</span>
+                                            <span className={`px-2 py-1 text-[10px] font-bold tracking-wider rounded-md uppercase ${event.type === 'view' ? 'bg-blue-500/10 text-blue-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                                {event.type}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3 text-text-primary">

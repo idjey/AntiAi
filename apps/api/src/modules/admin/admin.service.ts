@@ -213,20 +213,20 @@ export class AdminService {
         const actualData = hasMore ? topCreatorsData.slice(0, take) : topCreatorsData;
 
         const creatorIds = actualData.map(c => c.creatorId);
-        const users = await this.prisma.user.findMany({
+        const profiles = await this.prisma.creatorProfile.findMany({
             where: { id: { in: creatorIds } },
-            include: { profile: true }
+            include: { user: true }
         });
 
-        const userMap = new Map(users.map(u => [u.id, u]));
+        const profileMap = new Map(profiles.map(p => [p.id, p]));
 
         const finalData = actualData.map(c => {
-            const user = userMap.get(c.creatorId);
+            const profile = profileMap.get(c.creatorId);
             return {
                 creatorId: c.creatorId,
                 views: c._count.id,
-                handle: user?.profile?.handle || user?.email || 'Unknown',
-                avatar: user?.profile?.avatarUrl || null
+                handle: profile?.handle || profile?.user?.email || 'Unknown',
+                avatar: profile?.avatarUrl || null
             };
         });
 
@@ -237,11 +237,21 @@ export class AdminService {
         const events = await this.prisma.analyticsEvent.findMany({
             orderBy: { createdAt: 'desc' },
             skip,
-            take: take + 1
+            take: take + 1,
+            include: {
+                creator: {
+                    include: { user: true }
+                }
+            }
         });
 
         const hasMore = events.length > take;
-        const data = hasMore ? events.slice(0, take) : events;
+        const rawData = hasMore ? events.slice(0, take) : events;
+
+        const data = rawData.map(e => ({
+            ...e,
+            handle: e.creator?.handle || e.creator?.user?.email || 'Unknown'
+        }));
 
         return { data, hasMore };
     }
