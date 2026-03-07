@@ -9,12 +9,14 @@ export class AnalyticsController {
     constructor(private readonly analyticsService: AnalyticsService) { }
 
     @Post('track')
-    async track(@Body() body: { creatorId: string; type: 'view' | 'click'; entityId?: string }, @Req() req: any) {
+    async track(@Body() body: { creatorId: string; type: 'view' | 'click'; entityId?: string; userAgent?: string; referer?: string }, @Req() req: any) {
         // Public endpoint, no auth required
         // Extract IP from request
         const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-        const userAgent = req.headers['user-agent'];
-        const referer = req.headers['referer'];
+
+        // Use body value first to bypass strict browser referrer policies or proxy stripping
+        const userAgent = body.userAgent || req.headers['user-agent'];
+        const referer = body.referer || req.headers['referer'];
 
         return this.analyticsService.trackEvent({
             creatorId: body.creatorId,
