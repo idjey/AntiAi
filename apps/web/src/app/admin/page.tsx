@@ -347,6 +347,7 @@ export default function AdminOverviewPage() {
                                     <th className="px-4 py-3">Creator / Event</th>
                                     <th className="px-4 py-3">Device/OS</th>
                                     <th className="px-4 py-3">Location</th>
+                                    <th className="px-4 py-3">Engagement</th>
                                     <th className="px-4 py-3">Time</th>
                                 </tr>
                             </thead>
@@ -365,13 +366,23 @@ export default function AdminOverviewPage() {
                                         <td className="px-4 py-3 text-text-primary">
                                             {event.city || event.country ? `${event.city || ''}${event.city && event.country ? ', ' : ''}${event.country || ''}` : 'Hidden'}
                                         </td>
+                                        <td className="px-4 py-3 text-text-primary text-xs font-mono">
+                                            {event.type === 'dwell' ? (
+                                                <div className="flex flex-col gap-1">
+                                                    {event.sessionDuration ? <span className="text-emerald-500">{event.sessionDuration}s</span> : null}
+                                                    {event.scrollDepth ? <span className="text-blue-500">Scrolled {event.scrollDepth}%</span> : null}
+                                                </div>
+                                            ) : (
+                                                <span className="text-text-muted">-</span>
+                                            )}
+                                        </td>
                                         <td className="px-4 py-3 text-text-muted font-mono text-xs">
                                             {new Date(event.createdAt).toLocaleString()}
                                         </td>
                                     </tr>
                                 )) : (
                                     <tr>
-                                        <td colSpan={4} className="px-4 py-8 text-center text-text-muted font-mono">
+                                        <td colSpan={5} className="px-4 py-8 text-center text-text-muted font-mono">
                                             No recent events
                                         </td>
                                     </tr>

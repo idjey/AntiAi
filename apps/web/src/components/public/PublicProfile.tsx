@@ -135,7 +135,7 @@ export const PublicProfile = ({ creator }: Props) => {
     const [shopTooltipVisible, setShopTooltipVisible] = useState(false);
     const [expandedMapId, setExpandedMapId] = useState<string | null>(null);
 
-    // Analytics Tracking & WebSockets
+    // Analytics Tracking & WebSockets (View, Dwell & Pulse)
     useEffect(() => {
         // Track View (Standard)
         const trackView = async () => {
@@ -167,9 +167,59 @@ export const PublicProfile = ({ creator }: Props) => {
             console.warn('Socket connection error:', err.message);
         });
 
+        // Initialize Session Dwell Timers & Scroll Trackers
+        const sessionStartTime = Date.now();
+        let maxScroll = 0;
+
+        const handleScroll = () => {
+            if (typeof window === 'undefined' || typeof document === 'undefined') return;
+            const scrollPos = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            if (docHeight > 0) {
+                const currentScroll = Math.min(100, Math.round((scrollPos / docHeight) * 100));
+                if (currentScroll > maxScroll) {
+                    maxScroll = currentScroll;
+                }
+            }
+        };
+
+        const handleBeforeUnload = () => {
+            const sessionDuration = Math.round((Date.now() - sessionStartTime) / 1000); // seconds
+
+            // Execute the 'dwell' tracking payload right before tab closure
+            const payload = JSON.stringify({
+                creatorId: creator.id,
+                type: 'dwell',
+                entityId: creator.id,
+                userAgent: window.navigator.userAgent,
+                referer: document.referrer,
+                scrollDepth: maxScroll,
+                sessionDuration: sessionDuration
+            });
+
+            // Use Beacon API for reliable transmission on tab close, fallback to fetch if unavailable
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/analytics/track`, new Blob([payload], { type: 'application/json' }));
+            } else {
+                fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/analytics/track`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: payload,
+                    keepalive: true
+                }).catch(console.error);
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
         // Cleanup on unmount
         return () => {
             socket.disconnect();
+            window.removeEventListener('scroll', handleScroll);
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            // Also fire the dwell exit payload right here just in case it was a frontend SPA router change instead of a raw tab close
+            handleBeforeUnload();
         };
     }, [creator.id]);
 
