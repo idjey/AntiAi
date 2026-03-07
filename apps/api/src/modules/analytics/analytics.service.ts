@@ -6,11 +6,13 @@ import * as crypto from 'crypto';
 
 export interface TrackEventDto {
     creatorId: string;
-    type: 'view' | 'click';
+    type: 'view' | 'click' | 'dwell';
     entityId?: string; // Link ID or Profile ID
     ip?: string;
     userAgent?: string;
     referer?: string;
+    scrollDepth?: number;
+    sessionDuration?: number;
 }
 
 @Injectable()
