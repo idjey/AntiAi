@@ -193,7 +193,7 @@ export class AdminService {
         return topSources;
     }
 
-    async getTopCreators(days = 30): Promise<any[]> {
+    async getTopCreators(days = 30, skip = 0, take = 10): Promise<{ data: any[], hasMore: boolean }> {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
 
@@ -205,10 +205,14 @@ export class AdminService {
             },
             _count: { id: true },
             orderBy: { _count: { id: 'desc' } },
-            take: 10
+            skip,
+            take: take + 1
         });
 
-        const creatorIds = topCreatorsData.map(c => c.creatorId);
+        const hasMore = topCreatorsData.length > take;
+        const actualData = hasMore ? topCreatorsData.slice(0, take) : topCreatorsData;
+
+        const creatorIds = actualData.map(c => c.creatorId);
         const users = await this.prisma.user.findMany({
             where: { id: { in: creatorIds } },
             include: { profile: true }
@@ -216,7 +220,7 @@ export class AdminService {
 
         const userMap = new Map(users.map(u => [u.id, u]));
 
-        return topCreatorsData.map(c => {
+        const finalData = actualData.map(c => {
             const user = userMap.get(c.creatorId);
             return {
                 creatorId: c.creatorId,
@@ -225,12 +229,20 @@ export class AdminService {
                 avatar: user?.profile?.avatarUrl || null
             };
         });
+
+        return { data: finalData, hasMore };
     }
 
-    async getRecentEvents(take = 50): Promise<any[]> {
-        return this.prisma.analyticsEvent.findMany({
+    async getRecentEvents(skip = 0, take = 50): Promise<{ data: any[], hasMore: boolean }> {
+        const events = await this.prisma.analyticsEvent.findMany({
             orderBy: { createdAt: 'desc' },
-            take
+            skip,
+            take: take + 1
         });
+
+        const hasMore = events.length > take;
+        const data = hasMore ? events.slice(0, take) : events;
+
+        return { data, hasMore };
     }
 }
