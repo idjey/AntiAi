@@ -451,7 +451,6 @@ model AnalyticsEvent {
   creatorId String   @map("creator_id") @db.Uuid // Owner of the profile/link
   type      String   // 'view' | 'click'
   entityId  String?  @map("entity_id") // Link ID (for clicks) or Profile ID (for views)
-  
   // Visitor Info
   ipHash    String?  @map("ip_hash") // Anonymized
   country   String?
@@ -461,6 +460,10 @@ model AnalyticsEvent {
   os        String?
   browser   String?
   referer   String?
+  
+  // Engagement Info
+  scrollDepth     Int?     @map("scroll_depth") // 0-100 percentage
+  sessionDuration Int?     @map("session_duration") // seconds
 
   createdAt DateTime @default(now()) @map("created_at")
 
