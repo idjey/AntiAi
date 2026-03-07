@@ -109,6 +109,11 @@ export class AdminController {
         return this.adminService.getTrafficSources(days ? parseInt(days) : 30);
     }
 
+    @Get('analytics/heatmaps')
+    async getHeatmaps(@Query('days') days?: string) {
+        return this.adminService.getHeatmapData(days ? parseInt(days) : 30);
+    }
+
     @Get('analytics/top-creators')
     async getTopCreators(
         @Query('days') days?: string,
