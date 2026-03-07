@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { io } from 'socket.io-client';
 import { SocialIcon } from '@/components/SocialIcon';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { ShareDialog } from '@/components/share-dialog';
@@ -133,12 +135,10 @@ export const PublicProfile = ({ creator }: Props) => {
     const [shopTooltipVisible, setShopTooltipVisible] = useState(false);
     const [expandedMapId, setExpandedMapId] = useState<string | null>(null);
 
-    // Analytics Tracking
+    // Analytics Tracking & WebSockets
     useEffect(() => {
-        // Track View
+        // Track View (Standard)
         const trackView = async () => {
-            // Avoid tracking owner's own views if possible, but for now just track all
-            // De-bounce or check session storage to avoid duplicate views on reload could be added
             try {
                 await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/analytics/track`, {
                     method: 'POST',
@@ -157,6 +157,20 @@ export const PublicProfile = ({ creator }: Props) => {
         };
 
         trackView();
+
+        // Establish Live Pulse Socket
+        const socket = io(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/analytics`, {
+            transports: ['websocket', 'polling']
+        });
+
+        socket.on('connect_error', (err) => {
+            console.warn('Socket connection error:', err.message);
+        });
+
+        // Cleanup on unmount
+        return () => {
+            socket.disconnect();
+        };
     }, [creator.id]);
 
     const trackClick = async (linkId: string, url: string) => {
