@@ -8,6 +8,7 @@ import {
 } from 'recharts'
 import { Activity, MousePointerClick, Users, TrendingUp, RefreshCcw, Radio } from 'lucide-react'
 import { io } from 'socket.io-client'
+import { WorldMap } from '@/components/admin/WorldMap'
 
 // Brand Colors
 const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6']
@@ -16,6 +17,9 @@ export default function AdminOverviewPage() {
     const [stats, setStats] = useState<any>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [timeframe, setTimeframe] = useState(30) // Days
+
+    // Heatmap states
+    const [heatmapData, setHeatmapData] = useState<{ id: string, value: number }[]>([])
 
     // Pagination states
     const [creatorsPage, setCreatorsPage] = useState(0)
@@ -35,16 +39,18 @@ export default function AdminOverviewPage() {
                 const token = localStorage.getItem('token')
                 const headers = { 'Authorization': `Bearer ${token}` }
                 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-                const [overviewRes, devicesRes, trafficRes] = await Promise.all([
+                const [overviewRes, devicesRes, trafficRes, heatmapRes] = await Promise.all([
                     fetch(`${API}/admin/analytics/overview?days=${timeframe}`, { headers }),
                     fetch(`${API}/admin/analytics/devices?days=${timeframe}`, { headers }),
-                    fetch(`${API}/admin/analytics/traffic-sources?days=${timeframe}`, { headers })
+                    fetch(`${API}/admin/analytics/traffic-sources?days=${timeframe}`, { headers }),
+                    fetch(`${API}/admin/analytics/heatmaps?days=${timeframe}`, { headers })
                 ])
                 setStats({
                     overview: await overviewRes.json(),
                     devices: await devicesRes.json(),
                     traffic: await trafficRes.json()
                 })
+                setHeatmapData(await heatmapRes.json())
             } catch (error) { console.error(error) }
             finally { setIsLoading(false) }
         }
@@ -185,6 +191,15 @@ export default function AdminOverviewPage() {
                         <p className="text-sm font-medium text-text-secondary">{card.label}</p>
                     </div>
                 ))}
+            </div>
+
+            {/* Geographic Heatmap */}
+            <div className="p-6 rounded-xl bg-surface border border-white/10">
+                <h2 className="text-lg font-bold mb-1 font-mono tracking-tight">Global Traffic Heatmap</h2>
+                <p className="text-sm text-text-muted mb-6">Real-time geographic distribution</p>
+                <div className="w-full bg-[#0a0a0a] rounded-lg border border-white/5 overflow-hidden">
+                    <WorldMap data={heatmapData} />
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
