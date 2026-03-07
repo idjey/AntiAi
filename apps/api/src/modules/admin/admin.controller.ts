@@ -110,12 +110,26 @@ export class AdminController {
     }
 
     @Get('analytics/top-creators')
-    async getTopCreators(@Query('days') days?: string) {
-        return this.adminService.getTopCreators(days ? parseInt(days) : 30);
+    async getTopCreators(
+        @Query('days') days?: string,
+        @Query('skip') skip?: string,
+        @Query('take') take?: string
+    ) {
+        return this.adminService.getTopCreators(
+            days ? parseInt(days) : 30,
+            skip ? parseInt(skip) : 0,
+            take ? parseInt(take) : 10
+        );
     }
 
     @Get('analytics/recent-events')
-    async getRecentEvents(@Query('take') take?: string) {
-        return this.adminService.getRecentEvents(take ? parseInt(take) : 50);
+    async getRecentEvents(
+        @Query('skip') skip?: string,
+        @Query('take') take?: string
+    ) {
+        return this.adminService.getRecentEvents(
+            skip ? parseInt(skip) : 0,
+            take ? parseInt(take) : 50
+        );
     }
 }

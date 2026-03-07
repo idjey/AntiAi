@@ -16,44 +16,73 @@ export default function AdminOverviewPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [timeframe, setTimeframe] = useState(30) // Days
 
+    // Pagination states
+    const [creatorsPage, setCreatorsPage] = useState(0)
+    const [creatorsData, setCreatorsData] = useState({ data: [], hasMore: false, isLoading: true })
+    const [eventsPage, setEventsPage] = useState(0)
+    const [eventsData, setEventsData] = useState({ data: [], hasMore: false, isLoading: true })
+
+    // Fetch Core Stats
     useEffect(() => {
-        const fetchStats = async () => {
+        const fetchCoreStats = async () => {
             setIsLoading(true)
             try {
                 const token = localStorage.getItem('token')
                 const headers = { 'Authorization': `Bearer ${token}` }
                 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-
-                // Fetch all 5 aggregation endpoints concurrently
-                const [overviewRes, devicesRes, trafficRes, creatorsRes, eventsRes] = await Promise.all([
+                const [overviewRes, devicesRes, trafficRes] = await Promise.all([
                     fetch(`${API}/admin/analytics/overview?days=${timeframe}`, { headers }),
                     fetch(`${API}/admin/analytics/devices?days=${timeframe}`, { headers }),
-                    fetch(`${API}/admin/analytics/traffic-sources?days=${timeframe}`, { headers }),
-                    fetch(`${API}/admin/analytics/top-creators?days=${timeframe}`, { headers }),
-                    fetch(`${API}/admin/analytics/recent-events?take=50`, { headers })
+                    fetch(`${API}/admin/analytics/traffic-sources?days=${timeframe}`, { headers })
                 ])
-
-                const overview = await overviewRes.json()
-                const devices = await devicesRes.json()
-                const traffic = await trafficRes.json()
-                const topCreators = await creatorsRes.json()
-                const recentEvents = await eventsRes.json()
-
                 setStats({
-                    overview,
-                    devices,
-                    traffic,
-                    topCreators,
-                    recentEvents
+                    overview: await overviewRes.json(),
+                    devices: await devicesRes.json(),
+                    traffic: await trafficRes.json()
                 })
+            } catch (error) { console.error(error) }
+            finally { setIsLoading(false) }
+        }
+        fetchCoreStats()
+    }, [timeframe])
+
+    // Fetch Creators Pagination
+    useEffect(() => {
+        const fetchCreators = async () => {
+            setCreatorsData(prev => ({ ...prev, isLoading: true }))
+            try {
+                const token = localStorage.getItem('token')
+                const headers = { 'Authorization': `Bearer ${token}` }
+                const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+                const res = await fetch(`${API}/admin/analytics/top-creators?days=${timeframe}&skip=${creatorsPage * 10}&take=10`, { headers })
+                const data = await res.json()
+                setCreatorsData({ ...data, isLoading: false })
             } catch (error) {
-                console.error("Failed to fetch analytics:", error)
-            } finally {
-                setIsLoading(false)
+                console.error(error)
+                setCreatorsData(prev => ({ ...prev, isLoading: false }))
             }
         }
-        fetchStats()
-    }, [timeframe])
+        fetchCreators()
+    }, [timeframe, creatorsPage])
+
+    // Fetch Events Pagination
+    useEffect(() => {
+        const fetchEvents = async () => {
+            setEventsData(prev => ({ ...prev, isLoading: true }))
+            try {
+                const token = localStorage.getItem('token')
+                const headers = { 'Authorization': `Bearer ${token}` }
+                const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+                const res = await fetch(`${API}/admin/analytics/recent-events?skip=${eventsPage * 50}&take=50`, { headers })
+                const data = await res.json()
+                setEventsData({ ...data, isLoading: false })
+            } catch (error) {
+                console.error(error)
+                setEventsData(prev => ({ ...prev, isLoading: false }))
+            }
+        }
+        fetchEvents()
+    }, [eventsPage])
 
     if (isLoading || !stats) {
         return (
@@ -65,7 +94,9 @@ export default function AdminOverviewPage() {
         )
     }
 
-    const { overview, devices, traffic, topCreators, recentEvents } = stats
+    const { overview, devices, traffic } = stats
+    const topCreators = creatorsData.data
+    const recentEvents = eventsData.data
 
     const kpiCards = [
         { label: 'Platform Views', value: overview.totalViews?.toLocaleString() || 0, icon: <Activity className="w-6 h-6" />, color: 'text-blue-500', bg: 'bg-blue-500/10' },
@@ -221,6 +252,24 @@ export default function AdminOverviewPage() {
                             </tbody>
                         </table>
                     </div>
+                    {/* Creators Pagination */}
+                    <div className="flex justify-between items-center mt-4 pt-2 border-t border-white/5">
+                        <button
+                            disabled={creatorsPage === 0 || creatorsData.isLoading}
+                            onClick={() => setCreatorsPage(p => p - 1)}
+                            className="px-3 py-1 bg-white/5 hover:bg-white/10 text-text-primary rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-xs font-mono transition-colors"
+                        >
+                            &larr; Previous
+                        </button>
+                        <span className="text-xs text-text-muted font-mono">Page {creatorsPage + 1}</span>
+                        <button
+                            disabled={!creatorsData.hasMore || creatorsData.isLoading}
+                            onClick={() => setCreatorsPage(p => p + 1)}
+                            className="px-3 py-1 bg-white/5 hover:bg-white/10 text-text-primary rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-xs font-mono transition-colors"
+                        >
+                            Next &rarr;
+                        </button>
+                    </div>
                 </div>
 
                 {/* Recent Events Stream */}
@@ -264,6 +313,24 @@ export default function AdminOverviewPage() {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+                    {/* Events Pagination */}
+                    <div className="flex justify-between items-center mt-4 pt-2 border-t border-white/5">
+                        <button
+                            disabled={eventsPage === 0 || eventsData.isLoading}
+                            onClick={() => setEventsPage(p => p - 1)}
+                            className="px-3 py-1 bg-white/5 hover:bg-white/10 text-text-primary rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-xs font-mono transition-colors"
+                        >
+                            &larr; Previous
+                        </button>
+                        <span className="text-xs text-text-muted font-mono">Page {eventsPage + 1}</span>
+                        <button
+                            disabled={!eventsData.hasMore || eventsData.isLoading}
+                            onClick={() => setEventsPage(p => p + 1)}
+                            className="px-3 py-1 bg-white/5 hover:bg-white/10 text-text-primary rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-xs font-mono transition-colors"
+                        >
+                            Next &rarr;
+                        </button>
                     </div>
                 </div>
             </div>
