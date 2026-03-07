@@ -108,4 +108,14 @@ export class AdminController {
     async getAnalyticsTrafficSources(@Query('days') days?: string) {
         return this.adminService.getTrafficSources(days ? parseInt(days) : 30);
     }
+
+    @Get('analytics/top-creators')
+    async getTopCreators(@Query('days') days?: string) {
+        return this.adminService.getTopCreators(days ? parseInt(days) : 30);
+    }
+
+    @Get('analytics/recent-events')
+    async getRecentEvents(@Query('take') take?: string) {
+        return this.adminService.getRecentEvents(take ? parseInt(take) : 50);
+    }
 }
