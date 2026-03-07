@@ -193,6 +193,32 @@ export class AdminService {
         return topSources;
     }
 
+    async getHeatmapData(days = 30): Promise<{ id: string, value: number }[]> {
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+
+        const events = await this.prisma.analyticsEvent.findMany({
+            where: {
+                createdAt: { gte: startDate },
+                country: { not: null }
+            },
+            select: { country: true }
+        });
+
+        const countryMap = new Map<string, number>();
+        events.forEach(e => {
+            if (e.country) {
+                // Ensure it's a 2-character ISO code for react-simple-maps compatibility
+                const countryCode = e.country.trim().toUpperCase();
+                countryMap.set(countryCode, (countryMap.get(countryCode) || 0) + 1);
+            }
+        });
+
+        return Array.from(countryMap.entries())
+            .map(([id, value]) => ({ id, value }))
+            .sort((a, b) => b.value - a.value);
+    }
+
     async getTopCreators(days = 30, skip = 0, take = 10): Promise<{ data: any[], hasMore: boolean }> {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
