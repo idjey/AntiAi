@@ -9,6 +9,7 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SignupDto, LoginDto } from './dto';
 import { EmailService } from '../email/email.service';
+import { CouponsService } from '../coupons/coupons.service';
 
 @Injectable()
 export class AuthService {
@@ -17,6 +18,7 @@ export class AuthService {
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
         private readonly emailService: EmailService,
+        private readonly couponsService: CouponsService,
     ) { }
 
     async signup(dto: SignupDto) {
@@ -82,6 +84,11 @@ export class AuthService {
 
         // Send OTP
         await this.emailService.sendOtpEmail(user.email, otp);
+
+        // Generate welcome coupon (fire-and-forget, don't block signup)
+        this.couponsService.generateWelcomeCoupon(user.id, user.email).catch(err => {
+            console.error('Welcome coupon generation failed:', err.message);
+        });
 
         return {
             message: 'Signup successful. Please verify your email with the OTP sent.',

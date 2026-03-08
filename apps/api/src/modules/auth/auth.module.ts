@@ -7,6 +7,7 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { EmailModule } from '../email/email.module';
+import { CouponsModule } from '../coupons/coupons.module';
 
 @Module({
     imports: [
@@ -22,6 +23,7 @@ import { EmailModule } from '../email/email.module';
         }),
         PassportModule,
         EmailModule,
+        CouponsModule,
     ],
     controllers: [AuthController],
     providers: [AuthService, JwtStrategy, GoogleStrategy],
