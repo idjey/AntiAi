@@ -281,4 +281,49 @@ export class AdminService {
 
         return { data, hasMore };
     }
+
+    async getUtmCampaigns(days = 30): Promise<any[]> {
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+
+        const events = await this.prisma.analyticsEvent.findMany({
+            where: {
+                createdAt: { gte: startDate },
+                utmSource: { not: null }
+            },
+            select: {
+                type: true,
+                utmSource: true,
+                utmMedium: true,
+                utmCampaign: true
+            }
+        });
+
+        const campaignMap = new Map<string, { source: string, medium: string, campaign: string, views: number, clicks: number, total: number }>();
+
+        events.forEach(e => {
+            const key = `${e.utmSource || ''}|${e.utmMedium || ''}|${e.utmCampaign || ''}`;
+            if (!campaignMap.has(key)) {
+                campaignMap.set(key, {
+                    source: e.utmSource || '(none)',
+                    medium: e.utmMedium || '(none)',
+                    campaign: e.utmCampaign || '(none)',
+                    views: 0,
+                    clicks: 0,
+                    total: 0
+                });
+            }
+            const entry = campaignMap.get(key)!;
+            entry.total++;
+            if (e.type === 'view') entry.views++;
+            if (e.type === 'click') entry.clicks++;
+        });
+
+        return Array.from(campaignMap.values())
+            .map(c => ({
+                ...c,
+                ctr: c.views > 0 ? parseFloat(((c.clicks / c.views) * 100).toFixed(2)) : 0
+            }))
+            .sort((a, b) => b.total - a.total);
+    }
 }

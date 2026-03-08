@@ -6,7 +6,7 @@ import {
     PieChart, Pie, Cell, Legend,
     BarChart, Bar
 } from 'recharts'
-import { Activity, MousePointerClick, Users, TrendingUp, RefreshCcw, Radio } from 'lucide-react'
+import { Activity, MousePointerClick, Users, TrendingUp, RefreshCcw, Radio, Megaphone } from 'lucide-react'
 import { io } from 'socket.io-client'
 import { WorldMap } from '@/components/admin/WorldMap'
 import { Toaster, toast } from 'sonner'
@@ -28,6 +28,7 @@ export default function AdminOverviewPage() {
     const [eventsPage, setEventsPage] = useState(0)
     const [eventsData, setEventsData] = useState({ data: [], hasMore: false, isLoading: true })
     const [refreshTrigger, setRefreshTrigger] = useState(0)
+    const [utmCampaigns, setUtmCampaigns] = useState<any[]>([])
 
     // Real-Time Socket State
     const [liveUsers, setLiveUsers] = useState<number>(0)
@@ -40,11 +41,12 @@ export default function AdminOverviewPage() {
                 const token = localStorage.getItem('token')
                 const headers = { 'Authorization': `Bearer ${token}` }
                 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-                const [overviewRes, devicesRes, trafficRes, heatmapRes] = await Promise.all([
+                const [overviewRes, devicesRes, trafficRes, heatmapRes, utmRes] = await Promise.all([
                     fetch(`${API}/admin/analytics/overview?days=${timeframe}`, { headers }),
                     fetch(`${API}/admin/analytics/devices?days=${timeframe}`, { headers }),
                     fetch(`${API}/admin/analytics/traffic-sources?days=${timeframe}`, { headers }),
-                    fetch(`${API}/admin/analytics/heatmaps?days=${timeframe}`, { headers })
+                    fetch(`${API}/admin/analytics/heatmaps?days=${timeframe}`, { headers }),
+                    fetch(`${API}/admin/analytics/utm-campaigns?days=${timeframe}`, { headers })
                 ])
                 setStats({
                     overview: await overviewRes.json(),
@@ -52,6 +54,7 @@ export default function AdminOverviewPage() {
                     traffic: await trafficRes.json()
                 })
                 setHeatmapData(await heatmapRes.json())
+                setUtmCampaigns(await utmRes.json())
             } catch (error) { console.error(error) }
             finally { setIsLoading(false) }
         }
@@ -418,6 +421,49 @@ export default function AdminOverviewPage() {
                             Next &rarr;
                         </button>
                     </div>
+                </div>
+            </div>
+
+            {/* UTM Campaign Tracking */}
+            <div className="p-6 rounded-xl bg-surface border border-white/10 mt-8">
+                <div className="flex items-center gap-3 mb-1">
+                    <span className="p-2 rounded-lg bg-amber-500/10 text-amber-500">
+                        <Megaphone className="w-5 h-5" />
+                    </span>
+                    <h2 className="text-lg font-bold font-mono tracking-tight">UTM Campaign Tracking</h2>
+                </div>
+                <p className="text-sm text-text-muted mb-6 ml-11">Marketing campaign attribution and conversion data</p>
+                <div className="overflow-auto rounded-lg border border-white/5 max-h-[400px]">
+                    <table className="w-full text-sm text-left">
+                        <thead className="text-xs text-text-muted bg-white/5 uppercase sticky top-0 z-10 backdrop-blur-md">
+                            <tr>
+                                <th className="px-4 py-3">Source</th>
+                                <th className="px-4 py-3">Medium</th>
+                                <th className="px-4 py-3">Campaign</th>
+                                <th className="px-4 py-3 text-right">Views</th>
+                                <th className="px-4 py-3 text-right">Clicks</th>
+                                <th className="px-4 py-3 text-right">CTR</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {utmCampaigns.length > 0 ? utmCampaigns.map((c: any, i: number) => (
+                                <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                    <td className="px-4 py-3 font-mono text-amber-500 font-medium">{c.source}</td>
+                                    <td className="px-4 py-3 text-text-primary">{c.medium}</td>
+                                    <td className="px-4 py-3 text-text-primary">{c.campaign}</td>
+                                    <td className="px-4 py-3 text-right font-mono text-blue-500">{c.views.toLocaleString()}</td>
+                                    <td className="px-4 py-3 text-right font-mono text-emerald-500">{c.clicks.toLocaleString()}</td>
+                                    <td className="px-4 py-3 text-right font-mono text-text-primary">{c.ctr}%</td>
+                                </tr>
+                            )) : (
+                                <tr>
+                                    <td colSpan={6} className="px-4 py-8 text-center text-text-muted font-mono">
+                                        No UTM campaign data yet. Share links with ?utm_source=...&utm_medium=...&utm_campaign=... to start tracking.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
