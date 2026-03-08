@@ -105,7 +105,7 @@ export class BillingService {
         }
 
         // Create checkout session
-        const session = await this.stripe.checkout.sessions.create({
+        const sessionParams: Stripe.Checkout.SessionCreateParams = {
             customer: customerId,
             line_items: [{ price: priceId, quantity: 1 }],
             mode: 'subscription',
@@ -116,7 +116,36 @@ export class BillingService {
                 plan: dto.plan,
                 interval: dto.interval
             },
-        });
+        };
+
+        // Apply coupon if provided
+        if (dto.couponCode) {
+            const coupon = await this.prisma.coupon.findUnique({
+                where: { code: dto.couponCode.toUpperCase() },
+            });
+
+            if (coupon && coupon.isActive && coupon.stripeCouponId) {
+                const isExpired = coupon.expiresAt && coupon.expiresAt < new Date();
+                const isMaxedOut = coupon.maxRedemptions && coupon.currentUses >= coupon.maxRedemptions;
+
+                if (!isExpired && !isMaxedOut) {
+                    sessionParams.discounts = [{ coupon: coupon.stripeCouponId }];
+
+                    // Record redemption
+                    await this.prisma.$transaction([
+                        this.prisma.couponRedemption.create({
+                            data: { couponId: coupon.id, userId },
+                        }),
+                        this.prisma.coupon.update({
+                            where: { id: coupon.id },
+                            data: { currentUses: { increment: 1 } },
+                        }),
+                    ]);
+                }
+            }
+        }
+
+        const session = await this.stripe.checkout.sessions.create(sessionParams);
 
         return { checkout_url: session.url };
     }
