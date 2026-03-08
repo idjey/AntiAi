@@ -320,6 +320,51 @@ export const PublicProfile = ({ creator }: Props) => {
         }
     }, [appearance]);
 
+    // ─── Visitor Discount Popup ───
+    const [showDiscountPopup, setShowDiscountPopup] = useState(false);
+    const [popupEmail, setPopupEmail] = useState('');
+    const [popupLoading, setPopupLoading] = useState(false);
+    const [popupCoupon, setPopupCoupon] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const hasSeen = localStorage.getItem('antiai_popup_seen');
+        if (hasSeen) return;
+
+        const timer = setTimeout(() => {
+            setShowDiscountPopup(true);
+        }, 5000);
+
+        return () => clearTimeout(timer);
+    }, []);
+
+    const handlePopupClose = () => {
+        setShowDiscountPopup(false);
+        localStorage.setItem('antiai_popup_seen', 'true');
+    };
+
+    const handlePopupSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!popupEmail) return;
+        setPopupLoading(true);
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/coupons/lead`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: popupEmail }),
+            });
+            const data = await res.json();
+            if (data.code) {
+                setPopupCoupon(data.code);
+                localStorage.setItem('antiai_popup_seen', 'true');
+            }
+        } catch (err) {
+            console.error('Lead capture failed:', err);
+        } finally {
+            setPopupLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen relative overflow-hidden font-sans">
             {/* 1. Fixed Page Background (The "World" Layer) */}
@@ -1395,6 +1440,84 @@ export const PublicProfile = ({ creator }: Props) => {
                     </a>
                 </div>
             </div>
+
+            {/* Visitor Discount Popup */}
+            <AnimatePresence>
+                {showDiscountPopup && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+                        onClick={handlePopupClose}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="relative w-full max-w-sm bg-gradient-to-br from-[#1a1a2e] to-[#16213e] border border-white/10 rounded-2xl p-8 shadow-2xl shadow-black/50"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            {/* Shadow Close Button */}
+                            <button
+                                onClick={handlePopupClose}
+                                className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-black/30 hover:bg-black/50 text-white/60 hover:text-white transition-all shadow-lg shadow-black/30 backdrop-blur-sm border border-white/5"
+                                aria-label="Close"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+
+                            {!popupCoupon ? (
+                                <>
+                                    <div className="text-center mb-6">
+                                        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 mb-4">
+                                            <span className="text-3xl">🎁</span>
+                                        </div>
+                                        <h3 className="text-xl font-bold text-white mb-2">Get 25% Off!</h3>
+                                        <p className="text-sm text-gray-400 leading-relaxed">
+                                            Sign up for free and receive an exclusive <span className="text-amber-400 font-semibold">25% discount</span> on Pro & Elite plans.
+                                        </p>
+                                    </div>
+                                    <form onSubmit={handlePopupSubmit} className="space-y-3">
+                                        <input
+                                            type="email"
+                                            value={popupEmail}
+                                            onChange={e => setPopupEmail(e.target.value)}
+                                            placeholder="Enter your email"
+                                            required
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-amber-500/50 transition-colors"
+                                        />
+                                        <button
+                                            type="submit"
+                                            disabled={popupLoading}
+                                            className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold rounded-xl text-sm transition-all disabled:opacity-50 shadow-lg shadow-amber-500/20"
+                                        >
+                                            {popupLoading ? 'Getting your code...' : 'Claim My 25% Discount'}
+                                        </button>
+                                    </form>
+                                    <p className="text-[11px] text-gray-500 text-center mt-3">No spam. Unsubscribe anytime.</p>
+                                </>
+                            ) : (
+                                <div className="text-center">
+                                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mb-4">
+                                        <span className="text-3xl">🎉</span>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white mb-2">Your Coupon Code</h3>
+                                    <div className="bg-black/30 border-2 border-dashed border-amber-500/50 rounded-xl px-6 py-4 my-4">
+                                        <span className="text-2xl font-black tracking-widest text-amber-400 font-mono">{popupCoupon}</span>
+                                    </div>
+                                    <p className="text-sm text-gray-400 mb-4">Use this code at checkout for 25% off!</p>
+                                    <button
+                                        onClick={handlePopupClose}
+                                        className="px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-sm font-medium transition-colors"
+                                    >Got it!</button>
+                                </div>
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div >
     );
 };

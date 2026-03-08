@@ -309,4 +309,118 @@ export class EmailService {
 </html>
         `;
     }
+
+    // ─── Coupon Emails ───
+
+    private async sendEmailGeneric(to: string, subject: string, html: string) {
+        const apiKey = this.configService.get<string>('SMTP_PASS');
+        const host = this.configService.get<string>('SMTP_HOST');
+        const fromEmail = this.configService.get<string>('SMTP_FROM') || 'noreply@antiai.me';
+
+        try {
+            if (!apiKey) {
+                this.logger.warn(`SMTP_PASS not configured. Skipping email to ${to}. Subject: ${subject}`);
+                return;
+            }
+
+            if (host === 'smtp.resend.com') {
+                const response = await fetch('https://api.resend.com/emails', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        from: `AntiAI <${fromEmail}>`,
+                        to: [to],
+                        subject,
+                        html
+                    })
+                });
+                if (!response.ok) {
+                    const errorResponse = await response.text();
+                    throw new Error(`Resend API Error: ${response.status} ${errorResponse}`);
+                }
+                return;
+            }
+
+            await this.transporter.sendMail({
+                from: `"AntiAI" <${fromEmail}>`,
+                to,
+                subject,
+                html,
+            });
+        } catch (error) {
+            this.logger.error(`Failed to send email to ${to}: ${error.message}`);
+        }
+    }
+
+    async sendCouponEmail(to: string, couponCode: string, discountValue: number, discountType: string) {
+        const discountText = discountType === 'percentage' ? `${discountValue}%` : `$${discountValue}`;
+        const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="background-color: #0B0F14; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+        <div style="text-align: center; margin-bottom: 40px;">
+            <a href="https://antiai.me" style="text-decoration: none;">
+                <div style="font-size: 24px; font-weight: bold; color: #ffffff;">antiai<span style="color: #22C55E;">.me</span></div>
+            </a>
+        </div>
+        <div style="background-color: #1a2234; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 40px; text-align: center;">
+            <h1 style="font-size: 28px; font-weight: 700; margin: 0 0 8px 0; color: #ffffff;">🎉 Welcome Gift!</h1>
+            <p style="font-size: 15px; color: #94A3B8; margin: 0 0 32px 0; line-height: 1.5;">
+                Here's your exclusive <strong style="color: #EAB308;">${discountText} OFF</strong> coupon for your first Pro or Elite upgrade.
+            </p>
+            <div style="background-color: #0f172a; border-radius: 12px; padding: 24px; margin-bottom: 32px; border: 2px dashed #EAB308;">
+                <p style="font-size: 32px; font-weight: 800; letter-spacing: 4px; color: #EAB308; margin: 0; font-family: 'Courier New', Courier, monospace;">${couponCode}</p>
+            </div>
+            <a href="https://antiai.me/dashboard/settings" style="display: inline-block; background: linear-gradient(135deg, #EAB308, #F59E0B); color: #000; font-weight: 700; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-size: 15px;">Upgrade Now →</a>
+            <p style="margin-top: 24px; font-size: 13px; color: #94A3B8;">This coupon expires in 30 days. Don't miss out!</p>
+        </div>
+        <div style="text-align: center; margin-top: 40px; font-size: 13px; color: #64748B;">
+            <p>&copy; ${new Date().getFullYear()} AntiAI.me. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>`;
+
+        await this.sendEmailGeneric(to, `🎁 Your ${discountText} OFF Coupon - AntiAI.me`, html);
+    }
+
+    async sendPromotionalCoupon(to: string, couponCode: string, discountValue: number, discountType: string, expiresAt?: Date | null) {
+        const discountText = discountType === 'percentage' ? `${discountValue}%` : `$${discountValue}`;
+        const expiryText = expiresAt ? `Expires ${expiresAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : 'Limited time offer';
+        const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="background-color: #0B0F14; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+        <div style="text-align: center; margin-bottom: 40px;">
+            <a href="https://antiai.me" style="text-decoration: none;">
+                <div style="font-size: 24px; font-weight: bold; color: #ffffff;">antiai<span style="color: #22C55E;">.me</span></div>
+            </a>
+        </div>
+        <div style="background-color: #1a2234; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 40px; text-align: center;">
+            <h1 style="font-size: 28px; font-weight: 700; margin: 0 0 8px 0; color: #ffffff;">🔥 Exclusive Offer</h1>
+            <p style="font-size: 15px; color: #94A3B8; margin: 0 0 32px 0; line-height: 1.5;">
+                You've been selected for an exclusive <strong style="color: #EF4444;">${discountText} OFF</strong> discount on Pro and Elite plans!
+            </p>
+            <div style="background-color: #0f172a; border-radius: 12px; padding: 24px; margin-bottom: 32px; border: 2px dashed #EF4444;">
+                <p style="font-size: 32px; font-weight: 800; letter-spacing: 4px; color: #EF4444; margin: 0; font-family: 'Courier New', Courier, monospace;">${couponCode}</p>
+            </div>
+            <a href="https://antiai.me/dashboard/settings" style="display: inline-block; background: linear-gradient(135deg, #EF4444, #DC2626); color: #fff; font-weight: 700; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-size: 15px;">Claim Your Discount →</a>
+            <p style="margin-top: 24px; font-size: 13px; color: #94A3B8;">${expiryText}</p>
+        </div>
+        <div style="text-align: center; margin-top: 40px; font-size: 13px; color: #64748B;">
+            <p>&copy; ${new Date().getFullYear()} AntiAI.me. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>`;
+
+        await this.sendEmailGeneric(to, `🔥 ${discountText} OFF — Upgrade Your AntiAI Plan`, html);
+    }
 }

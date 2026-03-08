@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsUrl } from 'class-validator';
+import { IsString, IsEnum, IsUrl, IsOptional } from 'class-validator';
 
 export class CheckoutDto {
     @IsEnum(['pro', 'elite'], { message: 'Plan must be pro or elite' })
@@ -12,6 +12,10 @@ export class CheckoutDto {
 
     @IsString()
     cancel_url: string;
+
+    @IsOptional()
+    @IsString()
+    couponCode?: string;
 }
 
 export class BillingPortalDto {
