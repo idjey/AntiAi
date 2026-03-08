@@ -9,7 +9,7 @@ export class AnalyticsController {
     constructor(private readonly analyticsService: AnalyticsService) { }
 
     @Post('track')
-    async track(@Body() body: { creatorId: string; type: 'view' | 'click' | 'dwell'; entityId?: string; userAgent?: string; referer?: string; scrollDepth?: number; sessionDuration?: number }, @Req() req: any) {
+    async track(@Body() body: { creatorId: string; type: 'view' | 'click' | 'dwell'; entityId?: string; userAgent?: string; referer?: string; scrollDepth?: number; sessionDuration?: number; utmSource?: string; utmMedium?: string; utmCampaign?: string }, @Req() req: any) {
         // Public endpoint, no auth required
         // Extract IP from request
         const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -26,7 +26,10 @@ export class AnalyticsController {
             userAgent,
             referer,
             scrollDepth: body.scrollDepth,
-            sessionDuration: body.sessionDuration
+            sessionDuration: body.sessionDuration,
+            utmSource: body.utmSource,
+            utmMedium: body.utmMedium,
+            utmCampaign: body.utmCampaign
         });
     }
 

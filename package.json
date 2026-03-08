@@ -29,6 +29,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@prisma/client": "^5.22.0"
+    "@prisma/client": "^5.22.0",
+    "prop-types": "^15.8.1"
   }
 }
