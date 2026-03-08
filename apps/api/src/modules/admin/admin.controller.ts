@@ -114,6 +114,11 @@ export class AdminController {
         return this.adminService.getHeatmapData(days ? parseInt(days) : 30);
     }
 
+    @Get('analytics/utm-campaigns')
+    async getUtmCampaigns(@Query('days') days?: string) {
+        return this.adminService.getUtmCampaigns(days ? parseInt(days) : 30);
+    }
+
     @Get('analytics/top-creators')
     async getTopCreators(
         @Query('days') days?: string,

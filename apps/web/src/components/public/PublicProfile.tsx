@@ -148,7 +148,10 @@ export const PublicProfile = ({ creator }: Props) => {
                         type: 'view',
                         entityId: creator.id,
                         userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : '',
-                        referer: typeof document !== 'undefined' ? document.referrer : ''
+                        referer: typeof document !== 'undefined' ? document.referrer : '',
+                        utmSource: typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('utm_source') || undefined : undefined,
+                        utmMedium: typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('utm_medium') || undefined : undefined,
+                        utmCampaign: typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('utm_campaign') || undefined : undefined
                     })
                 });
             } catch (e) {
@@ -194,7 +197,10 @@ export const PublicProfile = ({ creator }: Props) => {
                 userAgent: window.navigator.userAgent,
                 referer: document.referrer,
                 scrollDepth: maxScroll,
-                sessionDuration: sessionDuration
+                sessionDuration: sessionDuration,
+                utmSource: new URLSearchParams(window.location.search).get('utm_source') || undefined,
+                utmMedium: new URLSearchParams(window.location.search).get('utm_medium') || undefined,
+                utmCampaign: new URLSearchParams(window.location.search).get('utm_campaign') || undefined
             });
 
             // Use Beacon API for reliable transmission on tab close, fallback to fetch if unavailable
@@ -233,7 +239,10 @@ export const PublicProfile = ({ creator }: Props) => {
                     type: 'click',
                     entityId: linkId,
                     userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : '',
-                    referer: typeof document !== 'undefined' ? document.referrer : ''
+                    referer: typeof document !== 'undefined' ? document.referrer : '',
+                    utmSource: typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('utm_source') || undefined : undefined,
+                    utmMedium: typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('utm_medium') || undefined : undefined,
+                    utmCampaign: typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('utm_campaign') || undefined : undefined
                 })
             });
         } catch (e) {
@@ -250,7 +259,10 @@ export const PublicProfile = ({ creator }: Props) => {
                     type: 'click',
                     entityId: productId,
                     userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : '',
-                    referer: typeof document !== 'undefined' ? document.referrer : ''
+                    referer: typeof document !== 'undefined' ? document.referrer : '',
+                    utmSource: typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('utm_source') || undefined : undefined,
+                    utmMedium: typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('utm_medium') || undefined : undefined,
+                    utmCampaign: typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('utm_campaign') || undefined : undefined
                 })
             });
         } catch (e) {

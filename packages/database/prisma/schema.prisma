@@ -464,6 +464,11 @@ model AnalyticsEvent {
   // Engagement Info
   scrollDepth     Int?     @map("scroll_depth") // 0-100 percentage
   sessionDuration Int?     @map("session_duration") // seconds
+  
+  // Marketing UTMs
+  utmSource       String?  @map("utm_source")
+  utmMedium       String?  @map("utm_medium")
+  utmCampaign     String?  @map("utm_campaign")
 
   createdAt DateTime @default(now()) @map("created_at")
 

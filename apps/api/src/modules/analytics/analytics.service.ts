@@ -13,6 +13,9 @@ export interface TrackEventDto {
     referer?: string;
     scrollDepth?: number;
     sessionDuration?: number;
+    utmSource?: string;
+    utmMedium?: string;
+    utmCampaign?: string;
 }
 
 @Injectable()
@@ -59,6 +62,11 @@ export class AnalyticsService {
                     os,
                     browser,
                     referer: dto.referer,
+                    scrollDepth: dto.scrollDepth,
+                    sessionDuration: dto.sessionDuration,
+                    utmSource: dto.utmSource,
+                    utmMedium: dto.utmMedium,
+                    utmCampaign: dto.utmCampaign,
                 },
             });
         } catch (error) {
