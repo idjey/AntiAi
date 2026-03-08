@@ -1,3 +1,9 @@
+// Polyfill: Node 18 doesn't expose crypto globally (needed by @nestjs/schedule)
+import { webcrypto } from 'node:crypto';
+if (typeof globalThis.crypto === 'undefined') {
+    (globalThis as any).crypto = webcrypto;
+}
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import 'dotenv/config';
