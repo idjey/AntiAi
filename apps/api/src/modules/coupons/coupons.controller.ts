@@ -50,6 +50,13 @@ export class CouponsController {
         return this.couponsService.getStats();
     }
 
+    @Get('admin/coupons/tracking')
+    @UseGuards(AuthGuard('jwt'), RolesGuard)
+    @Roles(UserRole.admin)
+    async getTracking() {
+        return this.couponsService.getTrackingData();
+    }
+
     @Patch('admin/coupons/:id')
     @UseGuards(AuthGuard('jwt'), RolesGuard)
     @Roles(UserRole.admin)
