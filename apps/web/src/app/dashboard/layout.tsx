@@ -18,6 +18,13 @@ export default function DashboardLayout({
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const [isCollapsed, setIsCollapsed] = useState(false)
 
+    // Handle Setup Modal (for Google OAuth users without profiles)
+    const [showHandleModal, setShowHandleModal] = useState(false)
+    const [handleInput, setHandleInput] = useState('')
+    const [handleStatus, setHandleStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle')
+    const [handleError, setHandleError] = useState('')
+    const [isCreatingProfile, setIsCreatingProfile] = useState(false)
+
     // Load initial collapse state
     useEffect(() => {
         const saved = localStorage.getItem('sidebar_collapsed')
@@ -60,6 +67,11 @@ export default function DashboardLayout({
 
                 const userData = await res.json()
                 setUser(userData)
+
+                // Check if user needs to set up their handle (Google OAuth without profile)
+                if (!userData.profile) {
+                    setShowHandleModal(true)
+                }
             } catch (err) {
                 // Token invalid or expired
                 localStorage.removeItem('token')
@@ -71,6 +83,84 @@ export default function DashboardLayout({
 
         checkAuth()
     }, [router])
+
+    // Debounced handle availability check
+    useEffect(() => {
+        if (handleInput.length < 3) {
+            setHandleStatus(handleInput.length > 0 ? 'invalid' : 'idle')
+            setHandleError(handleInput.length > 0 ? 'Handle must be at least 3 characters' : '')
+            return
+        }
+        if (handleInput.length > 10) {
+            setHandleStatus('invalid')
+            setHandleError('Handle must be 10 characters or less')
+            return
+        }
+        if (!/^[a-z0-9_\-\.]+$/.test(handleInput.toLowerCase())) {
+            setHandleStatus('invalid')
+            setHandleError('Only lowercase letters, numbers, underscore, hyphen, and dot')
+            return
+        }
+
+        setHandleStatus('checking')
+        const timer = setTimeout(async () => {
+            try {
+                const token = localStorage.getItem('token')
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/profile/check-handle/${handleInput.toLowerCase()}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                const data = await res.json()
+                if (data.available) {
+                    setHandleStatus('available')
+                    setHandleError('')
+                } else {
+                    setHandleStatus('taken')
+                    setHandleError(data.reason === 'reserved' ? 'This handle is reserved' : 'Handle already taken')
+                }
+            } catch {
+                setHandleStatus('idle')
+            }
+        }, 400)
+
+        return () => clearTimeout(timer)
+    }, [handleInput])
+
+    const handleCreateProfile = async () => {
+        if (handleStatus !== 'available') return
+        setIsCreatingProfile(true)
+        try {
+            const token = localStorage.getItem('token')
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/profile`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    handle: handleInput.toLowerCase(),
+                    display_name: handleInput,
+                })
+            })
+
+            if (!res.ok) {
+                const err = await res.json()
+                setHandleError(err.message || 'Failed to create profile')
+                return
+            }
+
+            // Refresh user data
+            const meRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/auth/me`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            const userData = await meRes.json()
+            setUser(userData)
+            setShowHandleModal(false)
+        } catch {
+            setHandleError('Something went wrong. Please try again.')
+        } finally {
+            setIsCreatingProfile(false)
+        }
+    }
 
     const handleLogout = () => {
         localStorage.removeItem('token')
@@ -365,6 +455,86 @@ export default function DashboardLayout({
                 </header>
 
                 <div className="p-4 md:p-8 flex-1 overflow-auto">
+                    {/* Blocking Handle Setup Modal */}
+                    {showHandleModal && (
+                        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-md">
+                            <div className="bg-surface border border-border rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4">
+                                <div className="text-center mb-8">
+                                    <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
+                                        <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-text-primary mb-2">Choose Your Creator Handle</h2>
+                                    <p className="text-sm text-text-secondary leading-relaxed">
+                                        This will be your unique URL on AntiAI. You can change it later with a Pro or Elite plan.
+                                    </p>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-xs text-text-secondary uppercase tracking-wider font-medium block mb-2">Creator Handle</label>
+                                        <div className="relative">
+                                            <div className="flex items-center bg-surface-light border border-border rounded-xl overflow-hidden focus-within:border-primary/50 transition-colors">
+                                                <span className="pl-4 pr-1 text-text-secondary text-sm whitespace-nowrap select-none">antiai.me/</span>
+                                                <input
+                                                    type="text"
+                                                    value={handleInput}
+                                                    onChange={e => setHandleInput(e.target.value.toLowerCase().replace(/[^a-z0-9_\-\.]/g, ''))}
+                                                    placeholder="yourname"
+                                                    maxLength={10}
+                                                    autoFocus
+                                                    className="flex-1 bg-transparent py-3 pr-10 text-text-primary placeholder-text-secondary/50 text-sm focus:outline-none"
+                                                    onKeyDown={e => { if (e.key === 'Enter' && handleStatus === 'available') handleCreateProfile() }}
+                                                />
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                                    {handleStatus === 'checking' && (
+                                                        <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                                    )}
+                                                    {handleStatus === 'available' && (
+                                                        <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    )}
+                                                    {(handleStatus === 'taken' || handleStatus === 'invalid') && handleInput.length > 0 && (
+                                                        <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {handleError && (
+                                            <p className="mt-2 text-xs text-red-400">{handleError}</p>
+                                        )}
+                                        {handleStatus === 'available' && (
+                                            <p className="mt-2 text-xs text-emerald-400">This handle is available!</p>
+                                        )}
+                                    </div>
+
+                                    <button
+                                        onClick={handleCreateProfile}
+                                        disabled={handleStatus !== 'available' || isCreatingProfile}
+                                        className="w-full py-3 bg-primary hover:bg-primary/90 disabled:bg-surface-light disabled:text-text-secondary text-background font-bold rounded-xl text-sm transition-all disabled:cursor-not-allowed"
+                                    >
+                                        {isCreatingProfile ? (
+                                            <span className="flex items-center justify-center gap-2">
+                                                <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                                                Creating profile...
+                                            </span>
+                                        ) : (
+                                            'Continue to Dashboard'
+                                        )}
+                                    </button>
+
+                                    <p className="text-[11px] text-text-secondary/60 text-center">
+                                        3-10 characters &middot; Letters, numbers, underscore, hyphen, dot
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {children}
                 </div>
             </main>

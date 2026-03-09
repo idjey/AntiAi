@@ -550,15 +550,18 @@ model Coupon {
 }
 
 model CouponRedemption {
-  id        String   @id @default(uuid()) @db.Uuid
-  couponId  String   @map("coupon_id") @db.Uuid
-  userId    String?  @map("user_id") @db.Uuid
-  email     String?                                // For visitor leads (pre-signup)
-  usedAt    DateTime @default(now()) @map("used_at")
+  id          String    @id @default(uuid()) @db.Uuid
+  couponId    String    @map("coupon_id") @db.Uuid
+  userId      String?   @map("user_id") @db.Uuid
+  email       String?                                // For visitor leads (pre-signup)
+  source      String    @default("manual")           // 'signup' | 'lead' | 'admin_send' | 'manual' | 'checkout'
+  emailSentAt DateTime? @map("email_sent_at")        // When the coupon email was sent
+  usedAt      DateTime  @default(now()) @map("used_at")
 
   coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
 
   @@index([couponId])
   @@index([userId])
+  @@index([source])
   @@map("coupon_redemptions")
 }
