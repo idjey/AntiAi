@@ -14,11 +14,12 @@ export default function Pricing() {
             description: 'Get started with the basics',
             features: [
                 '10 videos per month',
-                'Basic verification badge',
-                'Public creator page',
-                'Community support',
+                '1 Shop Product',
+                'Public Creator Page',
+                'Content Verification',
+                'Basic Color Themes',
             ],
-            cta: 'Start free',
+            cta: 'Get Started',
             featured: false,
             href: '/signup'
         },
@@ -31,13 +32,13 @@ export default function Pricing() {
             description: 'For serious creators',
             features: [
                 '100 videos per month',
-                'Priority verification',
-                'Analytics dashboard',
-                'Custom challenges',
-                'Priority support',
-                'API access',
+                'Unlimited Shop Products',
+                'Analytics Dashboard',
+                'Custom Backgrounds & Effects',
+                'Change Your Handle',
+                'Email Support',
             ],
-            cta: 'Start free trial',
+            cta: 'Upgrade to Pro',
             featured: true,
         },
         {
@@ -46,16 +47,15 @@ export default function Pricing() {
             yearlyPrice: '89.99',
             yearlyTotal: '1,079.88',
             savings: '120.00',
-            description: 'For teams and agencies',
+            description: 'For power creators',
             features: [
-                'Unlimited videos',
-                'Multiple team members',
-                'Full API access',
-                'White-label options',
-                'Dedicated support',
-                'Custom integrations',
+                'Unlimited Videos & Products',
+                'Everything in Pro',
+                'Custom Domain Support',
+                'White-label (Hide Logo)',
+                'Email Support',
             ],
-            cta: 'Contact sales',
+            cta: 'Upgrade to Elite',
             featured: false,
         },
     ]
@@ -193,7 +193,7 @@ export default function Pricing() {
 
                 {/* Note */}
                 <p className="text-center text-sm text-text-muted mt-8">
-                    All plans include a 14-day free trial. No credit card required.
+                    No credit card required for the Free plan. Upgrade anytime.
                 </p>
             </div>
         </section>

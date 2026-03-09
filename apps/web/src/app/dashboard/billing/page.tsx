@@ -18,21 +18,21 @@ const PLANS = {
         name: 'Free',
         prices: { month: '$0', year: '$0' },
         savings: null,
-        features: ['10 videos/month', '1 Creator Shop Product', 'Standard Verification', 'Standard Theme Styles'],
+        features: ['10 videos/month', '1 Shop Product', 'Public Creator Page', 'Content Verification', 'Basic Color Themes'],
         limit: 10
     },
     pro: {
         name: 'Pro',
         prices: { month: '$15.99', year: '$155.88' },
         savings: '$36.00',
-        features: ['100 videos/month', 'Unlimited Shop Products', 'Custom Borders & Effects', 'Advanced Verification', 'Full Analytics Access'],
+        features: ['100 videos/month', 'Unlimited Shop Products', 'Analytics Dashboard', 'Custom Backgrounds & Effects', 'Change Your Handle', 'Email Support'],
         limit: 100
     },
     elite: {
         name: 'Elite',
         prices: { month: '$99.99', year: '$1,079.88' },
         savings: '$120.00',
-        features: ['Unlimited Videos & Products', 'White-label (Hide Logo)', 'Custom Domain Support (Soon)', '24/7 Priority Support', 'Export Analytics Data'],
+        features: ['Unlimited Videos & Products', 'Everything in Pro', 'Custom Domain Support', 'White-label (Hide Logo)', 'Email Support'],
         limit: Infinity
     }
 }
