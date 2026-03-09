@@ -185,7 +185,7 @@ export class CouponsService {
 
         await this.prisma.$transaction([
             this.prisma.couponRedemption.create({
-                data: { couponId: coupon.id, userId, email },
+                data: { couponId: coupon.id, userId, email, source: 'checkout' },
             }),
             this.prisma.coupon.update({
                 where: { id: coupon.id },
@@ -212,12 +212,14 @@ export class CouponsService {
                 expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
             });
 
-            // Record the redemption link to the user
+            // Record the redemption link to the user with tracking
             await this.prisma.couponRedemption.create({
                 data: {
                     couponId: coupon.id,
                     userId,
                     email: userEmail,
+                    source: 'signup',
+                    emailSentAt: new Date(),
                 },
             });
 
@@ -269,6 +271,8 @@ export class CouponsService {
             data: {
                 couponId: coupon.id,
                 email: email.toLowerCase(),
+                source: 'lead',
+                emailSentAt: new Date(),
             },
         });
 
@@ -310,6 +314,16 @@ export class CouponsService {
                     coupon.discountType,
                     coupon.expiresAt,
                 );
+                // Track the send
+                await this.prisma.couponRedemption.create({
+                    data: {
+                        couponId: coupon.id,
+                        userId: user.id,
+                        email: user.email,
+                        source: 'admin_send',
+                        emailSentAt: new Date(),
+                    },
+                });
                 sent++;
             } catch (err) {
                 this.logger.warn(`Failed to send coupon to ${user.email}: ${err.message}`);
@@ -337,5 +351,27 @@ export class CouponsService {
         ]);
 
         return { total, active, totalRedemptions };
+    }
+
+    // ─── Tracking Data ───
+
+    async getTrackingData() {
+        const [bySource, recentEmails] = await Promise.all([
+            this.prisma.couponRedemption.groupBy({
+                by: ['source'],
+                _count: { id: true },
+            }),
+            this.prisma.couponRedemption.findMany({
+                where: { emailSentAt: { not: null } },
+                orderBy: { emailSentAt: 'desc' },
+                take: 50,
+                include: { coupon: { select: { code: true, discountType: true, discountValue: true } } },
+            }),
+        ]);
+
+        return {
+            bySource: bySource.map(s => ({ source: s.source, count: s._count.id })),
+            recentEmails,
+        };
     }
 }
