@@ -243,6 +243,13 @@ export class AuthService {
                         plan: true,
                         status: true
                     }
+                },
+                profile: {
+                    select: {
+                        handle: true,
+                        displayName: true,
+                        avatarUrl: true,
+                    }
                 }
             },
         });
@@ -381,17 +388,7 @@ export class AuthService {
                 },
             });
         } else {
-            // 3. Create New User
-            // Generate unique handle from name or email
-            let baseHandle = (firstName + lastName).toLowerCase().replace(/[^a-z0-9]/g, '');
-            if (baseHandle.length < 3) baseHandle = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-
-            let handle = baseHandle;
-            let counter = 1;
-            while (await this.prisma.creatorProfile.findUnique({ where: { handle } })) {
-                handle = `${baseHandle}${counter++}`;
-            }
-
+            // 3. Create New User (WITHOUT profile — they'll create it on the dashboard)
             user = await this.prisma.user.create({
                 data: {
                     email: email.toLowerCase(),
@@ -402,13 +399,6 @@ export class AuthService {
                             status: 'active',
                         },
                     },
-                    profile: {
-                        create: {
-                            handle,
-                            displayName: `${firstName} ${lastName}`,
-                            avatarUrl: profile.picture,
-                        }
-                    },
                     oauthAccounts: {
                         create: {
                             provider,
@@ -416,6 +406,11 @@ export class AuthService {
                         }
                     }
                 },
+            });
+
+            // Generate welcome coupon (fire-and-forget)
+            this.couponsService.generateWelcomeCoupon(user.id, user.email).catch(err => {
+                console.error('Welcome coupon generation failed:', err.message);
             });
         }
 
