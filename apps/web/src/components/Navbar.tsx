@@ -52,13 +52,13 @@ export default function Navbar() {
 
                     {/* Desktop Navigation */}
                     <div className="hidden md:flex items-center gap-8">
-                        <a href="#how-it-works" onClick={(e) => scrollToSection(e, 'how-it-works')} className="link text-sm font-medium cursor-pointer">
+                        <a href="#how-it-works" onClick={(e) => scrollToSection(e, 'how-it-works')} className="link text-sm font-bold cursor-pointer hover:text-primary transition-colors">
                             How it works
                         </a>
-                        <a href="#pricing" onClick={(e) => scrollToSection(e, 'pricing')} className="link text-sm font-medium cursor-pointer">
+                        <a href="#pricing" onClick={(e) => scrollToSection(e, 'pricing')} className="link text-sm font-bold cursor-pointer hover:text-primary transition-colors">
                             Pricing
                         </a>
-                        <a href="#creators" onClick={(e) => scrollToSection(e, 'creators')} className="link text-sm font-medium cursor-pointer">
+                        <a href="#creators" onClick={(e) => scrollToSection(e, 'creators')} className="link text-sm font-bold cursor-pointer hover:text-primary transition-colors">
                             Creator Directory
                         </a>
                     </div>
