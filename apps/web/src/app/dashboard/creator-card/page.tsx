@@ -341,6 +341,52 @@ const PRESET_THEMES = [
     }
 ];
 
+// ======= CURATED FONT PAIRS (PRO/ELITE) =======
+const FONT_PAIRS = [
+    { id: 'clean', name: 'Clean', heading: 'Inter', body: 'Inter', category: 'Modern' },
+    { id: 'editorial', name: 'Editorial', heading: 'Playfair Display', body: 'Source Sans 3', category: 'Classic' },
+    { id: 'tech', name: 'Tech', heading: 'Space Grotesk', body: 'IBM Plex Sans', category: 'Modern' },
+    { id: 'bold', name: 'Bold', heading: 'Oswald', body: 'Nunito', category: 'Modern' },
+    { id: 'elegant', name: 'Elegant', heading: 'Cormorant Garamond', body: 'Lato', category: 'Classic' },
+    { id: 'playful', name: 'Playful', heading: 'Fredoka', body: 'Quicksand', category: 'Creative' },
+    { id: 'mono', name: 'Mono', heading: 'Space Mono', body: 'JetBrains Mono', category: 'Modern' },
+    { id: 'retro', name: 'Retro', heading: 'Righteous', body: 'Poppins', category: 'Creative' },
+    { id: 'art_deco', name: 'Art Deco', heading: 'Poiret One', body: 'Raleway', category: 'Classic' },
+    { id: 'handwritten', name: 'Handwritten', heading: 'Caveat', body: 'Nunito', category: 'Creative' },
+    { id: 'neon', name: 'Neon', heading: 'Orbitron', body: 'Exo 2', category: 'Futuristic' },
+    { id: 'minimal', name: 'Minimal', heading: 'Outfit', body: 'Work Sans', category: 'Modern' },
+    { id: 'luxury', name: 'Luxury', heading: 'Cinzel', body: 'EB Garamond', category: 'Classic' },
+    { id: 'urban', name: 'Urban', heading: 'Archivo Black', body: 'DM Sans', category: 'Modern' },
+    { id: 'whimsy', name: 'Whimsy', heading: 'Pacifico', body: 'Outfit', category: 'Creative' },
+    { id: 'gothic', name: 'Gothic', heading: 'UnifrakturCook', body: 'Lora', category: 'Classic' },
+    { id: 'futuristic', name: 'Futuristic', heading: 'Rajdhani', body: 'Exo 2', category: 'Futuristic' },
+    { id: 'warm', name: 'Warm', heading: 'Merriweather', body: 'Source Sans 3', category: 'Classic' },
+    { id: 'impact', name: 'Impact', heading: 'Anton', body: 'Roboto', category: 'Modern' },
+    { id: 'classic', name: 'Classic', heading: 'Libre Baskerville', body: 'Karla', category: 'Classic' },
+];
+
+// ======= CURATED COLOR PALETTES (for "Feeling Lucky") =======
+const COLOR_PALETTES = [
+    { name: 'Sunset', heading: '#FF6B6B', body: '#A0937D' },
+    { name: 'Arctic', heading: '#B8E4F0', body: '#C5C6D0' },
+    { name: 'Noir', heading: '#FFFFFF', body: '#B0B0B0' },
+    { name: 'Emerald', heading: '#2ECC71', body: '#7FB285' },
+    { name: 'Royalty', heading: '#FFD700', body: '#C0C0C0' },
+    { name: 'Lavender Dream', heading: '#B388FF', body: '#D1C4E9' },
+    { name: 'Coral Reef', heading: '#FF7043', body: '#FFAB91' },
+    { name: 'Midnight Blue', heading: '#82B1FF', body: '#90CAF9' },
+    { name: 'Rose Gold', heading: '#F48FB1', body: '#E0BEC7' },
+    { name: 'Citrus', heading: '#FFD54F', body: '#E6C068' },
+    { name: 'Electric', heading: '#00E5FF', body: '#B2EBF2' },
+    { name: 'Cherry Blossom', heading: '#F06292', body: '#F8BBD0' },
+    { name: 'Terminal', heading: '#00FF41', body: '#76FF03' },
+    { name: 'Slate', heading: '#CFD8DC', body: '#90A4AE' },
+    { name: 'Candy', heading: '#EA80FC', body: '#FF80AB' },
+];
+
+const ALL_FONTS_LIST = Array.from(new Set(FONT_PAIRS.flatMap(fp => [fp.heading, fp.body])));
+const GOOGLE_FONTS_URL = `https://fonts.googleapis.com/css2?${ALL_FONTS_LIST.map(f => `family=${f.replace(/ /g, '+')}:wght@400;700`).join('&')}&display=swap`;
+
 export default function CreatorCardPage() {
     const [links, setLinks] = useState<CreatorLink[]>([]);
     const [profile, setProfile] = useState<Profile | null>(null);
@@ -492,6 +538,10 @@ export default function CreatorCardPage() {
         card_border_glow: false,
         tab_visibility: { links: true, shop: true, videos: true, music: true, events: true },
         pinned_items: { links: '', shop: '', videos: '', music: '', events: '' },
+        // Typography (Pro/Elite)
+        font_pair: 'clean',
+        heading_color: '',
+        body_color: '',
     });
 
     // Scatter Pattern State
@@ -1698,6 +1748,152 @@ export default function CreatorCardPage() {
                                             </div>
                                         );
                                     })}
+                                </AccordionContent>
+                            </AccordionItem>
+
+                            {/* ═══ SECTION: TYPOGRAPHY (PRO/ELITE) ═══ */}
+                            <AccordionItem value="typography" className="bg-surface border border-border rounded-xl px-5 border-b-0 shadow-sm">
+                                <AccordionTrigger className="hover:no-underline py-5 text-sm font-bold text-text-primary uppercase tracking-wider text-left">
+                                    <div className="flex items-center gap-2">
+                                        ✦ Typography
+                                        <InfoTooltip content="Choose a font pair and custom text colors for your creator card. Available on Pro & Elite plans." />
+                                        {!isPro && <span className="text-[10px] font-medium bg-primary/20 text-primary px-2 py-0.5 rounded-full">PRO</span>}
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pb-5 space-y-6 pt-1">
+                                    {!isPro ? (
+                                        <div className="relative">
+                                            <div className="blur-sm opacity-50 pointer-events-none select-none space-y-4">
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    {FONT_PAIRS.slice(0, 4).map(fp => (
+                                                        <div key={fp.id} className="p-4 rounded-xl border border-border bg-surface-light">
+                                                            <p style={{ fontFamily: 'serif' }} className="text-lg font-bold text-text-primary truncate">Heading</p>
+                                                            <p className="text-sm text-text-secondary truncate">Body text</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <div className="text-center px-6">
+                                                    <p className="text-text-primary font-bold mb-1">Custom Typography</p>
+                                                    <p className="text-sm text-text-muted mb-3">Available on Pro and Elite plans</p>
+                                                    <button
+                                                        onClick={() => window.location.href = '/dashboard/billing'}
+                                                        className="bg-primary hover:bg-primary/90 text-black text-sm font-bold py-2 px-5 rounded-full transition-all hover:scale-105"
+                                                    >
+                                                        Upgrade to Pro →
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {/* Dynamic Google Font Loading */}
+                                            {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+                                            <link rel="stylesheet" href={GOOGLE_FONTS_URL} />
+
+                                            {/* Font Pair Grid */}
+                                            <div>
+                                                <label className="text-sm font-medium text-text-secondary mb-3 block">Font Pair</label>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    {FONT_PAIRS.map(fp => {
+                                                        const isActive = appearance.font_pair === fp.id;
+                                                        return (
+                                                            <button
+                                                                key={fp.id}
+                                                                onClick={() => setAppearance(prev => ({ ...prev, font_pair: fp.id }))}
+                                                                className={`p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02] ${isActive
+                                                                    ? 'border-primary bg-primary/10 ring-1 ring-primary shadow-[0_0_15px_rgba(16,185,129,0.15)]'
+                                                                    : 'border-border bg-surface-light hover:border-primary/50'
+                                                                    }`}
+                                                            >
+                                                                <p
+                                                                    style={{ fontFamily: `'${fp.heading}', sans-serif` }}
+                                                                    className="text-lg font-bold text-text-primary truncate leading-tight"
+                                                                >
+                                                                    {fp.name}
+                                                                </p>
+                                                                <p
+                                                                    style={{ fontFamily: `'${fp.body}', sans-serif` }}
+                                                                    className="text-xs text-text-muted mt-1 truncate"
+                                                                >
+                                                                    {fp.heading} + {fp.body}
+                                                                </p>
+                                                                <span className="text-[10px] text-text-muted/60 mt-1 block">{fp.category}</span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {/* Font Colors */}
+                                            <div className="space-y-4 pt-2">
+                                                <div className="flex items-center justify-between">
+                                                    <label className="text-sm font-medium text-text-secondary">Text Colors</label>
+                                                    <button
+                                                        onClick={() => {
+                                                            const palette = COLOR_PALETTES[Math.floor(Math.random() * COLOR_PALETTES.length)];
+                                                            setAppearance(prev => ({
+                                                                ...prev,
+                                                                heading_color: palette.heading,
+                                                                body_color: palette.body
+                                                            }));
+                                                        }}
+                                                        className="text-xs font-medium bg-primary/10 text-primary px-3 py-1.5 rounded-full hover:bg-primary/20 transition-all hover:scale-105 flex items-center gap-1.5"
+                                                    >
+                                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
+                                                        Feeling Lucky
+                                                    </button>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs text-text-muted">Heading Color</label>
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="color"
+                                                                value={appearance.heading_color || '#ffffff'}
+                                                                onChange={(e) => setAppearance(prev => ({ ...prev, heading_color: e.target.value }))}
+                                                                className="w-8 h-8 rounded-lg border border-border cursor-pointer bg-transparent"
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                value={appearance.heading_color}
+                                                                onChange={(e) => setAppearance(prev => ({ ...prev, heading_color: e.target.value }))}
+                                                                className="flex-1 bg-background border border-border rounded-lg px-3 py-1.5 text-text-primary text-sm focus:outline-none focus:border-primary font-mono"
+                                                                placeholder="Auto (theme)"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs text-text-muted">Body Color</label>
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="color"
+                                                                value={appearance.body_color || '#aaaaaa'}
+                                                                onChange={(e) => setAppearance(prev => ({ ...prev, body_color: e.target.value }))}
+                                                                className="w-8 h-8 rounded-lg border border-border cursor-pointer bg-transparent"
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                value={appearance.body_color}
+                                                                onChange={(e) => setAppearance(prev => ({ ...prev, body_color: e.target.value }))}
+                                                                className="flex-1 bg-background border border-border rounded-lg px-3 py-1.5 text-text-primary text-sm focus:outline-none focus:border-primary font-mono"
+                                                                placeholder="Auto (theme)"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {(appearance.heading_color || appearance.body_color) && (
+                                                    <button
+                                                        onClick={() => setAppearance(prev => ({ ...prev, heading_color: '', body_color: '' }))}
+                                                        className="text-xs text-text-muted hover:text-text-secondary transition-colors"
+                                                    >
+                                                        ← Reset to auto theme colors
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
                                 </AccordionContent>
                             </AccordionItem>
 
