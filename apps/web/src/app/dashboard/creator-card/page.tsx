@@ -883,8 +883,18 @@ export default function CreatorCardPage() {
     const cardBackdropBlur = appearance.card_backdrop_blur || 0;
     const cardGlow = appearance.public_card_glow || 0;
 
+    const previewFontPairId = appearance.font_pair || 'clean';
+    const previewFontPair = FONT_PAIRS.find(fp => fp.name.toLowerCase() === previewFontPairId.toLowerCase()) || FONT_PAIRS[0];
+    const previewHeadingFont = previewFontPair.heading;
+    const previewBodyFont = previewFontPair.body;
+    const customHeadingColor = appearance.heading_color || '';
+    const customBodyColor = appearance.body_color || '';
+
 
     return (
+        <>
+        {/* Inject dynamic fonts for the preview */}
+        <link href={GOOGLE_FONTS_URL} rel="stylesheet" />
         <div className="max-w-[2000px] mx-auto h-[calc(100vh-100px)] flex gap-8 px-6">
             <div className="flex-1 flex flex-col gap-6 overflow-y-auto pr-8 border-r border-border scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
                 <div className="flex items-center justify-between">
@@ -3019,8 +3029,8 @@ export default function CreatorCardPage() {
                                     </div>
 
                                     <div className="text-center space-y-1">
-                                        <h1 className="text-xl font-bold tracking-tight">{profile?.display_name || 'Your Name'}</h1>
-                                        <p className="text-sm opacity-70">@{profile?.handle || 'username'}</p>
+                                        <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: previewHeadingFont, ...(customHeadingColor ? { color: customHeadingColor } : {}) }}>{profile?.display_name || 'Your Name'}</h1>
+                                        <p className="text-sm opacity-70" style={{ fontFamily: previewBodyFont, ...(customBodyColor ? { color: customBodyColor } : {}) }}>@{profile?.handle || 'username'}</p>
                                     </div>
 
                                     <div className={`w-full gap-3 ${appearance.link_style === 'grid' ? 'grid grid-cols-2' : appearance.link_style === 'row' ? 'flex flex-wrap justify-center' : 'grid grid-cols-1'}`}>
@@ -3047,7 +3057,7 @@ export default function CreatorCardPage() {
                                                         <div className={`w-8 h-8 flex items-center justify-center shrink-0 ${appearance.icon_style === 'color' ? '' : 'text-current'}`}>
                                                             <SocialIcon type={link.icon} variant={appearance.icon_style === 'monochrome' ? 'monochrome' : undefined} className="w-6 h-6 relative z-10" />
                                                         </div>
-                                                        <span className={`font-medium text-sm truncate relative z-10 flex-1 ${appearance.link_style === 'grid' ? 'text-center' : 'text-left'}`}>{link.label}</span>
+                                                        <span className={`font-medium text-sm truncate relative z-10 flex-1 ${appearance.link_style === 'grid' ? 'text-center' : 'text-left'}`} style={{ fontFamily: previewBodyFont, ...(customBodyColor ? { color: customBodyColor } : {}) }}>{link.label}</span>
                                                         {appearance.link_style === 'list' && (
                                                             <svg className="w-4 h-4 opacity-50 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                                                         )}
@@ -3144,5 +3154,6 @@ export default function CreatorCardPage() {
                 )
             }
         </div >
+        </>
     );
 }
