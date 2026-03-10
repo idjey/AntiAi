@@ -64,6 +64,18 @@ export class AppearanceDto {
     logo_position?: string;
 
     @IsOptional()
+    @IsString()
+    font_pair?: string;
+
+    @IsOptional()
+    @IsString()
+    heading_color?: string;
+
+    @IsOptional()
+    @IsString()
+    body_color?: string;
+
+    @IsOptional()
     @IsNumber()
     logo_opacity?: number;
 
