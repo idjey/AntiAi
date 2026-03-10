@@ -9,6 +9,31 @@ import { SocialIcon } from '@/components/SocialIcon';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { ShareDialog } from '@/components/share-dialog';
 
+
+// Font Pairs Lookup (must match creator-card/page.tsx)
+const FONT_PAIRS_MAP: Record<string, { heading: string; body: string }> = {
+    clean: { heading: 'Inter', body: 'Inter' },
+    editorial: { heading: 'Playfair Display', body: 'Source Sans 3' },
+    tech: { heading: 'Space Grotesk', body: 'IBM Plex Sans' },
+    bold: { heading: 'Oswald', body: 'Nunito' },
+    elegant: { heading: 'Cormorant Garamond', body: 'Lato' },
+    playful: { heading: 'Fredoka', body: 'Quicksand' },
+    mono: { heading: 'Space Mono', body: 'JetBrains Mono' },
+    retro: { heading: 'Righteous', body: 'Poppins' },
+    art_deco: { heading: 'Poiret One', body: 'Raleway' },
+    handwritten: { heading: 'Caveat', body: 'Nunito' },
+    neon: { heading: 'Orbitron', body: 'Exo 2' },
+    minimal: { heading: 'Outfit', body: 'Work Sans' },
+    luxury: { heading: 'Cinzel', body: 'EB Garamond' },
+    urban: { heading: 'Archivo Black', body: 'DM Sans' },
+    whimsy: { heading: 'Pacifico', body: 'Outfit' },
+    gothic: { heading: 'UnifrakturCook', body: 'Lora' },
+    futuristic: { heading: 'Rajdhani', body: 'Exo 2' },
+    warm: { heading: 'Merriweather', body: 'Source Sans 3' },
+    impact: { heading: 'Anton', body: 'Roboto' },
+    classic: { heading: 'Libre Baskerville', body: 'Karla' },
+};
+
 interface Props {
     creator: any;
 }
@@ -75,6 +100,14 @@ export const PublicProfile = ({ creator }: Props) => {
     const cardBgOpacity = appearance.card_bg_opacity !== undefined ? appearance.card_bg_opacity : 100;
     const cardBackdropBlur = appearance.card_backdrop_blur || 0;
 
+
+    // Typography
+    const fontPairId = appearance.font_pair || 'clean';
+    const fontPair = FONT_PAIRS_MAP[fontPairId] || FONT_PAIRS_MAP.clean;
+    const headingFont = fontPair.heading;
+    const bodyFont = fontPair.body;
+    const customHeadingColor = appearance.heading_color || '';
+    const customBodyColor = appearance.body_color || '';
     // Helper function to convert Hex + Opacity into rgba
     const hexToRgba = (hex: string, opacityPercent: number) => {
         if (!hex) return `rgba(0,0,0,${opacityPercent / 100})`;
@@ -631,16 +664,16 @@ export const PublicProfile = ({ creator }: Props) => {
 
                             {/* Name & Handle */}
                             <motion.div variants={{ hidden: { y: 10, opacity: 0 }, visible: { y: 0, opacity: 1 } }}>
-                                <h1 className="text-2xl font-bold flex items-center justify-center gap-2 drop-shadow-lg leading-tight">
+                                <h1 className="text-2xl font-bold flex items-center justify-center gap-2 drop-shadow-lg leading-tight" style={{ fontFamily: `'${headingFont}', sans-serif`, ...(customHeadingColor ? { color: customHeadingColor } : {}) }}>
                                     {creator.display_name}
                                     <svg className="w-5 h-5 flex-shrink-0" style={{ color: appearance.primary_color }} fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
                                 </h1>
-                                <p className={`text-sm ${textSecondaryColor} mt-1 font-medium opacity-80`}>@{creator.handle}</p>
+                                <p className={`text-sm ${textSecondaryColor} mt-1 font-medium opacity-80`} style={{ fontFamily: `'${bodyFont}', sans-serif`, ...(customBodyColor ? { color: customBodyColor } : {}) }}>@{creator.handle}</p>
                             </motion.div>
 
                             {/* Bio */}
                             {creator.bio && (
-                                <motion.p variants={{ hidden: { y: 10, opacity: 0 }, visible: { y: 0, opacity: 1 } }} className={`${textSecondaryColor} px-2 text-sm leading-relaxed whitespace-pre-wrap opacity-90`}>
+                                <motion.p variants={{ hidden: { y: 10, opacity: 0 }, visible: { y: 0, opacity: 1 } }} className={`${textSecondaryColor} px-2 text-sm leading-relaxed whitespace-pre-wrap opacity-90`} style={{ fontFamily: `'${bodyFont}', sans-serif`, ...(customBodyColor ? { color: customBodyColor } : {}) }}>
                                     {creator.bio}
                                 </motion.p>
                             )}
