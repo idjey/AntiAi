@@ -33,13 +33,18 @@ import { HealthController } from './health.controller';
         ServeStaticModule.forRoot({
             rootPath: join(process.cwd(), 'uploads'),
             serveRoot: '/uploads',
+            serveStaticOptions: {
+                setHeaders: (res) => {
+                    res.setHeader('X-Content-Type-Options', 'nosniff');
+                },
+            },
         }),
 
         // Rate limiting
-        // ThrottlerModule.forRoot([{
-        //     ttl: 60000,
-        //     limit: 100,
-        // }]),
+        ThrottlerModule.forRoot([{
+             ttl: 60000,
+             limit: 100,
+        }]),
 
         // Database
         PrismaModule,
@@ -59,10 +64,10 @@ import { HealthController } from './health.controller';
         CouponsModule,
     ],
     providers: [
-        // {
-        //     provide: 'APP_GUARD',
-        //     useClass: ThrottlerGuard,
-        // },
+        {
+            provide: APP_GUARD,
+            useClass: ThrottlerGuard,
+        },
     ],
     controllers: [HealthController],
 })
