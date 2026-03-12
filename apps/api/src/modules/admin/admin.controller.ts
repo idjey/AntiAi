@@ -1,4 +1,3 @@
-
 import { Controller, Get, Post, Patch, Body, Param, UseGuards, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { UserRole } from '@prisma/client';
@@ -12,7 +11,6 @@ import { AdminService } from './admin.service';
 export class AdminController {
     constructor(private readonly adminService: AdminService) { }
 
-    @Get('users')
     @Get('users')
     async findAll(
         @Query('skip') skip?: string,
@@ -52,34 +50,25 @@ export class AdminController {
     }
 
     @Get('stats')
-    @Get('stats')
     async getStats(): Promise<any> {
         return this.adminService.getDashboardStats();
     }
 
-    @UseGuards(AuthGuard('jwt'), RolesGuard)
-    @Roles(UserRole.admin)
     @Post('users/:id/suspend')
     async suspendUser(@Param('id') id: string) {
         return this.adminService.suspendUser(id);
     }
 
-    @UseGuards(AuthGuard('jwt'), RolesGuard)
-    @Roles(UserRole.admin)
     @Post('users/:id/plan')
     async updateUserPlan(@Param('id') id: string, @Body('plan') plan: 'free' | 'pro' | 'elite') {
         return this.adminService.updateUserPlan(id, plan);
     }
 
-    @UseGuards(AuthGuard('jwt'), RolesGuard)
-    @Roles(UserRole.admin)
     @Post('users/:id/reset-limits')
     async resetLimits(@Param('id') id: string) {
         return this.adminService.resetUserLimits(id);
     }
 
-    @UseGuards(AuthGuard('jwt'), RolesGuard)
-    @Roles(UserRole.admin)
     @Post('users/:id/impersonate')
     async impersonateUser(@Param('id') id: string) {
         // In a real implementation, this would generate a token.
@@ -87,8 +76,6 @@ export class AdminController {
         return this.adminService.impersonateUser(id);
     }
 
-    @UseGuards(AuthGuard('jwt'), RolesGuard)
-    @Roles(UserRole.admin)
     @Patch('profiles/:id/feature')
     async featureProfile(@Param('id') id: string, @Body('isFeatured') isFeatured: boolean) {
         return this.adminService.featureProfile(id, isFeatured);
