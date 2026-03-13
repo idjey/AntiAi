@@ -165,7 +165,6 @@ export class ProfilesService {
         }
 
         const oldProfile = { ...existing };
-
         const profile = await this.prisma.creatorProfile.update({
             where: { userId },
             data: {
@@ -181,6 +180,9 @@ export class ProfilesService {
             },
             include: {
                 featuredVideo: true,
+                user: {
+                    include: { subscription: true }
+                }
             },
         });
 
