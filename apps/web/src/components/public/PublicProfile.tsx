@@ -399,7 +399,11 @@ export const PublicProfile = ({ creator }: Props) => {
     };
 
     return (
-        <div className="min-h-screen relative overflow-hidden font-sans">
+        <>
+            {fontPairId !== 'clean' && (
+                <link rel="stylesheet" href={`https://fonts.googleapis.com/css2?family=${headingFont.replace(/ /g, '+')}:wght@400;700&family=${bodyFont.replace(/ /g, '+')}:wght@400;700&display=swap`} />
+            )}
+            <div className="min-h-screen relative overflow-hidden font-sans">
             {/* 1. Fixed Page Background (The "World" Layer) */}
             <div
                 className="fixed inset-0 z-0 bg-cover bg-center transition-colors duration-500"
@@ -1552,5 +1556,6 @@ export const PublicProfile = ({ creator }: Props) => {
                 )}
             </AnimatePresence>
         </div >
+        </>
     );
 };
