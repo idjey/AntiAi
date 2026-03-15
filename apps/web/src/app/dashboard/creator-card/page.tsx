@@ -1892,7 +1892,7 @@ export default function CreatorCardPage() {
                                                         const formData = new FormData();
                                                         formData.append('file', file);
                                                         try {
-                                                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/upload/image`, {
+                                                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/upload`, {
                                                                 method: 'POST',
                                                                 headers: { 'Authorization': `Bearer ${token}` },
                                                                 body: formData
