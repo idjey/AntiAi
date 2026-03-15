@@ -619,9 +619,21 @@ export const PublicProfile = ({ creator }: Props) => {
                             primaryColor={appearance.primary_color}
                         />
                     </div>
+                                      {/* --- PROFILE HEADER BLOCKS (Layouts & Shapes) --- */}
+                    {appearance.layout === 'hero' && (
+                        <div className="absolute top-0 left-0 w-full h-40 bg-black/50 z-[5]">
+                            {appearance.banner_image_url ? (
+                                <img src={appearance.banner_image_url} className="w-full h-full object-cover opacity-80" alt="Banner" />
+                            ) : (
+                                <div className="w-full h-full bg-gradient-to-r from-primary/20 to-primary/5" />
+                            )}
+                            {/* Gradient fade to blend into background */}
+                            <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t" style={{ backgroundImage: `linear-gradient(to top, ${hexToRgba(appearance.public_background_color || appearance.background_color || '#000000', cardBgOpacity)}, transparent)` }} />
+                        </div>
+                    )}
 
                     {/* Content Wrapper (Relative z-10 to stay above bg effects) */}
-                    <div className="relative z-10 flex flex-col p-6 pb-8">
+                    <div className={`relative z-10 flex flex-col pb-8 ${appearance.layout === 'showcase' ? 'px-8 pt-12 pb-4' : appearance.layout === 'hero' ? 'px-6 pt-[5.5rem]' : 'p-6'}`}>
 
                         {/* Avatar & Info */}
                         <motion.div
@@ -631,11 +643,21 @@ export const PublicProfile = ({ creator }: Props) => {
                                 hidden: { opacity: 0 },
                                 visible: { opacity: 1, transition: { staggerChildren: 0.15 } }
                             }}
-                            className="text-center space-y-4 mb-6"
+                            className={`w-full flex ${appearance.layout === 'showcase' ? 'flex-row items-center gap-6' : 'flex-col items-center mb-6'}`}
                         >
                             {/* Avatar */}
-                            <motion.div variants={{ hidden: { scale: 0.8, opacity: 0 }, visible: { scale: 1, opacity: 1, transition: { type: "spring", bounce: 0.4 } } }} className="relative mx-auto w-28 h-28 mt-4 mb-6 group">
-                                <div className="w-full h-full rounded-full overflow-hidden border-2 border-white/20 shadow-xl relative z-10 transition-transform duration-300 group-hover:scale-105" style={{ backgroundColor: appearance.background_color }}>
+                            <motion.div variants={{ hidden: { scale: 0.8, opacity: 0 }, visible: { scale: 1, opacity: 1, transition: { type: "spring", bounce: 0.4 } } }} className="relative mx-auto w-28 h-28 mt-4 group shrink-0">
+                                <div 
+                                    className="w-full h-full overflow-hidden border-2 border-white/20 shadow-xl relative z-10 transition-transform duration-300 group-hover:scale-105" 
+                                    style={{ 
+                                        backgroundColor: appearance.background_color,
+                                        ...(appearance.avatar_shape === 'squircle' ? { borderRadius: '25%' } : 
+                                            appearance.avatar_shape === 'hexagon' ? { clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)', borderRadius: '0' } :
+                                            appearance.avatar_shape === 'archway' ? { borderTopLeftRadius: '50%', borderTopRightRadius: '50%', borderBottomLeftRadius: '10%', borderBottomRightRadius: '10%' } :
+                                            appearance.avatar_shape === 'starburst' ? { clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)', borderRadius: '0' } :
+                                            { borderRadius: '50%' })
+                                    }}
+                                >
                                     {creator.avatar_url ? (
                                         <img src={creator.avatar_url} alt={creator.display_name} className="w-full h-full object-cover relative z-10" />
                                     ) : (
@@ -652,35 +674,35 @@ export const PublicProfile = ({ creator }: Props) => {
                                 </div>
 
                                 {/* Base Glow (Default) */}
-                                <div className="absolute inset-0 bg-primary/30 blur-xl rounded-full scale-110 -z-0 transition-colors duration-300 pointer-events-none" style={{ backgroundColor: appearance.primary_color }} />
+                                <div className="absolute inset-0 bg-primary/30 blur-xl scale-110 -z-0 transition-colors duration-300 pointer-events-none" style={{ backgroundColor: appearance.primary_color, borderRadius: appearance.avatar_shape === 'circle' ? '50%' : '25%' }} />
 
                                 {/* Aura Effects on Hover */}
                                 {appearance.avatar_aura === 'solid' && (
-                                    <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md pointer-events-none" style={{ backgroundColor: appearance.primary_color, transform: 'scale(1.3)' }} />
+                                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md pointer-events-none" style={{ backgroundColor: appearance.primary_color, transform: 'scale(1.3)', borderRadius: appearance.avatar_shape === 'circle' ? '50%' : '25%' }} />
                                 )}
                                 {appearance.avatar_aura === 'rainbow' && (
-                                    <div className="absolute -inset-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-lg pointer-events-none animate-spin-slow" style={{ background: 'conic-gradient(from 0deg, #ff0000, #ff8000, #ffff00, #00ff00, #0000ff, #4b0082, #ee82ee, #ff0000)' }} />
+                                    <div className="absolute -inset-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-lg pointer-events-none animate-spin-slow" style={{ borderRadius: '50%', background: 'conic-gradient(from 0deg, #ff0000, #ff8000, #ffff00, #00ff00, #0000ff, #4b0082, #ee82ee, #ff0000)' }} />
                                 )}
                                 {appearance.avatar_aura === 'pulse' && (
-                                    <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-500 blur-sm pointer-events-none" style={{ backgroundColor: appearance.primary_color }} />
+                                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-500 blur-sm pointer-events-none" style={{ backgroundColor: appearance.primary_color, borderRadius: appearance.avatar_shape === 'circle' ? '50%' : '25%' }} />
                                 )}
                             </motion.div>
 
-                            {/* Name & Handle */}
-                            <motion.div variants={{ hidden: { y: 10, opacity: 0 }, visible: { y: 0, opacity: 1 } }}>
-                                <h1 className="text-2xl font-bold flex items-center justify-center gap-2 drop-shadow-lg leading-tight" style={{ fontFamily: `'${headingFont}', sans-serif`, ...(customHeadingColor ? { color: customHeadingColor } : {}) }}>
+                            {/* Name & Handle & Bio */}
+                            <motion.div variants={{ hidden: { y: 10, opacity: 0 }, visible: { y: 0, opacity: 1 } }} className={`${appearance.layout === 'showcase' ? 'text-left space-y-1' : 'text-center w-full'} flex-1`}>
+                                <h1 className={`${appearance.layout === 'showcase' ? 'text-3xl' : 'text-2xl'} font-bold flex items-center ${appearance.layout === 'showcase' ? 'justify-start' : 'justify-center'} gap-2 drop-shadow-lg leading-tight`} style={{ fontFamily: `'${headingFont}', sans-serif`, ...(customHeadingColor ? { color: customHeadingColor } : {}) }}>
                                     {creator.display_name}
                                     <svg className="w-5 h-5 flex-shrink-0" style={{ color: appearance.primary_color }} fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
                                 </h1>
                                 <p className={`text-sm ${textSecondaryColor} mt-1 font-medium opacity-80`} style={{ fontFamily: `'${bodyFont}', sans-serif`, ...(customBodyColor ? { color: customBodyColor } : {}) }}>@{creator.handle}</p>
+                            
+                                {/* Bio */}
+                                {creator.bio && (
+                                    <motion.p variants={{ hidden: { y: 10, opacity: 0 }, visible: { y: 0, opacity: 1 } }} className={`${textSecondaryColor} ${appearance.layout === 'showcase' ? 'px-0 mt-3' : 'px-2 mt-4 mx-auto max-w-md'} text-sm leading-relaxed whitespace-pre-wrap opacity-90`} style={{ fontFamily: `'${bodyFont}', sans-serif`, ...(customBodyColor ? { color: customBodyColor } : {}) }}>
+                                        {creator.bio}
+                                    </motion.p>
+                                )}
                             </motion.div>
-
-                            {/* Bio */}
-                            {creator.bio && (
-                                <motion.p variants={{ hidden: { y: 10, opacity: 0 }, visible: { y: 0, opacity: 1 } }} className={`${textSecondaryColor} px-2 text-sm leading-relaxed whitespace-pre-wrap opacity-90`} style={{ fontFamily: `'${bodyFont}', sans-serif`, ...(customBodyColor ? { color: customBodyColor } : {}) }}>
-                                    {creator.bio}
-                                </motion.p>
-                            )}
                         </motion.div>
 
                         {/* Tab Bar: Links / Shop / Music / Events */}

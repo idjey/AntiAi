@@ -65,6 +65,18 @@ export class AppearanceDto {
 
     @IsOptional()
     @IsString()
+    layout?: string;
+
+    @IsOptional()
+    @IsString()
+    avatar_shape?: string;
+
+    @IsOptional()
+    @IsString()
+    banner_image_url?: string;
+
+    @IsOptional()
+    @IsString()
     font_pair?: string;
 
     @IsOptional()
