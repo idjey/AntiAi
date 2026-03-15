@@ -32,7 +32,7 @@ export default function Footer() {
                                 </svg>
                             </div>
                             <span className="text-lg font-semibold text-text-primary">
-                                antiai<span className="text-primary">.me</span>
+                                antiAI<span className="text-primary">.me</span>
                             </span>
                         </Link>
                         <p className="text-sm text-text-secondary leading-relaxed max-w-xs">
@@ -101,7 +101,7 @@ export default function Footer() {
                 {/* Bottom bar */}
                 <div className="mt-12 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <p className="text-sm text-text-muted">
-                        © 2026 antiai.me. All rights reserved.
+                        © 2026 antiAI.me. All rights reserved.
                     </p>
                     <div className="flex items-center gap-6">
                         {/* Social icons */}

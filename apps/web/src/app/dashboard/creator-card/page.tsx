@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -384,6 +384,22 @@ const COLOR_PALETTES = [
     { name: 'Candy', heading: '#EA80FC', body: '#FF80AB' },
 ];
 
+// ======= CREATOR CARD LAYOUTS =======
+const LAYOUTS = [
+    { id: 'classic', name: 'Classic', description: 'Standard centered layout', tier: 'free' },
+    { id: 'showcase', name: 'Showcase', description: 'Modern split layout', tier: 'pro' },
+    { id: 'hero', name: 'Hero Cover', description: 'Premium banner layout', tier: 'elite' },
+];
+
+// ======= AVATAR SHAPES =======
+const SHAPES = [
+    { id: 'circle', name: 'Circle', tier: 'free' },
+    { id: 'squircle', name: 'Squircle', tier: 'pro' },
+    { id: 'hexagon', name: 'Hexagon', tier: 'pro' },
+    { id: 'archway', name: 'Archway', tier: 'elite' },
+    { id: 'starburst', name: 'Starburst', tier: 'elite' },
+];
+
 const ALL_FONTS_LIST = Array.from(new Set(FONT_PAIRS.flatMap(fp => [fp.heading, fp.body])));
 const GOOGLE_FONTS_URL = `https://fonts.googleapis.com/css2?${ALL_FONTS_LIST.map(f => `family=${f.replace(/ /g, '+')}:wght@400;700`).join('&')}&display=swap`;
 
@@ -542,6 +558,10 @@ export default function CreatorCardPage() {
         font_pair: 'clean',
         heading_color: '',
         body_color: '',
+        // Layouts & Shapes
+        layout: 'classic',
+        avatar_shape: 'circle',
+        banner_image_url: '',
     });
 
     // Scatter Pattern State
@@ -1758,6 +1778,137 @@ export default function CreatorCardPage() {
                                             </div>
                                         );
                                     })}
+                                </AccordionContent>
+                            </AccordionItem>
+
+                            {/* ═══ SECTION: LAYOUTS & SHAPES ═══ */}
+                            <AccordionItem value="layouts_shapes" className="bg-surface border border-border rounded-xl px-5 border-b-0 shadow-sm">
+                                <AccordionTrigger className="hover:no-underline py-5 text-sm font-bold text-text-primary uppercase tracking-wider text-left">
+                                    <div className="flex items-center gap-2">
+                                        <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                                        </svg>
+                                        Layouts & Shapes
+                                        <InfoTooltip content="Customize the structure of your card and the shape of your profile picture. Some layouts and shapes require Pro or Elite plans." />
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pb-5 pt-1 space-y-8">
+                                    {/* Layout Selection */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-sm font-bold text-text-secondary uppercase tracking-wider">Card Layout</h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                            {LAYOUTS.map(layout => {
+                                                const isActive = appearance.layout === layout.id;
+                                                const isLocked = (layout.tier === 'pro' && !isPro) || (layout.tier === 'elite' && profile?.plan !== 'elite');
+                                                
+                                                return (
+                                                    <button
+                                                        key={layout.id}
+                                                        onClick={() => {
+                                                            if (!isLocked) setAppearance(prev => ({ ...prev, layout: layout.id }));
+                                                        }}
+                                                        className={`relative flex flex-col p-4 rounded-xl border text-left transition-all duration-200 ${isActive ? 'border-primary bg-primary/10 ring-1 ring-primary shadow-sm' : 'border-border bg-surface-light hover:border-primary/50'} ${isLocked ? 'opacity-60 grayscale cursor-not-allowed' : 'hover:scale-[1.02]'}`}
+                                                    >
+                                                        {isLocked && (
+                                                            <div className="absolute top-2 right-2">
+                                                                <span className="text-[9px] font-bold bg-[#fbbf24] text-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider flex items-center gap-1">
+                                                                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                                                    {layout.tier}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        <span className="font-bold text-text-primary mb-1">{layout.name}</span>
+                                                        <span className="text-xs text-text-muted">{layout.description}</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Shape Selection */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-sm font-bold text-text-secondary uppercase tracking-wider">Avatar Shape</h3>
+                                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                                            {SHAPES.map(shape => {
+                                                const isActive = appearance.avatar_shape === shape.id;
+                                                const isLocked = (shape.tier === 'pro' && !isPro) || (shape.tier === 'elite' && profile?.plan !== 'elite');
+                                                
+                                                // Preview shape CSS classes
+                                                let shapeClass = 'rounded-full';
+                                                let styleObj = {};
+                                                if (shape.id === 'squircle') shapeClass = 'rounded-2xl';
+                                                else if (shape.id === 'hexagon') styleObj = { clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' };
+                                                else if (shape.id === 'archway') shapeClass = 'rounded-t-full rounded-b-md';
+                                                else if (shape.id === 'starburst') styleObj = { clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' };
+
+                                                return (
+                                                    <button
+                                                        key={shape.id}
+                                                        onClick={() => {
+                                                            if (!isLocked) setAppearance(prev => ({ ...prev, avatar_shape: shape.id }));
+                                                        }}
+                                                        title={shape.name}
+                                                        className={`relative flex flex-col items-center p-3 rounded-xl border transition-all duration-200 ${isActive ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-border bg-surface-light hover:border-primary/50'} ${isLocked ? 'opacity-60 cursor-not-allowed' : 'hover:scale-[1.05]'}`}
+                                                    >
+                                                        {isLocked && (
+                                                            <div className="absolute -top-1.5 -right-1.5 z-10">
+                                                                <span className="flex items-center justify-center w-5 h-5 bg-surface-dark rounded-full shadow-sm text-[#fbbf24] border border-[#fbbf24]/30">
+                                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        <div className={`w-10 h-10 bg-primary/20 bg-gradient-to-br from-primary/40 to-primary/10 mb-2 border border-primary/30 ${shapeClass}`} style={styleObj} />
+                                                        <span className="text-[10px] font-bold text-text-secondary w-full truncate">{shape.name}</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Upload Banner Section (for Hero layout) */}
+                                    {appearance.layout === 'hero' && (
+                                        <div className="pt-4 border-t border-border mt-6 space-y-4 animate-in fade-in slide-in-from-top-2">
+                                            <h3 className="text-sm font-bold text-text-secondary uppercase tracking-wider">Cover Banner Image</h3>
+                                            <div className="relative border-2 border-dashed border-border rounded-xl aspect-[3/1] bg-surface-dark flex items-center justify-center overflow-hidden hover:border-primary/50 transition-colors group">
+                                                {appearance.banner_image_url ? (
+                                                    // eslint-disable-next-line @next/next/no-img-element
+                                                    <img src={appearance.banner_image_url} alt="Banner" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="text-center text-text-muted group-hover:text-primary transition-colors">
+                                                        <svg className="w-8 h-8 mx-auto mb-2 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                        </svg>
+                                                        <span className="text-sm font-medium">Upload Banner Image</span>
+                                                    </div>
+                                                )}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (!file) return;
+                                                        const token = localStorage.getItem('token');
+                                                        const formData = new FormData();
+                                                        formData.append('file', file);
+                                                        try {
+                                                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/upload/image`, {
+                                                                method: 'POST',
+                                                                headers: { 'Authorization': `Bearer ${token}` },
+                                                                body: formData
+                                                            });
+                                                            if (res.ok) {
+                                                                const data = await res.json();
+                                                                setAppearance(prev => ({ ...prev, banner_image_url: data.url }));
+                                                            }
+                                                        } catch (err) {
+                                                            console.error('Failed to upload banner', err);
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </AccordionContent>
                             </AccordionItem>
 
@@ -3007,30 +3158,61 @@ export default function CreatorCardPage() {
                                             className={`w-auto absolute bottom-6 transition-all duration-500 ${appearance.logo_position === 'bottom_left' ? 'left-6' : 'right-6'}`}
                                         />
                                     )}
-
-                                    <div className="relative mt-8 group">
-                                        <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-white/20 shadow-xl relative z-10 bg-surface transition-transform duration-300 group-hover:scale-105">
-                                            {profile?.avatar_url ? (
-                                                <img src={profile.avatar_url} className="w-full h-full object-cover relative z-10" />
+                                    {/* --- PROFILE HEADER BLOCKS (Layouts & Shapes) --- */}
+                                    {appearance.layout === 'hero' && (
+                                        <div className="absolute top-0 left-0 w-full h-32 bg-surface-dark/50 z-0">
+                                            {appearance.banner_image_url ? (
+                                                // eslint-disable-next-line @next/next/no-img-element
+                                                <img src={appearance.banner_image_url} className="w-full h-full object-cover opacity-80" alt="Banner" />
                                             ) : (
-                                                <div className="w-full h-full bg-primary/20 flex items-center justify-center text-xl font-bold relative z-10">{profile?.display_name?.charAt(0)}</div>
+                                                <div className="w-full h-full bg-gradient-to-r from-primary/20 to-primary/5" />
+                                            )}
+                                            {/* Gradient fade to blend into background */}
+                                            <div className="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-t" style={{ backgroundImage: `linear-gradient(to top, ${appearance.public_background_color || appearance.background_color || '#000'}, transparent)` }} />
+                                        </div>
+                                    )}
+
+                                    {/* Profile Info Block */}
+                                    <div className={`relative z-10 w-full flex ${appearance.layout === 'showcase' ? 'flex-row items-center gap-5 px-4 pt-10 pb-2' : appearance.layout === 'hero' ? 'flex-col items-center mt-12' : 'flex-col items-center mt-8'}`}>
+                                        
+                                        {/* Avatar Container */}
+                                        <div className="relative group shrink-0">
+                                            <div 
+                                                className="w-24 h-24 overflow-hidden border-2 border-white/20 shadow-xl relative z-10 bg-surface transition-all duration-300 group-hover:scale-105"
+                                                style={{
+                                                    ...(appearance.avatar_shape === 'squircle' ? { borderRadius: '25%' } : 
+                                                        appearance.avatar_shape === 'hexagon' ? { clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)', borderRadius: '0' } :
+                                                        appearance.avatar_shape === 'archway' ? { borderTopLeftRadius: '50%', borderTopRightRadius: '50%', borderBottomLeftRadius: '10%', borderBottomRightRadius: '10%' } :
+                                                        appearance.avatar_shape === 'starburst' ? { clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)', borderRadius: '0' } :
+                                                        { borderRadius: '50%' })
+                                                }}
+                                            >
+                                                {profile?.avatar_url ? (
+                                                    // eslint-disable-next-line @next/next/no-img-element
+                                                    <img src={profile.avatar_url} className="w-full h-full object-cover relative z-10" alt="Avatar" />
+                                                ) : (
+                                                    <div className="w-full h-full bg-primary/20 flex items-center justify-center text-xl font-bold relative z-10">{profile?.display_name?.charAt(0) || '?'}</div>
+                                                )}
+                                            </div>
+                                            <div className="absolute inset-0 bg-primary/30 blur-xl scale-110 -z-0 transition-colors duration-300 pointer-events-none" style={{ backgroundColor: appearance.primary_color, borderRadius: appearance.avatar_shape === 'circle' ? '50%' : '25%' }} />
+                                            
+                                            {/* Auras */}
+                                            {appearance.avatar_aura === 'solid' && (
+                                                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md pointer-events-none" style={{ backgroundColor: appearance.primary_color, transform: 'scale(1.3)', borderRadius: appearance.avatar_shape === 'circle' ? '50%' : '25%' }} />
+                                            )}
+                                            {appearance.avatar_aura === 'rainbow' && (
+                                                <div className="absolute -inset-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-lg pointer-events-none animate-spin-slow" style={{ borderRadius: '50%', background: 'conic-gradient(from 0deg, #ff0000, #ff8000, #ffff00, #00ff00, #0000ff, #4b0082, #ee82ee, #ff0000)' }} />
+                                            )}
+                                            {appearance.avatar_aura === 'pulse' && (
+                                                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-500 blur-sm pointer-events-none" style={{ backgroundColor: appearance.primary_color, borderRadius: appearance.avatar_shape === 'circle' ? '50%' : '25%' }} />
                                             )}
                                         </div>
-                                        <div className="absolute inset-0 bg-primary/30 blur-xl rounded-full scale-110 -z-0 transition-colors duration-300 pointer-events-none" style={{ backgroundColor: appearance.primary_color }} />
-                                        {appearance.avatar_aura === 'solid' && (
-                                            <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md pointer-events-none" style={{ backgroundColor: appearance.primary_color, transform: 'scale(1.3)' }} />
-                                        )}
-                                        {appearance.avatar_aura === 'rainbow' && (
-                                            <div className="absolute -inset-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-lg pointer-events-none animate-spin-slow" style={{ background: 'conic-gradient(from 0deg, #ff0000, #ff8000, #ffff00, #00ff00, #0000ff, #4b0082, #ee82ee, #ff0000)' }} />
-                                        )}
-                                        {appearance.avatar_aura === 'pulse' && (
-                                            <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-500 blur-sm pointer-events-none" style={{ backgroundColor: appearance.primary_color }} />
-                                        )}
-                                    </div>
 
-                                    <div className="text-center space-y-1">
-                                        <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: previewHeadingFont, ...(customHeadingColor ? { color: customHeadingColor } : {}) }}>{profile?.display_name || 'Your Name'}</h1>
-                                        <p className="text-sm opacity-70" style={{ fontFamily: previewBodyFont, ...(customBodyColor ? { color: customBodyColor } : {}) }}>@{profile?.handle || 'username'}</p>
+                                        {/* Text Container */}
+                                        <div className={`${appearance.layout === 'showcase' ? 'text-left space-y-0.5 mt-0' : 'text-center space-y-1 mt-4'}`}>
+                                            <h1 className={`${appearance.layout === 'showcase' ? 'text-2xl' : 'text-xl'} font-bold tracking-tight`} style={{ fontFamily: previewHeadingFont, ...(customHeadingColor ? { color: customHeadingColor } : {}) }}>{profile?.display_name || 'Your Name'}</h1>
+                                            <p className="text-sm opacity-70" style={{ fontFamily: previewBodyFont, ...(customBodyColor ? { color: customBodyColor } : {}) }}>@{profile?.handle || 'username'}</p>
+                                        </div>
                                     </div>
 
                                     <div className={`w-full gap-3 ${appearance.link_style === 'grid' ? 'grid grid-cols-2' : appearance.link_style === 'row' ? 'flex flex-wrap justify-center' : 'grid grid-cols-1'}`}>
