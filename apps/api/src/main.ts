@@ -95,6 +95,15 @@ if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
 
 // Vercel Serverless Function export
 export default async (req: any, res: any) => {
-    const server = await bootstrap();
-    return server(req, res);
+    try {
+        const server = await bootstrap();
+        return server(req, res);
+    } catch (error: any) {
+        console.error("Critical Vercel Bootstrap Error:", error);
+        return res.status(500).json({
+            error: "FUNCTION_INVOCATION_FAILED_CUSTOM",
+            message: error.message || "Unknown error",
+            stack: error.stack
+        });
+    }
 };
