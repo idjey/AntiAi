@@ -18,11 +18,19 @@ export class AnalyticsController {
         const userAgent = body.userAgent || req.headers['user-agent'];
         const referer = body.referer || req.headers['referer'];
 
+        // Vercel Geolocation Headers
+        const country = req.headers['x-vercel-ip-country'] as string | undefined;
+        const region = req.headers['x-vercel-ip-country-region'] as string | undefined;
+        const city = req.headers['x-vercel-ip-city'] as string | undefined;
+
         return this.analyticsService.trackEvent({
             creatorId: body.creatorId,
             type: body.type,
             entityId: body.entityId,
             ip,
+            country,
+            region,
+            city,
             userAgent,
             referer,
             scrollDepth: body.scrollDepth,
