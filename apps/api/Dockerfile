@@ -38,15 +38,22 @@ RUN npx nest build
 
 # =========================================
 # Stage 2: Runner (lean production image)
+# Uses Debian-slim — required for Prisma's
+# debian-openssl-3.0.x query engine binary.
+# Alpine (musl) is NOT compatible with the
+# glibc-based Prisma binaries.
 # =========================================
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install production-only native deps
-RUN apk add --no-cache dumb-init
+# dumb-init for proper signal handling in containers
+RUN apt-get update && apt-get install -y --no-install-recommends dumb-init && rm -rf /var/lib/apt/lists/*
+
+# Create uploads directory (required by ServeStaticModule)
+RUN mkdir -p /app/apps/api/uploads
 
 # Copy production node_modules from builder
 COPY --from=builder /app/node_modules ./node_modules
