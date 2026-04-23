@@ -1,0 +1,41 @@
+# Version control
+.git
+.gitignore
+
+# Environment files (secrets are injected by Cloud Run)
+.env
+.env.*
+!.env.example
+
+# Build artifacts
+**/dist
+**/.next
+**/node_modules
+
+# Logs
+**/*.log
+**/logs
+
+# Dev tooling
+**/.eslintrc*
+**/*.md
+**/*.pdf
+
+# Tests
+**/test
+**/*.spec.ts
+**/*.test.ts
+
+# Local docker compose (not needed in image)
+docker-compose.yml
+
+# Extension apps (not part of the web/api deploy)
+apps-extension
+apps-extension-v2
+apps/extension_v2
+
+# Misc
+**/.DS_Store
+**/Thumbs.db
+stripe/
+scripts/
