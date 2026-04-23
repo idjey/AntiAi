@@ -3,12 +3,12 @@
 # Build context must be the MONOREPO ROOT
 # docker build -f apps/api/Dockerfile .
 # =========================================
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# Install build deps for native modules (bcrypt, sharp)
-RUN apk add --no-cache python3 make g++
+# Install build tools for native modules (bcrypt, sharp)
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 # Copy package manifests first for better layer caching
 COPY package.json package-lock.json ./
