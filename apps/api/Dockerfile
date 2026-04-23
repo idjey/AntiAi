@@ -58,16 +58,10 @@ RUN mkdir -p /app/apps/api/uploads
 # Copy production node_modules from builder
 COPY --from=builder /app/node_modules ./node_modules
 
-# Copy built packages
-COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
-COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.json
-COPY --from=builder /app/packages/crypto/dist ./packages/crypto/dist
-COPY --from=builder /app/packages/crypto/package.json ./packages/crypto/package.json
-COPY --from=builder /app/packages/database/dist ./packages/database/dist
-COPY --from=builder /app/packages/database/package.json ./packages/database/package.json
-
-# Copy Prisma schema and generated client
-COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
+# Copy all packages from builder — this includes dist/, package.json,
+# AND any package-level node_modules/ (e.g. @noble/ed25519 in packages/crypto)
+# that npm did not hoist to the root node_modules.
+COPY --from=builder /app/packages ./packages
 
 # Copy API dist
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
