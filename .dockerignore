@@ -12,9 +12,8 @@
 **/.next
 **/node_modules
 
-# Logs
+# Log files only (NOT source directories named 'logs')
 **/*.log
-**/logs
 
 # Dev tooling
 **/.eslintrc*
