@@ -1,13 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AnalyticsGateway } from './analytics.gateway';
 
 @Injectable()
 export class AnalyticsCronService {
     private readonly logger = new Logger(AnalyticsCronService.name);
 
     constructor(
-        private readonly prisma: PrismaService
+        private readonly prisma: PrismaService,
+        private readonly gateway: AnalyticsGateway
     ) { }
 
     // Run every 10 minutes to detect massive traffic anomalies
@@ -84,7 +86,8 @@ export class AnalyticsCronService {
                     }
                 });
 
-                // We will rely on Next.js/Supabase polling or SSE for admin alerts now, removed WebSocket emit.
+                // Instantly broadcast via WebSockets to Admins who have God Mode open
+                this.gateway.server.emit('admin_alert', alert);
             }
         }
     }

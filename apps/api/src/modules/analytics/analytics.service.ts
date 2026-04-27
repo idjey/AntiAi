@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import * as geoip from 'geoip-lite';
 import { UAParser } from 'ua-parser-js';
 import * as crypto from 'crypto';
 
@@ -8,9 +9,6 @@ export interface TrackEventDto {
     type: 'view' | 'click' | 'dwell';
     entityId?: string; // Link ID or Profile ID
     ip?: string;
-    country?: string;
-    region?: string;
-    city?: string;
     userAgent?: string;
     referer?: string;
     scrollDepth?: number;
@@ -34,10 +32,19 @@ export class AnalyticsService {
             const os = parser.getOS().name;
             const browser = parser.getBrowser().name;
 
-            // Geolocation from Vercel headers
-            const country = dto.country || null;
-            const region = dto.region || null;
-            const city = dto.city || null;
+            // GeoIP Lookup
+            let country = null;
+            let region = null;
+            let city = null;
+
+            if (dto.ip) {
+                const geo = geoip.lookup(dto.ip);
+                if (geo) {
+                    country = geo.country || null;
+                    region = geo.region || null;
+                    city = geo.city || null;
+                }
+            }
 
             // Anonymize IP
             const ipHash = dto.ip ? crypto.createHash('sha256').update(dto.ip).digest('hex').substring(0, 16) : null;
