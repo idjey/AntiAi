@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/lib/supabase';
+import { io } from 'socket.io-client';
 import { SocialIcon } from '@/components/SocialIcon';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { ShareDialog } from '@/components/share-dialog';
@@ -194,19 +194,14 @@ export const PublicProfile = ({ creator }: Props) => {
 
         trackView();
 
-        // Establish Supabase Presence
-        let channel: any = null;
-        if (supabase) {
-            channel = supabase.channel('global:online_users');
-            channel.subscribe(async (status: string) => {
-                if (status === 'SUBSCRIBED') {
-                    await channel.track({
-                        page: creator.id,
-                        online_at: new Date().toISOString(),
-                    });
-                }
-            });
-        }
+        // Establish Live Pulse Socket
+        const socket = io(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/analytics`, {
+            transports: ['websocket', 'polling']
+        });
+
+        socket.on('connect_error', (err) => {
+            console.warn('Socket connection error:', err.message);
+        });
 
         // Initialize Session Dwell Timers & Scroll Trackers
         const sessionStartTime = Date.now();
@@ -259,9 +254,7 @@ export const PublicProfile = ({ creator }: Props) => {
 
         // Cleanup on unmount
         return () => {
-            if (channel && supabase) {
-                supabase.removeChannel(channel);
-            }
+            socket.disconnect();
             window.removeEventListener('scroll', handleScroll);
             window.removeEventListener('beforeunload', handleBeforeUnload);
             // Also fire the dwell exit payload right here just in case it was a frontend SPA router change instead of a raw tab close
