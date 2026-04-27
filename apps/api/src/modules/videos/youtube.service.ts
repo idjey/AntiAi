@@ -1,15 +1,20 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { google, youtube_v3 } from 'googleapis';
 
 @Injectable()
 export class YoutubeService {
     private readonly logger = new Logger(YoutubeService.name);
-    private readonly apiKey: string;
+    private youtube: youtube_v3.Youtube;
 
     constructor() {
         if (!process.env.YOUTUBE_API_KEY) {
             this.logger.warn('YOUTUBE_API_KEY is not set in environment variables');
         }
-        this.apiKey = process.env.YOUTUBE_API_KEY || '';
+
+        this.youtube = google.youtube({
+            version: 'v3',
+            auth: process.env.YOUTUBE_API_KEY,
+        });
     }
 
     /**
@@ -18,25 +23,26 @@ export class YoutubeService {
      */
     async getChannelUploadsPlaylistId(channelIdentifier: string): Promise<string | null> {
         try {
-            let url = `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&key=${this.apiKey}`;
+            let requestParams: youtube_v3.Params$Resource$Channels$List = {
+                part: ['contentDetails'],
+            };
 
             // Basic parsing to distinguish ID vs Handle
             if (channelIdentifier.startsWith('@')) {
-                url += `&forHandle=${encodeURIComponent(channelIdentifier)}`;
+                requestParams.forHandle = channelIdentifier;
             } else if (channelIdentifier.startsWith('UC') && channelIdentifier.length === 24) {
-                url += `&id=${encodeURIComponent(channelIdentifier)}`;
+                requestParams.id = [channelIdentifier];
             } else {
                 throw new BadRequestException('Invalid channel identifier (must be a @handle or a 24-char UC... ID)');
             }
 
-            const res = await fetch(url);
-            const data: any = await res.json();
+            const response: any = await this.youtube.channels.list(requestParams as any);
 
-            if (!data.items || data.items.length === 0) {
+            if (!response.data.items || response.data.items.length === 0) {
                 return null;
             }
 
-            const uploadsPlaylistId = data.items[0].contentDetails?.relatedPlaylists?.uploads;
+            const uploadsPlaylistId = response.data.items[0].contentDetails?.relatedPlaylists?.uploads;
             return uploadsPlaylistId || null;
         } catch (error: any) {
             this.logger.error(`Error fetching uploads playlist for ${channelIdentifier}: ${error.message}`, error.stack);
@@ -53,16 +59,15 @@ export class YoutubeService {
 
         try {
             do {
-                let url = `https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails,snippet&playlistId=${encodeURIComponent(playlistId)}&maxResults=50&key=${this.apiKey}`;
-                if (nextPageToken) {
-                    url += `&pageToken=${encodeURIComponent(nextPageToken)}`;
-                }
+                const response: any = await this.youtube.playlistItems.list({
+                    part: ['contentDetails', 'snippet'],
+                    playlistId: playlistId,
+                    maxResults: 50,
+                    pageToken: nextPageToken || undefined,
+                } as any);
 
-                const res = await fetch(url);
-                const data: any = await res.json();
-
-                if (data.items) {
-                    for (const item of data.items) {
+                if (response.data.items) {
+                    for (const item of response.data.items) {
                         const videoId = item.contentDetails?.videoId;
                         if (videoId) {
                             const snippet = item.snippet;
@@ -77,7 +82,7 @@ export class YoutubeService {
                     }
                 }
 
-                nextPageToken = data.nextPageToken;
+                nextPageToken = response.data.nextPageToken;
             } while (nextPageToken);
 
             return videos;

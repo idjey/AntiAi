@@ -7,8 +7,7 @@ import {
     BarChart, Bar
 } from 'recharts'
 import { Activity, MousePointerClick, Users, TrendingUp, RefreshCcw, Radio, Megaphone } from 'lucide-react'
-// import { io } from 'socket.io-client'
-import { supabase } from '@/lib/supabase'
+import { io } from 'socket.io-client'
 import { WorldMap } from '@/components/admin/WorldMap'
 import { Toaster, toast } from 'sonner'
 
@@ -100,30 +99,30 @@ export default function AdminOverviewPage() {
         fetchEvents()
     }, [eventsPage, refreshTrigger])
 
-    // Establish Supabase Presence Connection for Live Pulse
+    // Establish WebSocket Connection for Live Pulse
     useEffect(() => {
-        if (!supabase) return;
+        const socket = io(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/analytics`, {
+            transports: ['websocket', 'polling']
+        })
 
-        const channel = supabase.channel('global:online_users');
+        socket.on('liveUsersCount', (data: { count: number }) => {
+            setLiveUsers(data.count)
+        })
 
-        channel.on('presence', { event: 'sync' }, () => {
-            const newState = channel.presenceState();
-            let count = 0;
-            for (const id in newState) {
-                count += newState[id].length;
+        socket.on('admin_alert', (alert: any) => {
+            if (alert.type === 'VIRAL_VELOCITY') {
+                toast.error(alert.message, {
+                    description: `Spike detected! Traffic jumped from ${alert.data.baseline}/10m up to ${alert.data.current}/10m! 🚀`
+                })
             }
-            setLiveUsers(count);
-        });
+        })
 
-        // We also used to receive admin_alert here via sockets, but for now we'll have to rely on Next.js/Supabase polling or DB webhooks for alerts.
-        // We will leave the toast logic here for reference if we implement Supabase Realtime DB listening later.
-
-        channel.subscribe();
+        socket.on('connect_error', (error) => {
+            console.warn('Dashboard socket error:', error.message)
+        })
 
         return () => {
-            if (channel && supabase) {
-                supabase.removeChannel(channel);
-            }
+            socket.disconnect()
         }
     }, [])
 
