@@ -156,13 +156,16 @@ function IndexPopup() {
                     <span className={`text-sm font-semibold tracking-wide flex-none ${isEnabled ? 'text-primary' : 'text-zinc-500'}`}>
                         {isEnabled ? 'Protection Active' : 'Extension Disabled'}
                     </span>
-                    <button
-                        onClick={toggleEnabled}
-                        className={`w-12 h-6 rounded-full relative transition-colors duration-300 shadow-inner flex-none ${isEnabled ? 'bg-primary' : 'bg-zinc-700'}`}
-                        aria-label="Toggle Extension"
-                    >
-                        <div className={`w-5 h-5 rounded-full bg-white absolute top-0.5 left-0.5 shadow-[0_1px_3px_rgba(0,0,0,0.3)] transition-transform duration-300 ease-in-out ${isEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
-                    </button>
+                    <div className="bauble_box flex-none">
+                        <input
+                            type="checkbox"
+                            className="bauble_input"
+                            id="bauble_toggle"
+                            checked={!isEnabled}
+                            onChange={toggleEnabled}
+                        />
+                        <label className="bauble_label" htmlFor="bauble_toggle" />
+                    </div>
                 </div>
             </div>
             
