@@ -8,6 +8,7 @@ export const config: PlasmoCSConfig = {
 }
 
 let currentVideoId: string | null = null
+let lastCheckedChannelId: string | null = null
 let isExtensionEnabled: boolean = true
 
 // Helper to get video ID from URL
@@ -20,7 +21,59 @@ const getVideoId = (url: string) => {
     }
 }
 
-// Function to check content
+// ── Channel-level check ────────────────────────────────────────────
+// Scrapes the channel identifier from the YouTube watch page and
+// asks the background service to verify it. This triggers a one-time
+// icon blink (green = verified channel, red = unverified channel).
+const checkChannel = async () => {
+    if (!isExtensionEnabled) return
+
+    // YouTube surfaces the channel link in the watch page metadata
+    const channelLink =
+        document.querySelector('ytd-watch-metadata ytd-channel-name a') ||
+        document.querySelector('#owner a[href*="/@"]') ||
+        document.querySelector('#channel-name a')
+
+    if (!channelLink) {
+        console.log('[AntiAI] Channel link not found yet, will retry...')
+        return
+    }
+
+    const href = channelLink.getAttribute('href') || ''
+    // Extract @handle or /channel/UC... from the href
+    let channelId: string | null = null
+    if (href.startsWith('/@')) {
+        channelId = href // e.g. "/@MrBeast"
+    } else if (href.includes('/channel/')) {
+        channelId = href.split('/channel/')[1] || null
+    }
+
+    if (!channelId || channelId === lastCheckedChannelId) return
+    lastCheckedChannelId = channelId
+
+    console.log(`[AntiAI] Checking channel: ${channelId}`)
+
+    try {
+        await new Promise<any>((resolve) => {
+            chrome.runtime.sendMessage({
+                action: "checkChannel",
+                channelId: channelId
+            }, (response) => {
+                if (chrome.runtime.lastError) {
+                    console.error("[AntiAI] sendMessage error:", chrome.runtime.lastError)
+                    resolve(null)
+                    return
+                }
+                console.log(`[AntiAI] Channel response:`, response)
+                resolve(response)
+            })
+        })
+    } catch (err) {
+        console.error('[AntiAI] Channel check failed', err)
+    }
+}
+
+// ── Video-level check ──────────────────────────────────────────────
 const checkContent = async (videoId: string) => {
     if (!isExtensionEnabled) return;
     console.log(`[AntiAI] Checking video: ${videoId}`)
@@ -45,9 +98,6 @@ const checkContent = async (videoId: string) => {
 
         console.log(`[AntiAI] Verified: ${isVerified}`, data)
 
-        // Background handles icon update now.
-        // We just handle the badge.
-
         if (isVerified) {
             injectBadge(data)
         } else {
@@ -66,9 +116,6 @@ const checkContent = async (videoId: string) => {
 function injectBadge(data: any) {
     // avoid duplicates
     if (document.querySelector('.antiai-badge')) return;
-
-    // Use a simpler, more robust search or observer
-    // YouTube title: ytd-watch-metadata h1
 
     const tryInject = () => {
         const titleH1 = document.querySelector('ytd-watch-metadata h1') ||
@@ -95,7 +142,6 @@ function injectBadge(data: any) {
                 </div>
             `;
 
-            // Append to the H1 itself so it stays with the title
             titleH1.appendChild(badge);
             console.log('[AntiAI] Badge injected into H1.');
             return true;
@@ -104,12 +150,11 @@ function injectBadge(data: any) {
     };
 
     if (!tryInject()) {
-        // If not found yet, observe the DOM
         console.log('[AntiAI] Title not found, checking periodically...');
         let attempts = 0;
         const interval = setInterval(() => {
             attempts++;
-            if (tryInject() || attempts > 20) { // Max 10 seconds (500ms * 20)
+            if (tryInject() || attempts > 20) {
                 clearInterval(interval);
             }
         }, 500);
@@ -121,7 +166,7 @@ function removeBadge() {
     existing.forEach(el => el.remove());
 }
 
-// Initial check
+// ── Initialization ─────────────────────────────────────────────────
 const vId = getVideoId(window.location.href)
 if (vId) {
     currentVideoId = vId
@@ -131,6 +176,8 @@ chrome.storage.local.get(["antiAiEnabled"], (res) => {
     isExtensionEnabled = res.antiAiEnabled !== false; // default true
     if (isExtensionEnabled && currentVideoId) {
         checkContent(currentVideoId)
+        // Check channel after a short delay to let the DOM render
+        setTimeout(checkChannel, 2000)
     } else {
         // Set default icon
         chrome.runtime.sendMessage({ action: "updateIcon", verified: true })
@@ -146,23 +193,26 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             chrome.runtime.sendMessage({ action: "updateIcon", verified: true })
         } else if (currentVideoId) {
             checkContent(currentVideoId);
+            setTimeout(checkChannel, 1000)
         }
     }
 });
 
-// Listen for navigation (SPA)
-// YouTube dispatches custom events for navigation which is much more efficient than observing all DOM mutations.
+// ── SPA Navigation ─────────────────────────────────────────────────
 let lastUrl = location.href;
 
 const handleNavigation = () => {
     const url = location.href;
     if (url !== lastUrl) {
         lastUrl = url;
+        lastCheckedChannelId = null; // Reset channel check on navigation
         const newVid = getVideoId(url);
         if (newVid && newVid !== currentVideoId) {
             currentVideoId = newVid;
             if (isExtensionEnabled) {
                 checkContent(newVid);
+                // Channel check with delay for DOM to load
+                setTimeout(checkChannel, 2000)
             }
         } else if (!newVid) {
             currentVideoId = null;
