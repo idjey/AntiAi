@@ -28,27 +28,42 @@ const getVideoId = (url: string) => {
 const checkChannel = async () => {
     if (!isExtensionEnabled) return
 
-    // YouTube surfaces the channel link in the watch page metadata
-    const channelLink =
-        document.querySelector('ytd-watch-metadata ytd-channel-name a') ||
-        document.querySelector('#owner a[href*="/@"]') ||
-        document.querySelector('#channel-name a')
+    let channelId: string | null = null
 
-    if (!channelLink) {
+    // First, check if we are currently ON a channel page (URL-based)
+    const urlObj = new URL(window.location.href)
+    const path = urlObj.pathname
+    if (path.startsWith('/@')) {
+        channelId = path // e.g. "/@MrBeast"
+    } else if (path.startsWith('/channel/')) {
+        channelId = path.split('/channel/')[1] || null
+    } else if (path.startsWith('/c/')) {
+        channelId = path.split('/c/')[1] || null
+    }
+
+    // If not on a channel page, try to extract from watch page metadata
+    if (!channelId) {
+        const channelLink =
+            document.querySelector('ytd-watch-metadata ytd-channel-name a') ||
+            document.querySelector('#owner a[href*="/@"]') ||
+            document.querySelector('#channel-name a')
+
+        if (channelLink) {
+            const href = channelLink.getAttribute('href') || ''
+            if (href.startsWith('/@')) {
+                channelId = href
+            } else if (href.includes('/channel/')) {
+                channelId = href.split('/channel/')[1] || null
+            }
+        }
+    }
+
+    if (!channelId) {
         console.log('[AntiAI] Channel link not found yet, will retry...')
         return
     }
 
-    const href = channelLink.getAttribute('href') || ''
-    // Extract @handle or /channel/UC... from the href
-    let channelId: string | null = null
-    if (href.startsWith('/@')) {
-        channelId = href // e.g. "/@MrBeast"
-    } else if (href.includes('/channel/')) {
-        channelId = href.split('/channel/')[1] || null
-    }
-
-    if (!channelId || channelId === lastCheckedChannelId) return
+    if (channelId === lastCheckedChannelId) return
     lastCheckedChannelId = channelId
 
     console.log(`[AntiAI] Checking channel: ${channelId}`)
@@ -130,17 +145,42 @@ function injectBadge(data: any) {
             badge.className = 'antiai-badge';
             badge.href = `https://antiai.me/verify/${data.youtube_video_id}`;
             badge.target = '_blank';
-            badge.innerHTML = `
-                <svg viewBox="0 0 24 24" class="antiai-icon">
-                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
-                </svg>
-                <span class="antiai-text">Verified</span>
-                <div class="antiai-tooltip">
-                    <strong>Authenticated Content</strong><br>
-                    This video has a cryptographic proof on the AntiAI Transparency Log.<br>
-                    <span>Click to verify</span>
-                </div>
-            `;
+            const svgNS = "http://www.w3.org/2000/svg";
+            const svg = document.createElementNS(svgNS, "svg");
+            svg.setAttribute("viewBox", "0 0 24 24");
+            svg.setAttribute("class", "antiai-icon");
+            const path = document.createElementNS(svgNS, "path");
+            path.setAttribute("d", "M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z");
+            svg.appendChild(path);
+
+            const span = document.createElement('span');
+            span.className = 'antiai-text';
+            span.textContent = 'Verified';
+
+            const tooltip = document.createElement('div');
+            tooltip.className = 'antiai-tooltip';
+            
+            const strong = document.createElement('strong');
+            strong.textContent = 'Authenticated Content';
+            
+            const br1 = document.createElement('br');
+            
+            const textNode = document.createTextNode('This video has a cryptographic proof on the AntiAI Transparency Log.');
+            
+            const br2 = document.createElement('br');
+            
+            const clickSpan = document.createElement('span');
+            clickSpan.textContent = 'Click to verify';
+
+            tooltip.appendChild(strong);
+            tooltip.appendChild(br1);
+            tooltip.appendChild(textNode);
+            tooltip.appendChild(br2);
+            tooltip.appendChild(clickSpan);
+
+            badge.appendChild(svg);
+            badge.appendChild(span);
+            badge.appendChild(tooltip);
 
             titleH1.appendChild(badge);
             console.log('[AntiAI] Badge injected into H1.');
@@ -174,9 +214,11 @@ if (vId) {
 
 chrome.storage.local.get(["antiAiEnabled"], (res) => {
     isExtensionEnabled = res.antiAiEnabled !== false; // default true
-    if (isExtensionEnabled && currentVideoId) {
-        checkContent(currentVideoId)
-        // Check channel after a short delay to let the DOM render
+    if (isExtensionEnabled) {
+        if (currentVideoId) {
+            checkContent(currentVideoId)
+        }
+        // Always check channel, whether on video page or channel page
         setTimeout(checkChannel, 2000)
     } else {
         // Set default icon
@@ -191,8 +233,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         if (!isExtensionEnabled) {
             removeBadge();
             chrome.runtime.sendMessage({ action: "updateIcon", verified: true })
-        } else if (currentVideoId) {
-            checkContent(currentVideoId);
+        } else {
+            if (currentVideoId) {
+                checkContent(currentVideoId);
+            }
             setTimeout(checkChannel, 1000)
         }
     }
@@ -207,6 +251,7 @@ const handleNavigation = () => {
         lastUrl = url;
         lastCheckedChannelId = null; // Reset channel check on navigation
         const newVid = getVideoId(url);
+        
         if (newVid && newVid !== currentVideoId) {
             currentVideoId = newVid;
             if (isExtensionEnabled) {
@@ -216,10 +261,14 @@ const handleNavigation = () => {
             }
         } else if (!newVid) {
             currentVideoId = null;
-            chrome.runtime.sendMessage({
-                action: "updateIcon",
-                verified: true
-            });
+            if (isExtensionEnabled) {
+                setTimeout(checkChannel, 2000)
+            } else {
+                chrome.runtime.sendMessage({
+                    action: "updateIcon",
+                    verified: true
+                });
+            }
         }
     }
 };
