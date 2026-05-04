@@ -1,5 +1,6 @@
 import iconGreen from "data-base64:~assets/status/verified.png"
 import iconRed from "data-base64:~assets/status/unverified.png"
+import iconDefault from "data-base64:~assets/icon.png"
 
 export { }
 
@@ -7,16 +8,10 @@ console.log("AntiAI Background Service Started")
 
 // ── Icon blink helper ──────────────────────────────────────────────
 // Rapidly toggles the extension icon between the coloured version and
-// transparent, producing a single "blink" effect visible in the toolbar.
+// default, producing a single "blink" effect visible in the toolbar.
 function blinkIcon(tabId: number, colorIcon: string, times = 2, intervalMs = 200) {
     let count = 0
     const total = times * 2 // on-off pairs
-
-    // Create a 1×1 transparent PNG as "off" frame
-    const canvas = new OffscreenCanvas(16, 16)
-    const ctx = canvas.getContext("2d")!
-    ctx.clearRect(0, 0, 16, 16)
-    const blankImageData = ctx.getImageData(0, 0, 16, 16)
 
     const actionAPI: any = chrome.action || (chrome as any).browserAction
     if (!actionAPI?.setIcon) return
@@ -29,8 +24,8 @@ function blinkIcon(tabId: number, colorIcon: string, times = 2, intervalMs = 200
             return
         }
         if (count % 2 === 0) {
-            // "off" frame — transparent
-            actionAPI.setIcon({ tabId, imageData: blankImageData })
+            // "off" frame — default icon
+            actionAPI.setIcon({ tabId, path: iconDefault })
         } else {
             // "on" frame — coloured
             actionAPI.setIcon({ tabId, path: colorIcon })

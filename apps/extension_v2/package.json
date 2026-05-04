@@ -1,7 +1,7 @@
 {
     "name": "antiai-extension",
     "displayName": "AntiAI",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "AntiAI Browser Extension",
     "author": "AntiAI",
     "scripts": {
