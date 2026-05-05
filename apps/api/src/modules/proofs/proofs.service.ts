@@ -102,8 +102,8 @@ export class ProofsService {
         try {
             signedProof = await signProof({
                 kid,
-                youtubeVideoId: video.youtubeVideoId,
-                youtubeChannelId: video.channel.youtubeChannelId,
+                youtubeVideoId: video.platformId,
+                youtubeChannelId: video.channel.platformId,
                 expiresAt,
                 privateKeyB64,
             });
@@ -137,8 +137,8 @@ export class ProofsService {
                 entityType: 'proof',
                 entityId: proof.id,
                 data: {
-                    video_id: video.youtubeVideoId,
-                    channel_id: video.channel.youtubeChannelId,
+                    video_id: video.platformId,
+                    channel_id: video.channel.platformId,
                     kid: signedProof.kid,
                 },
             },
@@ -178,8 +178,8 @@ export class ProofsService {
         const expiresAt = new Date(dto.expires_at);
         const signedProof = await signProof({
             kid,
-            youtubeVideoId: video.youtubeVideoId,
-            youtubeChannelId: video.channel.youtubeChannelId,
+            youtubeVideoId: video.platformId,
+            youtubeChannelId: video.channel.platformId,
             expiresAt,
             privateKeyB64,
         });
@@ -234,11 +234,9 @@ export class ProofsService {
         };
     }
 
-    async getActiveProofByVideoId(identifier: string): Promise<any> {
-        const isUuid = identifier.length === 36 && identifier.includes('-');
-
-        const video = await this.prisma.video.findFirst({
-            where: isUuid ? { id: identifier } : { youtubeVideoId: identifier },
+    async getActiveProofByPlatformId(platform: string, platformId: string): Promise<any> {
+        const video = await this.prisma.video.findUnique({
+            where: { platform_platformId: { platform, platformId } },
             include: {
                 channel: {
                     include: {
@@ -297,7 +295,7 @@ export class ProofsService {
             video: {
                 id: video.id,
                 title: video.title,
-                youtube_video_id: video.youtubeVideoId,
+                platform_id: video.platformId,
                 thumbnail_url: video.thumbnailUrl,
                 published_at: video.publishedAt,
             },
@@ -306,7 +304,7 @@ export class ProofsService {
                 name: video.channel.channelName,
                 handle: video.channel.channelHandle,
                 avatar_url: video.channel.avatarUrl,
-                youtube_channel_id: video.channel.youtubeChannelId,
+                platform_id: video.channel.platformId,
                 verification_status: video.channel.verificationStatus,
                 verified_at: video.channel.verifiedAt,
             },
@@ -314,10 +312,10 @@ export class ProofsService {
         };
     }
 
-    async getPublicProofByYoutubeId(youtubeVideoId: string) {
-        // Find video by YouTube ID
+    async getPublicProofByPlatformId(platform: string, platformId: string) {
+        // Find video by Platform ID
         const video = await this.prisma.video.findUnique({
-            where: { youtubeVideoId },
+            where: { platform_platformId: { platform, platformId } },
             include: {
                 channel: {
                     include: {
@@ -345,7 +343,7 @@ export class ProofsService {
             video: {
                 id: video.id,
                 title: video.title,
-                youtube_video_id: video.youtubeVideoId,
+                platform_id: video.platformId,
                 thumbnail_url: video.thumbnailUrl,
                 published_at: video.publishedAt,
             },
@@ -354,7 +352,7 @@ export class ProofsService {
                 name: video.channel.channelName,
                 handle: video.channel.channelHandle,
                 avatar_url: video.channel.avatarUrl,
-                youtube_channel_id: video.channel.youtubeChannelId,
+                platform_id: video.channel.platformId,
                 verification_status: video.channel.verificationStatus,
                 verified_at: video.channel.verifiedAt,
             },

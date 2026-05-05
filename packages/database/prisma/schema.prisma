@@ -187,7 +187,8 @@ model SigningKey {
 model Channel {
   id                 String             @id @default(uuid()) @db.Uuid
   userId             String             @map("user_id") @db.Uuid
-  youtubeChannelId   String             @unique @map("youtube_channel_id")
+  platform           String             @default("youtube") // 'youtube', 'tiktok', 'instagram', 'facebook'
+  platformId         String             @map("platform_id")
   channelHandle      String?            @map("channel_handle")
   channelName        String             @map("channel_name")
   channelUrl         String?            @map("channel_url")
@@ -209,7 +210,8 @@ model Channel {
   challenges Challenge[]
   reports    Report[]
 
-  @@unique([userId, youtubeChannelId])
+  @@unique([userId, platform, platformId])
+  @@unique([platform, platformId])
   @@index([userId])
   @@index([verificationStatus])
   @@map("channels")
@@ -220,7 +222,8 @@ model Channel {
 model Video {
   id             String    @id @default(uuid()) @db.Uuid
   channelId      String    @map("channel_id") @db.Uuid
-  youtubeVideoId String    @unique @map("youtube_video_id")
+  platform       String    @default("youtube") // 'youtube', 'tiktok', 'instagram', 'facebook'
+  platformId     String    @map("platform_id")
   title          String?
   videoUrl       String?   @map("video_url")
   thumbnailUrl   String?   @map("thumbnail_url")
@@ -234,7 +237,10 @@ model Video {
   challenges Challenge[]
   reports    Report[]
   featuredBy CreatorProfile[] // Profiles that feature this video
+  flags      ContentFlag[]
+  context    VideoContext?
 
+  @@unique([platform, platformId])
   @@index([channelId])
   @@index([publishedAt])
   @@map("videos")
@@ -564,4 +570,32 @@ model CouponRedemption {
   @@index([userId])
   @@index([source])
   @@map("coupon_redemptions")
+}
+
+// ==================== CROWDSOURCED INTELLIGENCE ====================
+
+model ContentFlag {
+  id          String   @id @default(uuid()) @db.Uuid
+  videoId     String   @map("video_id") @db.Uuid // Foreign key to Video.id
+  userId      String?  @map("user_id") @db.Uuid  // Optional: ID of the user flagging it
+  reason      String   // E.g., "Deepfake", "Voice Clone"
+  status      String   @default("pending") // pending, approved, rejected
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+  @@map("content_flags")
+}
+
+model VideoContext {
+  id          String   @id @default(uuid()) @db.Uuid
+  videoId     String   @unique @map("video_id") @db.Uuid // Foreign key to Video.id
+  note        String   // The public "Community Note"
+  approvedBy  String   @map("approved_by") @db.Uuid // Admin ID who approved it
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@map("video_contexts")
 }

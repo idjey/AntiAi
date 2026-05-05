@@ -11,22 +11,23 @@ export class PublicService {
         private readonly proofsService: ProofsService,
     ) { }
 
-    async verifyVideo(youtubeVideoId: string) {
-        if (!youtubeVideoId) {
+    async verifyVideo(platform: string, platformId: string) {
+        if (!platformId) {
             return {
                 status: 'unverified',
-                youtube_video_id: youtubeVideoId,
+                platform,
+                platform_id: platformId,
                 message: 'Missing video ID',
             };
         }
 
-        const result = await this.proofsService.getActiveProofByVideoId(youtubeVideoId);
+        const result = await this.proofsService.getActiveProofByPlatformId(platform, platformId);
 
         if (!result) {
             return {
                 status: 'unverified',
-                youtube_video_id: youtubeVideoId,
-                youtube_channel_id: null,
+                platform,
+                platform_id: platformId,
                 channel_name: null,
                 channel_handle: null,
                 proof: null,
@@ -45,8 +46,8 @@ export class PublicService {
         if (proof.expiresAt < now) {
             return {
                 status: 'expired',
-                youtube_video_id: video.youtubeVideoId,
-                youtube_channel_id: video.channel.youtubeChannelId,
+                platform,
+                platform_id: video.platformId,
                 channel_name: video.channel.channelName,
                 channel_handle: video.channel.channelHandle,
                 proof: this.formatProof(proof),
@@ -59,8 +60,8 @@ export class PublicService {
         if (video.channel.verificationStatus !== 'verified') {
             return {
                 status: 'revoked',
-                youtube_video_id: video.youtubeVideoId,
-                youtube_channel_id: video.channel.youtubeChannelId,
+                platform,
+                platform_id: video.platformId,
                 channel_name: video.channel.channelName,
                 channel_handle: video.channel.channelHandle,
                 proof: this.formatProof(proof),
@@ -71,8 +72,8 @@ export class PublicService {
 
         return {
             status: 'verified',
-            youtube_video_id: video.youtubeVideoId,
-            youtube_channel_id: video.channel.youtubeChannelId,
+            platform,
+            platform_id: video.platformId,
             channel_name: video.channel.channelName,
             channel_handle: video.channel.channelHandle,
             proof: this.formatProof(proof),
@@ -81,8 +82,8 @@ export class PublicService {
         };
     }
 
-    async getProofToken(youtubeVideoId: string) {
-        const result = await this.proofsService.getActiveProofByVideoId(youtubeVideoId);
+    async getProofToken(platform: string, platformId: string) {
+        const result = await this.proofsService.getActiveProofByPlatformId(platform, platformId);
 
         if (!result) {
             return null;
@@ -166,7 +167,7 @@ export class PublicService {
                             where: { verificationStatus: 'verified' },
                             select: {
                                 id: true,
-                                youtubeChannelId: true,
+                                platformId: true,
                                 channelName: true,
                                 channelHandle: true,
                                 avatarUrl: true,
@@ -388,7 +389,7 @@ export class PublicService {
             appearance: profile.appearance,
             sponsored_products: (profile.appearance as any)?.sponsored_products || [],
             channels: profile.user.channels.map((c: any) => ({
-                youtube_channel_id: c.youtubeChannelId,
+                platform_id: c.platformId,
                 channel_name: c.channelName,
                 channel_handle: c.channelHandle,
                 avatar_url: c.avatarUrl,
@@ -399,14 +400,14 @@ export class PublicService {
                 icon: l.icon,
             })),
             featured_video: profile.featuredVideo ? {
-                youtube_video_id: profile.featuredVideo.youtubeVideoId,
+                platform_id: profile.featuredVideo.platformId,
                 title: profile.featuredVideo.title,
                 thumbnail_url: profile.featuredVideo.thumbnailUrl,
                 verified: profile.featuredVideo.proofs.length > 0,
             } : null,
             verified_videos: recentVideos.map(v => ({
                 id: v.id,
-                youtube_video_id: v.youtubeVideoId,
+                platform_id: v.platformId,
                 title: v.title,
                 thumbnail_url: v.thumbnailUrl,
                 proof_id: v.proofs?.[0]?.id,
