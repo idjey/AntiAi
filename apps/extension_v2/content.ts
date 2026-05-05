@@ -114,9 +114,9 @@ const checkContent = async (videoId: string) => {
         console.log(`[AntiAI] Verified: ${isVerified}`, data)
 
         if (isVerified) {
-            injectBadge(data)
+            injectBadge(true, data)
         } else {
-            removeBadge()
+            injectBadge(false, data)
         }
 
         // Also dispatch event for Popup or CSUI
@@ -124,53 +124,71 @@ const checkContent = async (videoId: string) => {
 
     } catch (err) {
         console.error(`[AntiAI] Verification failed`, err)
-        removeBadge()
+        injectBadge(false, null)
     }
 }
 
-function injectBadge(data: any) {
-    // avoid duplicates
-    if (document.querySelector('.antiai-badge')) return;
+function injectBadge(isVerified: boolean, data: any) {
+    // remove existing if we're updating
+    removeBadge();
 
     const tryInject = () => {
         const titleH1 = document.querySelector('ytd-watch-metadata h1') ||
             document.querySelector('#title > h1');
 
         if (titleH1) {
-            if (titleH1.querySelector('.antiai-badge')) return; // already there
+            if (titleH1.querySelector('.antiai-badge')) return true; // already there
 
-            console.log('[AntiAI] Found title element:', titleH1);
+            console.log('[AntiAI] Found title element, injecting badge...');
 
             const badge = document.createElement('a');
-            badge.className = 'antiai-badge';
-            badge.href = `https://antiai.me/verify/${data.youtube_video_id}`;
-            badge.target = '_blank';
+            badge.className = `antiai-badge ${!isVerified ? 'antiai-badge-unverified' : ''}`;
+            
+            if (isVerified && data?.youtube_video_id) {
+                badge.href = `https://antiai.me/verify/${data.youtube_video_id}`;
+                badge.target = '_blank';
+            } else {
+                badge.href = 'javascript:void(0)';
+                badge.style.cursor = 'default';
+            }
+
             const svgNS = "http://www.w3.org/2000/svg";
             const svg = document.createElementNS(svgNS, "svg");
             svg.setAttribute("viewBox", "0 0 24 24");
             svg.setAttribute("class", "antiai-icon");
             const path = document.createElementNS(svgNS, "path");
-            path.setAttribute("d", "M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z");
+            
+            if (isVerified) {
+                // Checkmark
+                path.setAttribute("d", "M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z");
+            } else {
+                // X mark / Shield Warning
+                path.setAttribute("d", "M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 6h2v4h-2V7zm0 6h2v2h-2v-2z");
+            }
             svg.appendChild(path);
 
             const span = document.createElement('span');
             span.className = 'antiai-text';
-            span.textContent = 'Verified';
+            span.textContent = isVerified ? 'Verified' : 'Unverified';
 
             const tooltip = document.createElement('div');
             tooltip.className = 'antiai-tooltip';
             
             const strong = document.createElement('strong');
-            strong.textContent = 'Authenticated Content';
+            strong.textContent = isVerified ? 'Authenticated Content' : 'Unverified Content';
             
             const br1 = document.createElement('br');
             
-            const textNode = document.createTextNode('This video has a cryptographic proof on the AntiAI Transparency Log.');
+            const textNode = document.createTextNode(
+                isVerified 
+                ? 'This video has a cryptographic proof on the AntiAI Transparency Log.' 
+                : 'No cryptographic proof found for this video.'
+            );
             
             const br2 = document.createElement('br');
             
             const clickSpan = document.createElement('span');
-            clickSpan.textContent = 'Click to verify';
+            clickSpan.textContent = isVerified ? 'Click to verify' : 'No ledger entry available';
 
             tooltip.appendChild(strong);
             tooltip.appendChild(br1);

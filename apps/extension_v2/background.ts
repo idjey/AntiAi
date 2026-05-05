@@ -60,18 +60,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 console.log(`[Background] Verified: ${isVerified}`, data)
 
                 const iconPath = isVerified ? iconGreen : iconRed
-                const actionAPI: any = chrome.action || (chrome as any).browserAction
-                if (actionAPI?.setIcon && sender.tab?.id) {
-                    actionAPI.setIcon({ tabId: sender.tab.id, path: iconPath })
+                
+                // Fire the eye-catching pulse/blink effect
+                if (sender.tab?.id) {
+                    blinkIcon(sender.tab.id, iconPath, 3, 150) // Faster, 3-pulse gimmick
                 }
 
                 sendResponse(data)
             })
             .catch(err => {
                 console.error(`[Background] Verification failed`, err)
-                const actionAPI: any = chrome.action || (chrome as any).browserAction
-                if (actionAPI?.setIcon && sender.tab?.id) {
-                    actionAPI.setIcon({ tabId: sender.tab.id, path: iconRed })
+                if (sender.tab?.id) {
+                    blinkIcon(sender.tab.id, iconRed, 3, 150)
                 }
                 sendResponse({ status: 'error', error: err.toString() })
             })

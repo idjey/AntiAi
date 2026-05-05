@@ -35,6 +35,29 @@
     letter-spacing: 0.5px;
 }
 
+/* Unverified Badge Styles */
+.antiai-badge-unverified {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.antiai-badge-unverified:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
+.antiai-badge-unverified .antiai-icon {
+    fill: #EF4444;
+}
+
+.antiai-badge-unverified .antiai-text {
+    color: #EF4444;
+}
+
+.antiai-badge-unverified .antiai-tooltip strong {
+    color: #EF4444;
+}
+
 /* Tooltip */
 .antiai-tooltip {
     visibility: hidden;
