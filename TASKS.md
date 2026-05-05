@@ -206,5 +206,19 @@
 | 8. Creator Dashboard | 📋 Not Started | 0% |
 | 9. Admin Dashboard | 📋 Not Started | 0% |
 | 10. Polish & Launch | 📋 Not Started | 0% |
+| 11. Linktree Profiles | ✅ Complete | 100% |
+| 12. Admin Email Marketing | 📋 Not Started | 0% |
 
 **Overall Progress: ~50% of MVP**
+
+---
+
+## Phase 12: Admin Email Marketing 📋 NEW
+
+- [ ] Prisma: Add `EmailCampaign`, `EmailTemplate`, and `EmailEvent` models
+- [ ] Backend: Setup BullMQ / Redis worker for async bulk sending
+- [ ] Backend: Build AI Service integration (OpenAI/Anthropic) for email generation
+- [ ] API: Endpoints for Campaign CRUD and Audience Segmentation
+- [ ] Frontend (Admin): Build WYSIWYG Email Editor (React-Email / TipTap)
+- [ ] Frontend (Admin): Add Audience Filtering UI (Free vs Pro vs Elite)
+- [ ] Frontend (Admin): Add Campaign Analytics View (Open rates, CTR)
