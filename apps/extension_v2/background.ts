@@ -51,9 +51,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // ── Video-level verification ───────────────────────────────────
     if (message.action === "checkUrl") {
         const videoId = message.videoId
-        console.log(`[Background] Checking video: ${videoId}`)
+        const platform = message.platform || "youtube"
+        console.log(`[Background] Checking video: ${videoId} on ${platform}`)
 
-        fetch(`https://antiaiapi-production.up.railway.app/public/verify?youtube_video_id=${videoId}`)
+        fetch(`https://antiaiapi-production.up.railway.app/public/verify?youtube_video_id=${videoId}&platform=${platform}`)
             .then(res => res.json())
             .then(data => {
                 const isVerified = data && data.status === 'verified'
