@@ -7,20 +7,33 @@ export class PublicController {
 
     /**
      * Main verification endpoint for browser extension
-     * GET /public/verify?youtube_video_id=XXXX
+     * GET /public/verify?platform=youtube&platform_id=XXXX
+     * Backward compatible with ?youtube_video_id=XXXX
      */
     @Get('verify')
-    async verify(@Query('youtube_video_id') youtubeVideoId: string) {
-        return this.publicService.verifyVideo(youtubeVideoId);
+    async verify(
+        @Query('platform') platformQuery?: string, 
+        @Query('platform_id') platformIdQuery?: string,
+        @Query('youtube_video_id') youtubeVideoId?: string
+    ) {
+        const platform = platformQuery || 'youtube';
+        const platformId = platformIdQuery || youtubeVideoId || '';
+        return this.publicService.verifyVideo(platform, platformId);
     }
 
     /**
      * Get active proof token for a video
-     * GET /public/proof?youtube_video_id=XXXX
+     * GET /public/proof?platform=youtube&platform_id=XXXX
      */
     @Get('proof')
-    async getProof(@Query('youtube_video_id') youtubeVideoId: string) {
-        const result = await this.publicService.getProofToken(youtubeVideoId);
+    async getProof(
+        @Query('platform') platformQuery?: string, 
+        @Query('platform_id') platformIdQuery?: string,
+        @Query('youtube_video_id') youtubeVideoId?: string
+    ) {
+        const platform = platformQuery || 'youtube';
+        const platformId = platformIdQuery || youtubeVideoId || '';
+        const result = await this.publicService.getProofToken(platform, platformId);
         if (!result) {
             throw new NotFoundException('No active proof for this video');
         }

@@ -35,9 +35,12 @@ export class ProofsController {
     }
 
     @Public()
-    @Get('public/verify/yt/:videoId')
-    async verifyPublicByYoutubeId(@Param('videoId') videoId: string) {
-        return this.proofsService.getPublicProofByYoutubeId(videoId);
+    @Get('public/verify/:platform/:videoId')
+    async verifyPublicByPlatformId(
+        @Param('platform') platform: string,
+        @Param('videoId') videoId: string
+    ) {
+        return this.proofsService.getPublicProofByPlatformId(platform, videoId);
     }
 
     @Post('issue')
