@@ -312,7 +312,7 @@ export class EmailService {
 
     // ─── Coupon Emails ───
 
-    private async sendEmailGeneric(to: string, subject: string, html: string, textFallback?: string) {
+    public async sendEmailGeneric(to: string, subject: string, html: string, textFallback?: string) {
         const apiKey = this.configService.get<string>('SMTP_PASS');
         const host = this.configService.get<string>('SMTP_HOST');
         const fromEmail = this.configService.get<string>('SMTP_FROM') || 'noreply@antiai.me';

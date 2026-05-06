@@ -69,29 +69,30 @@ enum PlanTier {
 // ==================== USERS ====================
 
 model User {
-  id              String    @id @default(uuid()) @db.Uuid
-  email           String    @unique @db.Citext
-  passwordHash    String?   @map("password_hash")
-  role            UserRole  @default(creator)
-  isEmailVerified Boolean   @default(false) @map("is_email_verified")
-  isSuspended     Boolean   @default(false) @map("is_suspended")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  lastLoginAt     DateTime? @map("last_login_at")
-  otp             String?   @db.VarChar(8)
-  otpExpiresAt    DateTime? @map("otp_expires_at")
+  id                String    @id @default(uuid()) @db.Uuid
+  email             String    @unique @db.Citext
+  passwordHash      String?   @map("password_hash")
+  role              UserRole  @default(creator)
+  isEmailVerified   Boolean   @default(false) @map("is_email_verified")
+  isSuspended       Boolean   @default(false) @map("is_suspended")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  lastLoginAt       DateTime? @map("last_login_at")
+  otp               String?   @db.VarChar(8)
+  otpExpiresAt      DateTime? @map("otp_expires_at")
   failedOtpAttempts Int       @default(0) @map("failed_otp_attempts")
-  otpLockedUntil  DateTime? @map("otp_locked_until")
+  otpLockedUntil    DateTime? @map("otp_locked_until")
 
   // Relations
-  oauthAccounts   OAuthAccount[]
-  channels        Channel[]
-  subscription    Subscription?
-  auditLogs       AuditLog[]
+  oauthAccounts     OAuthAccount[]
+  channels          Channel[]
+  subscription      Subscription?
+  auditLogs         AuditLog[]
   reviewedReports   Report[]          @relation("ReviewedBy")
   moderationReviews ModerationQueue[] @relation("ModerationReviewedBy")
   profile           CreatorProfile?
-  links           CreatorLink[]
+  links             CreatorLink[]
+  emailEvents       EmailEvent[]
 
   @@map("users")
 }
@@ -99,27 +100,27 @@ model User {
 // ==================== CREATOR PROFILES (Linktree-style) ====================
 
 model CreatorProfile {
-  id              String   @id @default(uuid()) @db.Uuid
-  userId          String   @unique @map("user_id") @db.Uuid
-  handle          String   @unique @db.Citext // Custom vanity URL: antiai.me/creators/{handle}
-  categories      String[] @default([]) // Selected categories for directory filtering
-  displayName     String?  @map("display_name")
-  bio             String?  @db.Text
-  avatarUrl       String?  @map("avatar_url")
-  bannerUrl       String?  @map("banner_url")
-  featuredVideoId String?  @map("featured_video_id") @db.Uuid
-  isPublic        Boolean  @default(true) @map("is_public")
-  isFeatured      Boolean  @default(false) @map("is_featured") // Admin override for "Trending Authentic Profiles"
-  appearance      Json?    @default("{}") // { theme, primaryColor, backgroundColor, backgroundImageUrl, ... }
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @unique @map("user_id") @db.Uuid
+  handle           String    @unique @db.Citext // Custom vanity URL: antiai.me/creators/{handle}
+  categories       String[]  @default([]) // Selected categories for directory filtering
+  displayName      String?   @map("display_name")
+  bio              String?   @db.Text
+  avatarUrl        String?   @map("avatar_url")
+  bannerUrl        String?   @map("banner_url")
+  featuredVideoId  String?   @map("featured_video_id") @db.Uuid
+  isPublic         Boolean   @default(true) @map("is_public")
+  isFeatured       Boolean   @default(false) @map("is_featured") // Admin override for "Trending Authentic Profiles"
+  appearance       Json?     @default("{}") // { theme, primaryColor, backgroundColor, backgroundImageUrl, ... }
   lastHandleChange DateTime? @map("last_handle_change")
-  customDomain    String?  @unique @map("custom_domain")
+  customDomain     String?   @unique @map("custom_domain")
   lastDomainChange DateTime? @map("last_domain_change")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  featuredVideo Video? @relation(fields: [featuredVideoId], references: [id], onDelete: SetNull)
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  featuredVideo   Video?           @relation(fields: [featuredVideoId], references: [id], onDelete: SetNull)
   analyticsEvents AnalyticsEvent[]
 
   @@index([handle])
@@ -127,16 +128,16 @@ model CreatorProfile {
 }
 
 model CreatorLink {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  label     String // "Website", "Twitter", "Instagram", etc.
-  url       String
-  icon      String? // Optional icon identifier: "website", "twitter", "instagram", etc.
-  customImageUrl String? @map("custom_image_url")
-  sortOrder Int      @default(0) @map("sort_order")
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  label          String // "Website", "Twitter", "Instagram", etc.
+  url            String
+  icon           String? // Optional icon identifier: "website", "twitter", "instagram", etc.
+  customImageUrl String?  @map("custom_image_url")
+  sortOrder      Int      @default(0) @map("sort_order")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -220,16 +221,16 @@ model Channel {
 // ==================== VIDEOS ====================
 
 model Video {
-  id             String    @id @default(uuid()) @db.Uuid
-  channelId      String    @map("channel_id") @db.Uuid
-  platform       String    @default("youtube") // 'youtube', 'tiktok', 'instagram', 'facebook'
-  platformId     String    @map("platform_id")
-  title          String?
-  videoUrl       String?   @map("video_url")
-  thumbnailUrl   String?   @map("thumbnail_url")
-  publishedAt    DateTime? @map("published_at")
-  registeredAt   DateTime  @default(now()) @map("registered_at")
-  createdAt      DateTime  @default(now()) @map("created_at")
+  id           String    @id @default(uuid()) @db.Uuid
+  channelId    String    @map("channel_id") @db.Uuid
+  platform     String    @default("youtube") // 'youtube', 'tiktok', 'instagram', 'facebook'
+  platformId   String    @map("platform_id")
+  title        String?
+  videoUrl     String?   @map("video_url")
+  thumbnailUrl String?   @map("thumbnail_url")
+  publishedAt  DateTime? @map("published_at")
+  registeredAt DateTime  @default(now()) @map("registered_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
 
   // Relations
   channel    Channel          @relation(fields: [channelId], references: [id], onDelete: Cascade)
@@ -296,7 +297,6 @@ model Proof {
   @@index([status, expiresAt])
   @@map("proofs")
 }
-
 
 // ==================== CHALLENGES (Optional Layer) ====================
 
@@ -453,33 +453,33 @@ model TransparencyLog {
 // ==================== ANALYTICS ====================
 
 model AnalyticsEvent {
-  id        String   @id @default(uuid()) @db.Uuid
-  creatorId String   @map("creator_id") @db.Uuid // Owner of the profile/link
-  type      String   // 'view' | 'click'
-  entityId  String?  @map("entity_id") // Link ID (for clicks) or Profile ID (for views)
+  id        String  @id @default(uuid()) @db.Uuid
+  creatorId String  @map("creator_id") @db.Uuid // Owner of the profile/link
+  type      String // 'view' | 'click'
+  entityId  String? @map("entity_id") // Link ID (for clicks) or Profile ID (for views)
   // Visitor Info
-  ipHash    String?  @map("ip_hash") // Anonymized
+  ipHash    String? @map("ip_hash") // Anonymized
   country   String?
-  region    String?  // State/Province
+  region    String? // State/Province
   city      String?
-  device    String?  // 'mobile', 'desktop', 'tablet'
+  device    String? // 'mobile', 'desktop', 'tablet'
   os        String?
   browser   String?
   referer   String?
-  
+
   // Engagement Info
-  scrollDepth     Int?     @map("scroll_depth") // 0-100 percentage
-  sessionDuration Int?     @map("session_duration") // seconds
-  
+  scrollDepth     Int? @map("scroll_depth") // 0-100 percentage
+  sessionDuration Int? @map("session_duration") // seconds
+
   // Marketing UTMs
-  utmSource       String?  @map("utm_source")
-  utmMedium       String?  @map("utm_medium")
-  utmCampaign     String?  @map("utm_campaign")
+  utmSource   String? @map("utm_source")
+  utmMedium   String? @map("utm_medium")
+  utmCampaign String? @map("utm_campaign")
 
   createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
-  creator   CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  creator CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
 
   @@index([creatorId, createdAt])
   @@index([type, createdAt])
@@ -489,15 +489,15 @@ model AnalyticsEvent {
 // ==================== MODERATION ====================
 
 model ModerationQueue {
-  id         String   @id @default(uuid()) @db.Uuid
-  targetType String   @map("target_type") // 'profile', 'channel', 'video'
-  targetId   String   @map("target_id") @db.Uuid
-  payload    Json     // { old: {}, new: {} }
-  status     String   @default("PENDING") // PENDING, APPROVED, REJECTED
-  reason     String?
-  createdAt  DateTime @default(now()) @map("created_at")
-  reviewedAt DateTime? @map("reviewed_at")
-  reviewedById String? @map("reviewed_by") @db.Uuid
+  id           String    @id @default(uuid()) @db.Uuid
+  targetType   String    @map("target_type") // 'profile', 'channel', 'video'
+  targetId     String    @map("target_id") @db.Uuid
+  payload      Json // { old: {}, new: {} }
+  status       String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  reason       String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  reviewedAt   DateTime? @map("reviewed_at")
+  reviewedById String?   @map("reviewed_by") @db.Uuid
 
   // Relations
   reviewedBy User? @relation("ModerationReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
@@ -518,14 +518,14 @@ model SystemSetting {
 // ==================== SYSTEM OBSERVABILITY ====================
 
 model SystemAlert {
-  id         String    @id @default(uuid()) @db.Uuid
-  type       String    // e.g. 'VIRAL_VELOCITY'
-  severity   String    // 'info', 'warning', 'critical'
-  message    String    
-  data       Json?     // { creatorId: "...", baseline: 5, current: 80 }
-  
-  readAt     DateTime? @map("read_at")
-  createdAt  DateTime  @default(now()) @map("created_at")
+  id       String @id @default(uuid()) @db.Uuid
+  type     String // e.g. 'VIRAL_VELOCITY'
+  severity String // 'info', 'warning', 'critical'
+  message  String
+  data     Json? // { creatorId: "...", baseline: 5, current: 80 }
+
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
 
   @@index([type, createdAt(sort: Desc)])
   @@index([readAt])
@@ -535,20 +535,20 @@ model SystemAlert {
 // ==================== COUPONS ====================
 
 model Coupon {
-  id              String    @id @default(uuid()) @db.Uuid
-  code            String    @unique               // e.g. "WELCOME25", "SPRING2026"
-  description     String?
-  discountType    String    @map("discount_type")  // 'percentage' | 'fixed'
-  discountValue   Float     @map("discount_value") // 25 = 25% or 5.00 = $5
-  maxRedemptions  Int?      @map("max_redemptions") // null = unlimited
-  currentUses     Int       @default(0) @map("current_uses")
-  isActive        Boolean   @default(true) @map("is_active")
-  expiresAt       DateTime? @map("expires_at")
-  stripeCouponId  String?   @map("stripe_coupon_id")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  id             String    @id @default(uuid()) @db.Uuid
+  code           String    @unique // e.g. "WELCOME25", "SPRING2026"
+  description    String?
+  discountType   String    @map("discount_type") // 'percentage' | 'fixed'
+  discountValue  Float     @map("discount_value") // 25 = 25% or 5.00 = $5
+  maxRedemptions Int?      @map("max_redemptions") // null = unlimited
+  currentUses    Int       @default(0) @map("current_uses")
+  isActive       Boolean   @default(true) @map("is_active")
+  expiresAt      DateTime? @map("expires_at")
+  stripeCouponId String?   @map("stripe_coupon_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  redemptions     CouponRedemption[]
+  redemptions CouponRedemption[]
 
   @@index([code])
   @@index([isActive, expiresAt])
@@ -559,12 +559,12 @@ model CouponRedemption {
   id          String    @id @default(uuid()) @db.Uuid
   couponId    String    @map("coupon_id") @db.Uuid
   userId      String?   @map("user_id") @db.Uuid
-  email       String?                                // For visitor leads (pre-signup)
-  source      String    @default("manual")           // 'signup' | 'lead' | 'admin_send' | 'manual' | 'checkout'
-  emailSentAt DateTime? @map("email_sent_at")        // When the coupon email was sent
+  email       String? // For visitor leads (pre-signup)
+  source      String    @default("manual") // 'signup' | 'lead' | 'admin_send' | 'manual' | 'checkout'
+  emailSentAt DateTime? @map("email_sent_at") // When the coupon email was sent
   usedAt      DateTime  @default(now()) @map("used_at")
 
-  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
 
   @@index([couponId])
   @@index([userId])
@@ -575,27 +575,75 @@ model CouponRedemption {
 // ==================== CROWDSOURCED INTELLIGENCE ====================
 
 model ContentFlag {
-  id          String   @id @default(uuid()) @db.Uuid
-  videoId     String   @map("video_id") @db.Uuid // Foreign key to Video.id
-  userId      String?  @map("user_id") @db.Uuid  // Optional: ID of the user flagging it
-  reason      String   // E.g., "Deepfake", "Voice Clone"
-  status      String   @default("pending") // pending, approved, rejected
-  createdAt   DateTime @default(now()) @map("created_at")
+  id        String   @id @default(uuid()) @db.Uuid
+  videoId   String   @map("video_id") @db.Uuid // Foreign key to Video.id
+  userId    String?  @map("user_id") @db.Uuid // Optional: ID of the user flagging it
+  reason    String // E.g., "Deepfake", "Voice Clone"
+  status    String   @default("pending") // pending, approved, rejected
+  createdAt DateTime @default(now()) @map("created_at")
 
-  video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
 
   @@index([videoId])
   @@map("content_flags")
 }
 
 model VideoContext {
-  id          String   @id @default(uuid()) @db.Uuid
-  videoId     String   @unique @map("video_id") @db.Uuid // Foreign key to Video.id
-  note        String   // The public "Community Note"
-  approvedBy  String   @map("approved_by") @db.Uuid // Admin ID who approved it
-  createdAt   DateTime @default(now()) @map("created_at")
+  id         String   @id @default(uuid()) @db.Uuid
+  videoId    String   @unique @map("video_id") @db.Uuid // Foreign key to Video.id
+  note       String // The public "Community Note"
+  approvedBy String   @map("approved_by") @db.Uuid // Admin ID who approved it
+  createdAt  DateTime @default(now()) @map("created_at")
 
-  video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
 
   @@map("video_contexts")
+}
+
+// ==================== EMAIL MARKETING ====================
+
+model EmailCampaign {
+  id              String    @id @default(uuid()) @db.Uuid
+  name            String
+  subject         String
+  htmlContent     String    @map("html_content") @db.Text
+  status          String    @default("draft") // 'draft', 'scheduled', 'sending', 'sent', 'failed'
+  audienceSegment String    @map("audience_segment") // e.g. 'all', 'elite_only', 'free_only'
+  scheduledAt     DateTime? @map("scheduled_at")
+  sentAt          DateTime? @map("sent_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  events EmailEvent[]
+
+  @@index([status])
+  @@index([scheduledAt])
+  @@map("email_campaigns")
+}
+
+model EmailTemplate {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  htmlContent String   @map("html_content") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("email_templates")
+}
+
+model EmailEvent {
+  id         String   @id @default(uuid()) @db.Uuid
+  campaignId String   @map("campaign_id") @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  email      String
+  eventType  String   @map("event_type") // 'sent', 'delivered', 'open', 'click', 'bounce', 'spamreport'
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  campaign EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user     User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId])
+  @@index([userId])
+  @@index([email])
+  @@map("email_events")
 }

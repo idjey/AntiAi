@@ -26,16 +26,7 @@ export class AdminVideosService {
                             id: true,
                             channelName: true,
                             avatarUrl: true,
-                            youtubeChannelId: true
-                        }
-                    },
-                    proofs: {
-                        select: {
-                            status: true,
-                            id: true
-                        },
-                        where: {
-                            status: ProofStatus.active
+                            platformId: true
                         }
                     },
                     _count: {
@@ -52,7 +43,7 @@ export class AdminVideosService {
         return {
             data: videos.map(v => ({
                 ...v,
-                hasActiveProof: v.proofs.length > 0
+                hasActiveProof: v._count.proofs > 0
             })),
             meta: {
                 total,
