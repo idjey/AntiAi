@@ -37,7 +37,7 @@ export class ProofsService {
         const proofs = await this.prisma.proof.findMany({
             where,
             include: {
-                video: { select: { youtubeVideoId: true, title: true } },
+                video: { select: { platformId: true, title: true } },
             },
             orderBy: { createdAt: 'desc' },
         });
@@ -126,7 +126,7 @@ export class ProofsService {
                 status: 'active',
             },
             include: {
-                video: { select: { youtubeVideoId: true, title: true } },
+                video: { select: { platformId: true, title: true } },
             },
         });
 
@@ -209,7 +209,7 @@ export class ProofsService {
                     supersedesProofId: existingProof.id,
                 },
                 include: {
-                    video: { select: { youtubeVideoId: true, title: true } },
+                    video: { select: { platformId: true, title: true } },
                 },
             }),
         ]);

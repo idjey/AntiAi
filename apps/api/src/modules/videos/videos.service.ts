@@ -57,7 +57,7 @@ export class VideosService {
             items: videos.map((v) => ({
                 id: v.id,
                 channel_id: v.channelId,
-                youtube_video_id: v.youtubeVideoId,
+                youtube_video_id: v.platformId,
                 title: v.title,
                 video_url: v.videoUrl,
                 thumbnail_url: v.thumbnailUrl,
@@ -86,7 +86,7 @@ export class VideosService {
 
         // Check if video already exists
         const existing = await this.prisma.video.findUnique({
-            where: { youtubeVideoId: videoId },
+            where: { platform_platformId: { platform: 'youtube', platformId: videoId } },
         });
 
         if (existing) {
@@ -95,7 +95,7 @@ export class VideosService {
                 return {
                     id: existing.id,
                     channel_id: existing.channelId,
-                    youtube_video_id: existing.youtubeVideoId,
+                    youtube_video_id: existing.platformId,
                     title: existing.title,
                     video_url: existing.videoUrl,
                     published_at: existing.publishedAt?.toISOString() || null,
@@ -108,9 +108,9 @@ export class VideosService {
         const metadata = await this.fetchVideoMetadata(videoId);
 
         // Security Check: Verify video belongs to the selected channel
-        if (metadata.channel_id && metadata.channel_id !== channel.youtubeChannelId) {
+        if (metadata.channel_id && metadata.channel_id !== channel.platformId) {
             throw new ForbiddenException(
-                `Video does not belong to the selected channel. Expected: ${channel.youtubeChannelId}, Found: ${metadata.channel_id}`
+                `Video does not belong to the selected channel. Expected: ${channel.platformId}, Found: ${metadata.channel_id}`
             );
         }
 
@@ -120,7 +120,7 @@ export class VideosService {
         const video = await this.prisma.video.create({
             data: {
                 channelId: channel.id,
-                youtubeVideoId: videoId,
+                platformId: videoId,
                 title: dto.title || metadata.title || `Video ${videoId}`,
                 videoUrl,
                 thumbnailUrl: metadata.thumbnail_url,
@@ -134,7 +134,7 @@ export class VideosService {
         return {
             id: video.id,
             channel_id: video.channelId,
-            youtube_video_id: video.youtubeVideoId,
+            youtube_video_id: video.platformId,
             title: video.title,
             video_url: video.videoUrl,
             published_at: video.publishedAt?.toISOString() || null,
@@ -195,16 +195,16 @@ export class VideosService {
         const allVideos = await this.youtubeService.getAllVideosFromPlaylist(playlistId);
 
         // Security check: ensure the fetched channel ID matches the user's verified channel ID
-        if (allVideos.length > 0 && allVideos[0].channelId && allVideos[0].channelId !== channel.youtubeChannelId) {
-            throw new ForbiddenException(`The provided handle/URL does not match your verified channel ID (${channel.youtubeChannelId}).`);
+        if (allVideos.length > 0 && allVideos[0].channelId && allVideos[0].channelId !== channel.platformId) {
+            throw new ForbiddenException(`The provided handle/URL does not match your verified channel ID (${channel.platformId}).`);
         }
 
         // 3. Diff against existing database videos
         const existingVideos = await this.prisma.video.findMany({
             where: { channelId: channel.id },
-            select: { youtubeVideoId: true }
+            select: { platformId: true }
         });
-        const existingIds = new Set(existingVideos.map(v => v.youtubeVideoId));
+        const existingIds = new Set(existingVideos.map(v => v.platformId));
         const newVideos = allVideos.filter(v => !existingIds.has(v.videoId));
 
         if (dto.dryRun) {
@@ -243,7 +243,7 @@ export class VideosService {
                     const video = await tx.video.create({
                         data: {
                             channelId: channel.id,
-                            youtubeVideoId: v.videoId,
+                            platformId: v.videoId,
                             title: v.title,
                             videoUrl,
                             thumbnailUrl: v.thumbnailUrl,
@@ -254,8 +254,8 @@ export class VideosService {
                     // Sign Proof
                     const signedProof = await signProof({
                         kid,
-                        youtubeVideoId: video.youtubeVideoId,
-                        youtubeChannelId: channel.youtubeChannelId,
+                        youtubeVideoId: video.platformId,
+                        youtubeChannelId: channel.platformId,
                         expiresAt,
                         privateKeyB64,
                     });
@@ -282,8 +282,8 @@ export class VideosService {
                             entityType: 'proof',
                             entityId: proof.id,
                             data: {
-                                video_id: video.youtubeVideoId,
-                                channel_id: channel.youtubeChannelId,
+                                video_id: video.platformId,
+                                channel_id: channel.platformId,
                                 kid: signedProof.kid,
                             },
                         },

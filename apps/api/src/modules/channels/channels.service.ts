@@ -22,7 +22,7 @@ export class ChannelsService {
         return {
             items: channels.map((c) => ({
                 id: c.id,
-                youtube_channel_id: c.youtubeChannelId,
+                youtube_channel_id: c.platformId,
                 channel_handle: c.channelHandle,
                 channel_name: c.channelName,
                 channel_url: c.channelUrl,
@@ -51,8 +51,8 @@ export class ChannelsService {
                 // Better: Check if normalized ID matches normalized stored ID? Too expensive.
                 // Let's rely on storing the normalized ID from now on, or using it for search.
                 OR: [
-                    { youtubeChannelId: normalizedId },
-                    { youtubeChannelId: dto.youtube_channel_id }
+                    { platformId: normalizedId },
+                    { platformId: dto.youtube_channel_id }
                 ]
             },
         });
@@ -68,9 +68,10 @@ export class ChannelsService {
         // Create or update channel
         const channel = await this.prisma.channel.upsert({
             where: {
-                userId_youtubeChannelId: {
+                userId_platform_platformId: {
                     userId,
-                    youtubeChannelId: normalizedId,
+                    platform: 'youtube',
+                platformId: normalizedId,
                 },
             },
             update: {
@@ -81,7 +82,7 @@ export class ChannelsService {
             },
             create: {
                 userId,
-                youtubeChannelId: normalizedId,
+                platformId: normalizedId,
                 channelName: dto.requested_handle || normalizedId,
                 channelHandle: dto.requested_handle,
                 verificationMethod: dto.method,
@@ -141,12 +142,12 @@ export class ChannelsService {
 
             // Determine if input is likely a Channel ID (UC...) or Handle
             // Handles usually don't start with UC unless coincidentally, but IDs always do and are 24 chars
-            const isLikelyChannelId = channel.youtubeChannelId.startsWith('UC') && channel.youtubeChannelId.length === 24;
+            const isLikelyChannelId = channel.platformId.startsWith('UC') && channel.platformId.length === 24;
 
             // Strategy 1: Try as ID
             if (isLikelyChannelId) {
                 const response = await fetch(
-                    `https://www.googleapis.com/youtube/v3/channels?part=snippet&id=${channel.youtubeChannelId}&key=${apiKey}`
+                    `https://www.googleapis.com/youtube/v3/channels?part=snippet&id=${channel.platformId}&key=${apiKey}`
                 );
                 if (response.ok) {
                     const data = await response.json();
@@ -159,9 +160,9 @@ export class ChannelsService {
             // Strategy 2: If no result yet, try as Handle
             if (!youtubeChannel) {
                 // Determine handle (add @ if missing)
-                const handle = channel.youtubeChannelId.startsWith('@')
-                    ? channel.youtubeChannelId
-                    : `@${channel.youtubeChannelId}`;
+                const handle = channel.platformId.startsWith('@')
+                    ? channel.platformId
+                    : `@${channel.platformId}`;
 
                 const response = await fetch(
                     `https://www.googleapis.com/youtube/v3/channels?part=snippet&forHandle=${encodeURIComponent(handle)}&key=${apiKey}`
@@ -201,13 +202,13 @@ export class ChannelsService {
 
             // If we verified via handle, we should update the DB to use the stable Channel ID properly
             // This prevents future lookup issues if they change their handle
-            if (youtubeChannel.id && youtubeChannel.id !== channel.youtubeChannelId) {
+            if (youtubeChannel.id && youtubeChannel.id !== channel.platformId) {
                 await this.prisma.channel.update({
                     where: { id: channel.id },
-                    data: { youtubeChannelId: youtubeChannel.id }
+                    data: { platformId: youtubeChannel.id }
                 });
                 // Update local object for the final update call
-                channel.youtubeChannelId = youtubeChannel.id;
+                channel.platformId = youtubeChannel.id;
             }
 
         } catch (error) {
@@ -237,7 +238,7 @@ export class ChannelsService {
                 entityType: 'channel',
                 entityId: channel.id,
                 data: {
-                    youtube_channel_id: channel.youtubeChannelId,
+                    youtube_channel_id: channel.platformId,
                     method: channel.verificationMethod,
                 },
             },
@@ -275,7 +276,7 @@ export class ChannelsService {
     private formatChannel(channel: any) {
         return {
             id: channel.id,
-            youtube_channel_id: channel.youtubeChannelId,
+            youtube_channel_id: channel.platformId,
             channel_handle: channel.channelHandle,
             channel_name: channel.channelName,
             channel_url: channel.channelUrl,
@@ -324,3 +325,4 @@ export class ChannelsService {
         return formatted;
     }
 }
+
