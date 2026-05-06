@@ -491,4 +491,41 @@ export class EmailService {
 
         await this.sendEmailGeneric(to, `${discountText} OFF Your AntiAI Upgrade`, html, textFallback);
     }
+    async sendPasswordResetEmail(to: string, otp: string) {
+        const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <meta name="supported-color-schemes" content="dark">
+    <title>Reset Your Password</title>
+</head>
+<body style="background-color: #0a0a0a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; margin: 0; padding: 0; -webkit-font-smoothing: antialiased;">
+    <div style="max-width: 560px; margin: 0 auto; padding: 48px 24px;">
+        <div style="text-align: center; margin-bottom: 40px;">
+            <a href="https://antiai.me" style="text-decoration: none;">
+                <span style="font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">anti</span><span style="font-size: 22px; font-weight: 700; color: #22C55E; letter-spacing: -0.5px;">ai</span><span style="font-size: 22px; font-weight: 700; color: #64748B; letter-spacing: -0.5px;">.me</span>
+            </a>
+        </div>
+        <div style="background-color: #111827; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 48px 40px; text-align: center;">
+            <h1 style="font-size: 26px; font-weight: 700; margin: 0 0 12px 0; color: #ffffff;">Reset Your Password</h1>
+            <p style="font-size: 15px; color: #94A3B8; margin: 0 0 36px 0; line-height: 1.6;">
+                We received a request to reset your password. Enter the code below to securely reset it.
+            </p>
+            <div style="background-color: #0a0a0a; border-radius: 12px; padding: 20px 24px; margin-bottom: 32px; border: 1px dashed rgba(34,197,94,0.4);">
+                <p style="font-size: 28px; font-weight: 800; letter-spacing: 6px; color: #22C55E; margin: 0; font-family: 'Courier New', Courier, monospace;">${otp}</p>
+            </div>
+            <p style="margin-top: 28px; font-size: 13px; color: #64748B; line-height: 1.5;">
+                This code will expire in 10 minutes. If you didn't request this email, you can safely ignore it.
+            </p>
+        </div>
+        ${this.getEmailFooter(to)}
+    </div>
+</body>
+</html>`;
+        const textFallback = `We received a request to reset your password.\n\nYour reset code is: ${otp}\n\nThis code will expire in 10 minutes.`;
+        await this.sendEmailGeneric(to, `Reset your AntiAI.me password`, html, textFallback);
+    }
 }
