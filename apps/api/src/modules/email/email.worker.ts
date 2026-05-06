@@ -32,22 +32,30 @@ export class EmailWorker extends WorkerHost {
 
         console.log(`Starting to send campaign: ${campaign.name}`);
 
-        // Fetch audience
-        // For MVP, if audienceSegment === 'all', get all users who verified their email
+        // Fetch audience based on segment
         let users: { id: string; email: string }[] = [];
-        if (campaign.audienceSegment === 'all') {
+        if (campaign.audienceSegment === 'custom' && campaign.customEmails) {
+            // Custom emails: parse comma-separated list
+            const emails = campaign.customEmails.split(',').map(e => e.trim()).filter(e => e.includes('@'));
+            users = emails.map(email => ({ id: '', email }));
+        } else if (campaign.audienceSegment === 'all') {
             users = await this.prisma.user.findMany({
                 where: { isEmailVerified: true },
                 select: { id: true, email: true },
             });
         } else if (campaign.audienceSegment === 'elite_only') {
             users = await this.prisma.user.findMany({
-                where: {
-                    isEmailVerified: true,
-                    subscription: {
-                        plan: 'elite',
-                    }
-                },
+                where: { isEmailVerified: true, subscription: { plan: 'elite' } },
+                select: { id: true, email: true },
+            });
+        } else if (campaign.audienceSegment === 'pro_only') {
+            users = await this.prisma.user.findMany({
+                where: { isEmailVerified: true, subscription: { plan: 'pro' } },
+                select: { id: true, email: true },
+            });
+        } else if (campaign.audienceSegment === 'free_only') {
+            users = await this.prisma.user.findMany({
+                where: { isEmailVerified: true, subscription: { plan: 'free' } },
                 select: { id: true, email: true },
             });
         }

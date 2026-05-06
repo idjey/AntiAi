@@ -22,7 +22,7 @@ export class EmailMarketingController {
     }
 
     @Post('campaigns')
-    async createCampaign(@Body() dto: { name: string; subject: string; htmlContent: string; audienceSegment: string }) {
+    async createCampaign(@Body() dto: { name: string; subject: string; htmlContent: string; audienceSegment: string; customEmails?: string }) {
         return this.emailMarketingService.createCampaign(dto);
     }
 
