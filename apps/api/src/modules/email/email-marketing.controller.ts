@@ -40,4 +40,9 @@ export class EmailMarketingController {
     async generateWithAi(@Body() dto: { prompt: string }) {
         return this.emailMarketingService.generateWithAi(dto.prompt);
     }
+
+    @Post('test-send')
+    async sendTestEmail(@Body() dto: { to: string; subject: string; htmlContent: string }) {
+        return this.emailMarketingService.sendTestEmail(dto.to, dto.subject, dto.htmlContent);
+    }
 }

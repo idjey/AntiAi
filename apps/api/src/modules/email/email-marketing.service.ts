@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EmailService } from './email.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
@@ -7,6 +8,7 @@ import { Queue } from 'bullmq';
 export class EmailMarketingService {
     constructor(
         private readonly prisma: PrismaService,
+        private readonly emailService: EmailService,
         @InjectQueue('email-campaigns') private emailQueue: Queue,
     ) { }
 
@@ -177,5 +179,18 @@ export class EmailMarketingService {
                 userId,
             }
         });
+    }
+
+    async sendTestEmail(to: string, subject: string, htmlContent: string) {
+        if (!to || !to.includes('@')) {
+            throw new BadRequestException('Invalid email address');
+        }
+        await this.emailService.sendEmailGeneric(
+            to,
+            `[TEST] ${subject}`,
+            htmlContent,
+            'Please view this email in a client that supports HTML'
+        );
+        return { success: true, message: `Test email sent to ${to}` };
     }
 }

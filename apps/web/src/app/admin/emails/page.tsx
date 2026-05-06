@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Mail, Plus, Send, Trash2, Edit3, X, Users, Sparkles, Eye, BarChart3, Clock, CheckCircle2, AlertCircle, Loader2, AtSign } from 'lucide-react'
+import { Mail, Plus, Send, Trash2, Edit3, X, Users, Sparkles, Eye, BarChart3, Clock, CheckCircle2, AlertCircle, Loader2, AtSign, Image, Link2, Minus, Share2, MailX, SendHorizonal } from 'lucide-react'
 
 const API = () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 const headers = () => ({
@@ -40,11 +40,55 @@ export default function AdminEmailsPage() {
     const [aiPrompt, setAiPrompt] = useState('')
     const [isGenerating, setIsGenerating] = useState(false)
     const [aiSuccess, setAiSuccess] = useState(false)
-    const editorRef = useRef<HTMLDivElement>(null)
+    const [testEmail, setTestEmail] = useState('')
+    const [isSendingTest, setIsSendingTest] = useState(false)
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
 
     const [form, setForm] = useState({
         name: '', subject: '', htmlContent: '', audienceSegment: 'all', customEmails: ''
     })
+
+    const openPreviewWindow = (html: string) => {
+        const w = window.open('', '_blank', 'width=700,height=800,scrollbars=yes,resizable=yes')
+        if (w) {
+            w.document.write(html)
+            w.document.close()
+            w.document.title = 'Email Preview — AntiAI.me'
+        }
+    }
+
+    const insertSnippet = (snippet: string) => {
+        const ta = textareaRef.current
+        if (!ta) { setForm(f => ({ ...f, htmlContent: f.htmlContent + snippet })); return }
+        const start = ta.selectionStart
+        const end = ta.selectionEnd
+        const before = form.htmlContent.substring(0, start)
+        const after = form.htmlContent.substring(end)
+        setForm(f => ({ ...f, htmlContent: before + snippet + after }))
+        setTimeout(() => { ta.focus(); ta.selectionStart = ta.selectionEnd = start + snippet.length }, 0)
+    }
+
+    const handleSendTest = async () => {
+        if (!testEmail.includes('@') || !form.htmlContent) return
+        setIsSendingTest(true)
+        try {
+            const res = await fetch(`${API()}/admin/emails/test-send`, {
+                method: 'POST', headers: headers(),
+                body: JSON.stringify({ to: testEmail, subject: form.subject || 'Test Email', htmlContent: form.htmlContent })
+            })
+            const data = await res.json()
+            alert(data.message || 'Test email sent!')
+        } catch (err) { alert('Failed to send test email') }
+        finally { setIsSendingTest(false) }
+    }
+
+    const SNIPPETS = [
+        { label: 'Logo', icon: <Image className="w-3.5 h-3.5" />, code: '<div style="text-align:center;margin-bottom:32px;"><img src="https://antiai.me/images/logo-dark.png" alt="AntiAI.me" style="height:40px;" /></div>' },
+        { label: 'CTA Button', icon: <Link2 className="w-3.5 h-3.5" />, code: '<div style="text-align:center;margin:32px 0;"><a href="https://antiai.me" style="display:inline-block;background-color:#22C55E;color:#000;font-weight:700;padding:14px 36px;border-radius:10px;text-decoration:none;font-size:15px;">Click Here</a></div>' },
+        { label: 'Divider', icon: <Minus className="w-3.5 h-3.5" />, code: '<hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:24px 0;" />' },
+        { label: 'Social Links', icon: <Share2 className="w-3.5 h-3.5" />, code: '<div style="text-align:center;margin-top:24px;"><a href="https://twitter.com/antiaime" style="color:#64748b;text-decoration:underline;margin:0 8px;">Twitter</a><a href="https://youtube.com/@antiaime" style="color:#64748b;text-decoration:underline;margin:0 8px;">YouTube</a><a href="https://discord.gg/antiai" style="color:#64748b;text-decoration:underline;margin:0 8px;">Discord</a></div>' },
+        { label: 'Unsubscribe', icon: <MailX className="w-3.5 h-3.5" />, code: '<p style="text-align:center;margin-top:32px;font-size:11px;color:#475569;">You received this email because you\'re registered on AntiAI.me. <a href="https://antiai.me/settings" style="color:#64748b;text-decoration:underline;">Unsubscribe</a></p>' },
+    ]
 
     const fetchCampaigns = async () => {
         setIsLoading(true)
@@ -223,7 +267,7 @@ export default function AdminEmailsPage() {
                                         </td>
                                         <td className="px-4 py-3 text-right">
                                             <div className="flex items-center justify-end gap-1">
-                                                <button onClick={() => setPreviewHtml(c.htmlContent)} className="p-2 hover:bg-white/10 rounded-lg text-text-muted hover:text-cyan-400 transition-colors" title="Preview"><Eye className="w-4 h-4" /></button>
+                                                <button onClick={() => openPreviewWindow(c.htmlContent)} className="p-2 hover:bg-white/10 rounded-lg text-text-muted hover:text-cyan-400 transition-colors" title="Preview"><Eye className="w-4 h-4" /></button>
                                                 {c.status === 'draft' && (
                                                     <>
                                                         <button onClick={() => handleEdit(c)} className="p-2 hover:bg-white/10 rounded-lg text-text-muted hover:text-blue-400 transition-colors" title="Edit"><Edit3 className="w-4 h-4" /></button>
@@ -254,20 +298,7 @@ export default function AdminEmailsPage() {
                 </div>
             </div>
 
-            {/* Preview Modal */}
-            {previewHtml && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setPreviewHtml(null)}>
-                    <div className="bg-surface border border-white/10 rounded-2xl shadow-2xl w-full max-w-3xl mx-4 max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
-                        <div className="flex justify-between items-center p-6 border-b border-white/10">
-                            <h2 className="text-xl font-bold font-mono flex items-center gap-2"><Eye className="w-5 h-5 text-cyan-400" /> Email Preview</h2>
-                            <button onClick={() => setPreviewHtml(null)} className="p-2 hover:bg-white/10 rounded-lg text-text-muted hover:text-white transition-colors"><X className="w-5 h-5" /></button>
-                        </div>
-                        <div className="flex-1 overflow-auto p-1">
-                            <iframe srcDoc={previewHtml} className="w-full h-[600px] rounded-lg bg-white" title="Email Preview" sandbox="" />
-                        </div>
-                    </div>
-                </div>
-            )}
+
 
             {/* Editor Modal */}
             {showEditor && (
@@ -342,10 +373,21 @@ export default function AdminEmailsPage() {
                                 </div>
                             </div>
 
-                            {/* HTML Editor */}
+                            {/* HTML Editor with Quick Insert Toolbar */}
                             <div>
-                                <label className="text-xs text-text-muted uppercase tracking-wider font-mono block mb-1">HTML Content</label>
-                                <textarea value={form.htmlContent} onChange={e => setForm(f => ({ ...f, htmlContent: e.target.value }))}
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="text-xs text-text-muted uppercase tracking-wider font-mono">HTML Content</label>
+                                    <div className="flex items-center gap-1">
+                                        {SNIPPETS.map(s => (
+                                            <button key={s.label} type="button" onClick={() => insertSnippet(s.code)}
+                                                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-cyan-500/30 text-text-muted hover:text-cyan-400 rounded-md text-[11px] font-mono transition-all"
+                                                title={`Insert ${s.label}`}>
+                                                {s.icon} {s.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <textarea ref={textareaRef} value={form.htmlContent} onChange={e => setForm(f => ({ ...f, htmlContent: e.target.value }))}
                                     placeholder="<h1>Hello from AntiAI.me</h1><p>Your email content here...</p>"
                                     rows={12} required
                                     className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-text-primary font-mono text-xs placeholder-text-muted focus:outline-none focus:border-cyan-500/50 resize-y" />
@@ -353,10 +395,23 @@ export default function AdminEmailsPage() {
 
                             {/* Actions */}
                             <div className="flex justify-between items-center pt-4 border-t border-white/5">
-                                <button type="button" onClick={() => { if (form.htmlContent) setPreviewHtml(form.htmlContent) }}
-                                    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-text-secondary rounded-lg text-sm transition-colors">
-                                    <Eye className="w-4 h-4" /> Preview
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button type="button" onClick={() => { if (form.htmlContent) openPreviewWindow(form.htmlContent) }}
+                                        className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-text-secondary rounded-lg text-sm transition-colors">
+                                        <Eye className="w-4 h-4" /> Preview
+                                    </button>
+                                    <div className="flex items-center gap-1.5 ml-2">
+                                        <input type="email" value={testEmail} onChange={e => setTestEmail(e.target.value)}
+                                            placeholder="your@email.com"
+                                            className="w-44 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:border-amber-500/50" />
+                                        <button type="button" onClick={handleSendTest}
+                                            disabled={isSendingTest || !testEmail.includes('@') || !form.htmlContent}
+                                            className="flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 rounded-lg text-xs font-medium transition-colors disabled:opacity-30">
+                                            {isSendingTest ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <SendHorizonal className="w-3.5 h-3.5" />}
+                                            Send Test
+                                        </button>
+                                    </div>
+                                </div>
                                 <div className="flex gap-3">
                                     <button type="button" onClick={() => setShowEditor(false)}
                                         className="px-4 py-2 bg-white/5 hover:bg-white/10 text-text-primary rounded-lg text-sm font-medium transition-colors">Cancel</button>
