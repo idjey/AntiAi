@@ -526,6 +526,6 @@ export class EmailService {
 </body>
 </html>`;
         const textFallback = `We received a request to reset your password.\n\nYour reset code is: ${otp}\n\nThis code will expire in 10 minutes.`;
-        await this.sendEmailGeneric(to, \`Reset your AntiAI.me password\`, html, textFallback);
+        await this.sendEmailGeneric(to, `Reset your AntiAI.me password`, html, textFallback);
     }
 }
