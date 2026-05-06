@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Mail, Plus, Send, Trash2, Edit3, X, Users, Sparkles, Eye, BarChart3, Clock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
+import { Mail, Plus, Send, Trash2, Edit3, X, Users, Sparkles, Eye, BarChart3, Clock, CheckCircle2, AlertCircle, Loader2, AtSign } from 'lucide-react'
 
 const API = () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 const headers = () => ({
@@ -39,10 +39,11 @@ export default function AdminEmailsPage() {
     const [sendingId, setSendingId] = useState<string | null>(null)
     const [aiPrompt, setAiPrompt] = useState('')
     const [isGenerating, setIsGenerating] = useState(false)
+    const [aiSuccess, setAiSuccess] = useState(false)
     const editorRef = useRef<HTMLDivElement>(null)
 
     const [form, setForm] = useState({
-        name: '', subject: '', htmlContent: '', audienceSegment: 'all'
+        name: '', subject: '', htmlContent: '', audienceSegment: 'all', customEmails: ''
     })
 
     const fetchCampaigns = async () => {
@@ -60,7 +61,7 @@ export default function AdminEmailsPage() {
     useEffect(() => { fetchCampaigns() }, [])
 
     const resetForm = () => {
-        setForm({ name: '', subject: '', htmlContent: '', audienceSegment: 'all' })
+        setForm({ name: '', subject: '', htmlContent: '', audienceSegment: 'all', customEmails: '' })
         setEditingCampaign(null)
     }
 
@@ -94,8 +95,8 @@ export default function AdminEmailsPage() {
         finally { setSendingId(null) }
     }
 
-    const handleEdit = (c: Campaign) => {
-        setForm({ name: c.name, subject: c.subject, htmlContent: c.htmlContent, audienceSegment: c.audienceSegment })
+    const handleEdit = (c: any) => {
+        setForm({ name: c.name, subject: c.subject, htmlContent: c.htmlContent, audienceSegment: c.audienceSegment, customEmails: c.customEmails || '' })
         setEditingCampaign(c)
         setShowEditor(true)
     }
@@ -103,6 +104,7 @@ export default function AdminEmailsPage() {
     const handleGenerateAi = async () => {
         if (!aiPrompt.trim()) return
         setIsGenerating(true)
+        setAiSuccess(false)
         try {
             const res = await fetch(`${API()}/admin/emails/generate`, {
                 method: 'POST', headers: headers(),
@@ -116,8 +118,13 @@ export default function AdminEmailsPage() {
                     htmlContent: data.htmlContent || f.htmlContent
                 }))
                 setAiPrompt('')
+                setAiSuccess(true)
+                setTimeout(() => setAiSuccess(false), 3000)
+            } else {
+                const err = await res.json().catch(() => ({}))
+                alert(err.message || 'Failed to generate email content')
             }
-        } catch (err) { console.error(err) }
+        } catch (err) { console.error(err); alert('Network error — check API connection') }
         finally { setIsGenerating(false) }
     }
 
@@ -305,14 +312,27 @@ export default function AdminEmailsPage() {
                                 </div>
                             </div>
 
+                            {/* Custom Emails */}
+                            <div>
+                                <label className="text-xs text-text-muted uppercase tracking-wider font-mono block mb-1">
+                                    <AtSign className="w-3.5 h-3.5 inline mr-1" /> Individual Emails (optional)
+                                </label>
+                                <input type="text" value={form.customEmails} onChange={e => setForm(f => ({ ...f, customEmails: e.target.value }))}
+                                    placeholder="ryan@example.com, creator@youtube.com, partner@brand.com"
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-text-primary font-mono text-sm placeholder-text-muted focus:outline-none focus:border-cyan-500/50" />
+                                <p className="text-[11px] text-text-muted mt-1.5 font-mono">Comma-separated. If provided, this overrides the audience segment above and sends only to these addresses.</p>
+                            </div>
+
                             {/* AI Generator */}
-                            <div className="p-4 rounded-xl bg-gradient-to-r from-purple-500/5 to-cyan-500/5 border border-purple-500/20">
+                            <div className={`p-4 rounded-xl bg-gradient-to-r from-purple-500/5 to-cyan-500/5 border transition-colors ${aiSuccess ? 'border-emerald-500/40' : 'border-purple-500/20'}`}>
                                 <label className="text-xs text-purple-400 uppercase tracking-wider font-mono block mb-2">
                                     <Sparkles className="w-3.5 h-3.5 inline mr-1" /> AI Content Generator
+                                    {aiSuccess && <span className="ml-2 text-emerald-400 normal-case">✓ Content generated — check Subject & HTML below</span>}
                                 </label>
                                 <div className="flex gap-2">
                                     <input type="text" value={aiPrompt} onChange={e => setAiPrompt(e.target.value)}
-                                        placeholder="Write a welcome email for new Elite subscribers..."
+                                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleGenerateAi() } }}
+                                        placeholder="Try: welcome email, elite upgrade offer, security update, new feature launch..."
                                         className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-purple-500/50" />
                                     <button type="button" onClick={handleGenerateAi} disabled={isGenerating || !aiPrompt.trim()}
                                         className="px-4 py-2.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-lg text-sm font-medium transition-colors disabled:opacity-30 flex items-center gap-2">

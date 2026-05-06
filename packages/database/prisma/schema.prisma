@@ -608,7 +608,8 @@ model EmailCampaign {
   subject         String
   htmlContent     String    @map("html_content") @db.Text
   status          String    @default("draft") // 'draft', 'scheduled', 'sending', 'sent', 'failed'
-  audienceSegment String    @map("audience_segment") // e.g. 'all', 'elite_only', 'free_only'
+  audienceSegment String    @map("audience_segment") // e.g. 'all', 'elite_only', 'free_only', 'custom'
+  customEmails    String?   @map("custom_emails") @db.Text // Comma-separated emails for 'custom' segment
   scheduledAt     DateTime? @map("scheduled_at")
   sentAt          DateTime? @map("sent_at")
   createdAt       DateTime  @default(now()) @map("created_at")
