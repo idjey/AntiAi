@@ -349,6 +349,87 @@ export class AuthService {
 
         return { message: 'Password updated successfully' };
     }
+
+    async forgotPassword(email: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { email: email.toLowerCase() },
+        });
+
+        if (!user) {
+            // Return success even if user not found to prevent email enumeration
+            return { message: 'If an account exists, a password reset email has been sent.' };
+        }
+
+        // Generate OTP for reset
+        const otp = Math.floor(10000000 + Math.random() * 90000000).toString();
+        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                otp,
+                otpExpiresAt,
+                failedOtpAttempts: 0,
+            },
+        });
+
+        await this.emailService.sendPasswordResetEmail(user.email, otp);
+
+        return { message: 'If an account exists, a password reset email has been sent.' };
+    }
+
+    async resetPassword(email: string, otp: string, newPassword: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { email: email.toLowerCase() },
+        });
+
+        if (!user) {
+            throw new BadRequestException('User not found');
+        }
+
+        if (user.otpLockedUntil && user.otpLockedUntil > new Date()) {
+            throw new UnauthorizedException('Too many failed attempts. Try again in 30 minutes.');
+        }
+
+        if (!user.otpExpiresAt || user.otpExpiresAt < new Date()) {
+            throw new BadRequestException('OTP expired');
+        }
+
+        if (user.otp !== otp) {
+            const newAttempts = user.failedOtpAttempts + 1;
+            const updateData: any = { failedOtpAttempts: newAttempts };
+
+            if (newAttempts >= 3) {
+                updateData.otpLockedUntil = new Date(Date.now() + 30 * 60 * 1000);
+                updateData.failedOtpAttempts = 0;
+            }
+
+            await this.prisma.user.update({
+                where: { id: user.id },
+                data: updateData,
+            });
+
+            if (newAttempts >= 3) {
+                throw new UnauthorizedException('Too many failed attempts. Account locked for 30 minutes.');
+            }
+            throw new BadRequestException('Invalid OTP');
+        }
+
+        const passwordHash = await bcrypt.hash(newPassword, 12);
+
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                passwordHash,
+                otp: null,
+                otpExpiresAt: null,
+                failedOtpAttempts: 0,
+                otpLockedUntil: null,
+            },
+        });
+
+        return { message: 'Password reset successful. You can now log in.' };
+    }
     async validateOAuthUser(profile: any) {
         const { email, firstName, lastName, provider, providerId } = profile;
 

@@ -66,6 +66,18 @@ export class AuthController {
     async changePassword(@CurrentUser() user: any, @Body() dto: any) {
         return this.authService.changePassword(user.id, dto);
     }
+
+    @Post('forgot-password')
+    @HttpCode(HttpStatus.OK)
+    async forgotPassword(@Body('email') email: string) {
+        return this.authService.forgotPassword(email);
+    }
+
+    @Post('reset-password')
+    @HttpCode(HttpStatus.OK)
+    async resetPassword(@Body() dto: any) {
+        return this.authService.resetPassword(dto.email, dto.otp, dto.newPassword);
+    }
     @Get('google')
     @UseGuards(AuthGuard('google'))
     async googleAuth(@Req() req: any) {
