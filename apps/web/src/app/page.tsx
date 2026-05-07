@@ -1,9 +1,10 @@
 import Hero from '@/components/sections/Hero'
-import Problem from '@/components/sections/Problem'
-import Solution from '@/components/sections/Solution'
-import ViewerExperience from '@/components/sections/ViewerExperience'
+import ProblemStatement from '@/components/sections/ProblemStatement'
+import HowItWorks from '@/components/sections/HowItWorks'
+import PlatformShowcase from '@/components/sections/PlatformShowcase'
 import Protocol from '@/components/sections/Protocol'
 import CreatorPage from '@/components/sections/CreatorPage'
+import Roadmap from '@/components/sections/Roadmap'
 import Pricing from '@/components/sections/Pricing'
 import FinalCTA from '@/components/sections/FinalCTA'
 import Footer from '@/components/sections/Footer'
@@ -14,10 +15,11 @@ export default function HomePage() {
         <main className="min-h-screen">
             <Navbar />
             <Hero />
-            <Problem />
-            <Solution />
+            <ProblemStatement />
+            <HowItWorks />
+            <PlatformShowcase />
             <Protocol />
-            <ViewerExperience />
+            <Roadmap />
             <CreatorPage />
             <Pricing />
             <FinalCTA />
