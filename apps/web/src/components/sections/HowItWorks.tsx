@@ -7,7 +7,7 @@ const steps = [
     {
         number: '01',
         title: 'Creator signs their content',
-        description: 'When you upload a video, AntiAI generates a unique cryptographic fingerprint using Ed25519 — the same standard used by SSH and blockchain wallets.',
+        description: 'When you upload a video, AntiAI generates a unique cryptographic fingerprint using Ed25519, the same standard used by SSH and blockchain wallets.',
         visual: (
             <div className="relative w-full h-full flex items-center justify-center">
                 {/* Signature animation */}
