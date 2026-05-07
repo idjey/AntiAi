@@ -6,7 +6,7 @@ const roadmap = [
     {
         phase: 'Now',
         title: 'Browser Extension',
-        description: 'Our Chrome extension verifies videos in real-time on YouTube, TikTok, Instagram, and Facebook — right in your desktop browser.',
+        description: 'Our Chrome extension verifies videos in real-time on YouTube, TikTok, Instagram, and Facebook, right in your desktop browser.',
         icon: (
             <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25z" />
@@ -28,7 +28,7 @@ const roadmap = [
     {
         phase: 'Vision',
         title: 'Enterprise API',
-        description: 'The "Stripe for Content Authenticity." Platforms like X, Meta, and TikTok integrate our API natively — no extension needed.',
+        description: 'The "Stripe for Content Authenticity." Platforms like X, Meta, and TikTok integrate our API natively, no extension needed.',
         icon: (
             <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
@@ -81,13 +81,12 @@ export default function Roadmap() {
                                 className="flex gap-6 md:gap-8 items-start"
                             >
                                 {/* Timeline dot */}
-                                <div className={`relative flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center border ${
-                                    item.status === 'active'
+                                <div className={`relative flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center border ${item.status === 'active'
                                         ? 'bg-primary/10 border-primary/30 text-primary'
                                         : item.status === 'upcoming'
                                             ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500'
                                             : 'bg-white/5 border-white/10 text-text-muted'
-                                }`}>
+                                    }`}>
                                     {item.icon}
                                     {item.status === 'active' && (
                                         <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-primary animate-pulse" />
@@ -96,9 +95,8 @@ export default function Roadmap() {
 
                                 <div className="flex-1">
                                     <div className="flex items-center gap-3 mb-2">
-                                        <span className={`text-xs font-bold uppercase tracking-wider ${
-                                            item.status === 'active' ? 'text-primary' : item.status === 'upcoming' ? 'text-yellow-500' : 'text-text-muted'
-                                        }`}>
+                                        <span className={`text-xs font-bold uppercase tracking-wider ${item.status === 'active' ? 'text-primary' : item.status === 'upcoming' ? 'text-yellow-500' : 'text-text-muted'
+                                            }`}>
                                             {item.phase}
                                         </span>
                                     </div>
