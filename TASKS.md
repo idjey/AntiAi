@@ -207,18 +207,40 @@
 | 9. Admin Dashboard | ✅ Complete | 100% |
 | 10. Polish & Launch | 📋 Not Started | 0% |
 | 11. Linktree Profiles | ✅ Complete | 100% |
-| 12. Admin Email Marketing | 📋 Not Started | 0% |
+| 12. Admin Email Marketing | 🔄 In Progress | 90% |
 
-**Overall Progress: ~90% of MVP**
+**Overall Progress: ~92% of MVP**
 
 ---
 
-## Phase 12: Admin Email Marketing 📋 NEW
+## Phase 12: Admin Email Marketing 🔄 IN PROGRESS
 
-- [ ] Prisma: Add `EmailCampaign`, `EmailTemplate`, and `EmailEvent` models
-- [ ] Backend: Setup BullMQ / Redis worker for async bulk sending
-- [ ] Backend: Build AI Service integration (OpenAI/Anthropic) for email generation
-- [ ] API: Endpoints for Campaign CRUD and Audience Segmentation
-- [ ] Frontend (Admin): Build WYSIWYG Email Editor (React-Email / TipTap)
-- [ ] Frontend (Admin): Add Audience Filtering UI (Free vs Pro vs Elite)
-- [ ] Frontend (Admin): Add Campaign Analytics View (Open rates, CTR)
+### Core Infrastructure
+- [x] Prisma: Add `EmailCampaign`, `EmailTemplate`, and `EmailEvent` models
+- [x] Prisma: Add `customEmails` field for individual email targeting
+- [x] Backend: Setup BullMQ / Redis worker for async bulk sending
+- [x] Backend: Build AI Content Generator (branded template engine, 7 categories)
+- [x] API: Endpoints for Campaign CRUD (`GET/POST/PUT /admin/emails/campaigns`)
+- [x] API: Send campaign endpoint (`POST /admin/emails/campaigns/:id/send`)
+- [x] API: AI generate endpoint (`POST /admin/emails/generate`)
+- [x] API: Test send endpoint (`POST /admin/emails/test-send`)
+
+### Frontend (Admin Panel)
+- [x] Campaign list table with status badges (draft/sending/sent/failed)
+- [x] New Campaign editor modal with subject, name, HTML content
+- [x] Audience segment selector (All, Elite, Pro, Free)
+- [x] Individual emails field (comma-separated, overrides segment)
+- [x] AI Content Generator with Enter-to-submit and success feedback
+- [x] Quick Insert Toolbar: Logo, CTA Button, Divider, Social Links, Unsubscribe
+- [x] Preview opens in new popup window (not inline modal)
+- [x] Send Test Email to any address before bulk sending
+- [x] Stats cards (Total Campaigns, Sent, Drafts)
+- [x] "Emails" nav item added to admin sidebar
+
+### Pending
+- [ ] Campaign Analytics View (open rates, click-through rates)
+- [ ] Open tracking (tracking pixel injection)
+- [ ] Click tracking (link wrapping with redirect)
+- [ ] Email templates library (save/load reusable templates)
+- [ ] Schedule campaigns for future send date/time
+- [ ] A/B testing (subject line variants)
