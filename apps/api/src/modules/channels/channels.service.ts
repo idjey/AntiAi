@@ -137,9 +137,8 @@ export class ChannelsService {
         }
 
         // Verify token placement via YouTube API
+        let youtubeChannel;
         try {
-            let youtubeChannel;
-
             // Determine if input is likely a Channel ID (UC...) or Handle
             // Handles usually don't start with UC unless coincidentally, but IDs always do and are 24 chars
             const isLikelyChannelId = channel.platformId.startsWith('UC') && channel.platformId.length === 24;
