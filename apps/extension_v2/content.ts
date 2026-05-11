@@ -92,9 +92,18 @@ const adapters: PlatformAdapter[] = [
                     if (isVerified && videoId) {
                         badge.href = `https://antiai.me/verify/${videoId}`
                         badge.target = '_blank'
+                        badge.onclick = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.open(`https://antiai.me/verify/${videoId}`, '_blank');
+                        };
                     } else {
                         badge.href = 'javascript:void(0)'
                         badge.style.cursor = 'default'
+                        badge.onclick = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        };
                     }
 
                     const svgNS = "http://www.w3.org/2000/svg"

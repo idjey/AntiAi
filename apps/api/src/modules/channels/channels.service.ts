@@ -221,6 +221,9 @@ export class ChannelsService {
         }
 
         // Mark as verified
+        const avatarUrl = youtubeChannel?.snippet?.thumbnails?.high?.url || youtubeChannel?.snippet?.thumbnails?.default?.url || null;
+        const channelName = youtubeChannel?.snippet?.title || channel.channelName;
+        
         const updatedChannel = await this.prisma.channel.update({
             where: { id: channel.id },
             data: {
@@ -228,6 +231,8 @@ export class ChannelsService {
                 verifiedAt: new Date(),
                 verificationToken: null, // Clear token after verification
                 tokenExpiresAt: null,
+                avatarUrl: avatarUrl,
+                channelName: channelName
             },
         });
 
