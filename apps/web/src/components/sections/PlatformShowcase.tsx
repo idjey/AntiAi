@@ -76,7 +76,7 @@ export default function PlatformShowcase() {
                         <span style={{ color: '#22C55E' }}>every platform.</span>
                     </h2>
                     <p className="text-lg md:text-xl text-text-secondary max-w-2xl mx-auto leading-relaxed">
-                        AntiAI protects your content wherever your audience watches — YouTube, TikTok, Instagram, and Facebook.
+                        AntiAI protects your content wherever your audience watches YouTube, TikTok, Instagram, and Facebook.
                     </p>
                 </header>
 
@@ -109,16 +109,14 @@ export default function PlatformShowcase() {
                                 <h3 className="text-xl font-bold text-text-primary mb-1">{platform.name}</h3>
                                 <p className="text-sm text-text-secondary mb-4">{platform.description}</p>
                                 <span
-                                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-                                        platform.status === 'Live'
-                                            ? 'bg-primary/10 text-primary'
-                                            : 'bg-yellow-500/10 text-yellow-500'
-                                    }`}
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${platform.status === 'Live'
+                                        ? 'bg-primary/10 text-primary'
+                                        : 'bg-yellow-500/10 text-yellow-500'
+                                        }`}
                                 >
                                     <span
-                                        className={`w-1.5 h-1.5 rounded-full ${
-                                            platform.status === 'Live' ? 'bg-primary animate-pulse' : 'bg-yellow-500'
-                                        }`}
+                                        className={`w-1.5 h-1.5 rounded-full ${platform.status === 'Live' ? 'bg-primary animate-pulse' : 'bg-yellow-500'
+                                            }`}
                                     />
                                     {platform.status}
                                 </span>

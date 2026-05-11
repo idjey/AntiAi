@@ -88,8 +88,9 @@ const adapters: PlatformAdapter[] = [
                     // Add shorts specific class if needed
                     badge.className = `antiai-badge ${!isVerified ? 'antiai-badge-unverified' : ''} ${isShorts ? 'antiai-badge-shorts' : ''}`
                     
-                    if (isVerified && data?.youtube_video_id) {
-                        badge.href = `https://antiai.me/verify/${data.youtube_video_id}`
+                    const videoId = data?.platform_id || data?.youtube_video_id;
+                    if (isVerified && videoId) {
+                        badge.href = `https://antiai.me/verify/${videoId}`
                         badge.target = '_blank'
                     } else {
                         badge.href = 'javascript:void(0)'
