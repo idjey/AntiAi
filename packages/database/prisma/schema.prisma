@@ -189,7 +189,7 @@ model Channel {
   id                 String             @id @default(uuid()) @db.Uuid
   userId             String             @map("user_id") @db.Uuid
   platform           String             @default("youtube") // 'youtube', 'tiktok', 'instagram', 'facebook'
-  platformId         String             @map("platform_id")
+  platformId         String             @default("") @map("platform_id")
   channelHandle      String?            @map("channel_handle")
   channelName        String             @map("channel_name")
   channelUrl         String?            @map("channel_url")
@@ -224,7 +224,7 @@ model Video {
   id           String    @id @default(uuid()) @db.Uuid
   channelId    String    @map("channel_id") @db.Uuid
   platform     String    @default("youtube") // 'youtube', 'tiktok', 'instagram', 'facebook'
-  platformId   String    @map("platform_id")
+  platformId   String    @default("") @map("platform_id")
   title        String?
   videoUrl     String?   @map("video_url")
   thumbnailUrl String?   @map("thumbnail_url")

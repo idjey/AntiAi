@@ -54,7 +54,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const platform = message.platform || "youtube"
         console.log(`[Background] Checking video: ${videoId} on ${platform}`)
 
-        fetch(`https://antiaiapi-production.up.railway.app/public/verify?youtube_video_id=${videoId}&platform=${platform}`)
+        fetch(`https://api.antiai.me/public/verify?youtube_video_id=${videoId}&platform=${platform}`)
             .then(res => res.json())
             .then(data => {
                 const isVerified = data && data.status === 'verified'
@@ -87,7 +87,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const channelId = message.channelId
         console.log(`[Background] Checking channel: ${channelId}`)
 
-        fetch(`https://antiaiapi-production.up.railway.app/public/channel/status?channelId=${encodeURIComponent(channelId)}`)
+        fetch(`https://api.antiai.me/public/channel/status?channelId=${encodeURIComponent(channelId)}`)
             .then(res => res.json())
             .then(data => {
                 const isVerified = data && data.verified === true

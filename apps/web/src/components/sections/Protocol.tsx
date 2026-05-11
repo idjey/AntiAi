@@ -72,15 +72,15 @@ export default function Protocol() {
                     <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16">
                         {/* Interactive tech stack items with "ray of hope" green glow on hover */}
                         <div className="group flex items-center gap-2 font-mono text-xl font-bold text-slate-500 transition-all duration-500 hover:text-primary hover:scale-110 hover:[filter:drop-shadow(0_0_20px_currentColor)] cursor-default">
-                            <ShieldCheck aria-hidden="true" className="w-7 h-7 transition-all duration-700 ease-out group-hover:rotate-[360deg] group-hover:scale-110" /> 
+                            <ShieldCheck aria-hidden="true" className="w-7 h-7 transition-all duration-700 ease-out group-hover:rotate-[360deg] group-hover:scale-110" />
                             <span className="tracking-wide">Ed25519</span>
                         </div>
                         <div className="group flex items-center gap-2 font-mono text-xl font-bold text-slate-500 transition-all duration-500 hover:text-primary hover:scale-110 hover:[filter:drop-shadow(0_0_20px_currentColor)] cursor-default">
-                            <Fingerprint aria-hidden="true" className="w-7 h-7 transition-all duration-500 ease-out group-hover:scale-125" /> 
+                            <Fingerprint aria-hidden="true" className="w-7 h-7 transition-all duration-500 ease-out group-hover:scale-125" />
                             <span className="tracking-wide">SHA-256</span>
                         </div>
                         <div className="group flex items-center gap-2 font-mono text-xl font-bold text-slate-500 transition-all duration-500 hover:text-primary hover:scale-110 hover:[filter:drop-shadow(0_0_20px_currentColor)] cursor-default">
-                            <Network aria-hidden="true" className="w-7 h-7 transition-all duration-500 ease-out group-hover:rotate-[15deg] group-hover:scale-110" /> 
+                            <Network aria-hidden="true" className="w-7 h-7 transition-all duration-500 ease-out group-hover:rotate-[15deg] group-hover:scale-110" />
                             <span className="tracking-wide">Merkle Trees</span>
                         </div>
                     </div>

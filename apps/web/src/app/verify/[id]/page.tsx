@@ -6,10 +6,11 @@ import Link from 'next/link'
 
 interface VerificationData {
     status: 'verified' | 'unverified' | 'expired' | 'revoked';
-    youtube_video_id: string;
-    youtube_channel_id: string | null;
+    platform: string;
+    platform_id: string;
     channel_name: string | null;
     channel_handle: string | null;
+    avatar_url?: string | null;
     public_creator_url: string | null;
     message: string | null;
     proof: {
@@ -135,20 +136,24 @@ export default function VerificationPage() {
                         <div>
                             <h3 className="text-xs font-bold text-text-secondary uppercase tracking-wider mb-4">Content</h3>
                             <a
-                                href={`https://youtube.com/watch?v=${data.youtube_video_id}`}
+                                href={data.platform === 'youtube' ? `https://youtube.com/watch?v=${data.platform_id}` : '#'}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="block group"
                             >
                                 <div className="aspect-video bg-surface-light rounded-lg overflow-hidden border border-white/5 mb-3 group-hover:border-primary/50 transition-colors flex items-center justify-center">
-                                    <img
-                                        src={`https://img.youtube.com/vi/${data.youtube_video_id}/hqdefault.jpg`}
-                                        alt="Video Thumbnail"
-                                        className="w-full h-full object-cover"
-                                    />
+                                    {data.platform === 'youtube' ? (
+                                        <img
+                                            src={`https://img.youtube.com/vi/${data.platform_id}/hqdefault.jpg`}
+                                            alt="Video Thumbnail"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="text-text-muted">Video Thumbnail</div>
+                                    )}
                                 </div>
-                                <h4 className="font-bold leading-tight group-hover:text-primary transition-colors">
-                                    YouTube Video
+                                <h4 className="font-bold leading-tight group-hover:text-primary transition-colors capitalize">
+                                    {data.platform} Video
                                 </h4>
                             </a>
                         </div>
@@ -156,8 +161,12 @@ export default function VerificationPage() {
                         <div>
                             <h3 className="text-xs font-bold text-text-secondary uppercase tracking-wider mb-4">Creator</h3>
                             <div className="flex items-center gap-4 bg-surface-light p-4 rounded-lg border border-white/5">
-                                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                                    {data.channel_name ? data.channel_name.charAt(0) : '?'}
+                                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold overflow-hidden">
+                                    {data.avatar_url ? (
+                                        <img src={data.avatar_url} alt={data.channel_name || 'Creator'} className="w-full h-full object-cover" />
+                                    ) : (
+                                        data.channel_name ? data.channel_name.charAt(0) : '?'
+                                    )}
                                 </div>
                                 <div>
                                     <div className="font-bold flex items-center gap-1.5">
