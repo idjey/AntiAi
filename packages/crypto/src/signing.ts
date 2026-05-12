@@ -9,8 +9,6 @@ import * as ed25519 from '@noble/ed25519';
 import { sha512 } from '@noble/hashes/sha512';
 import { canonicalize } from 'json-canonicalize';
 import { randomBytes } from 'crypto';
-import { KMSClient, SignCommand } from '@aws-sdk/client-kms';
-
 // Required for @noble/ed25519 v1 sync operations
 ed25519.utils.sha512Sync = (...m) => sha512(ed25519.utils.concatBytes(...m));
 
@@ -151,10 +149,8 @@ export interface SignProofOptions {
     kid: string;
     youtubeVideoId: string;
     youtubeChannelId: string;
-    expiresAt: Date | number; // Date object or unix timestamp in ms
-    privateKeyB64?: string; // Optional if using KMS
-    awsKmsKeyId?: string; // AWS KMS Key ARN or ID
-    awsRegion?: string; // e.g., 'us-east-1'
+    expiresAt: Date | number;
+    privateKeyB64: string;
     contentHash?: string;
 }
 
@@ -162,18 +158,16 @@ export interface SignProofOptions {
  * Sign a proof for a video using Ed25519
  */
 export async function signProof(options: SignProofOptions): Promise<SignedProof> {
-    const { kid, youtubeVideoId, youtubeChannelId, expiresAt, privateKeyB64, awsKmsKeyId, awsRegion, contentHash } = options;
+    const { kid, youtubeVideoId, youtubeChannelId, expiresAt, privateKeyB64, contentHash } = options;
 
-    if (!privateKeyB64 && !awsKmsKeyId) {
-        throw new Error('Either privateKeyB64 or awsKmsKeyId must be provided');
+    if (!privateKeyB64) {
+        throw new Error('privateKeyB64 must be provided');
     }
 
-    // Normalize expiry to unix seconds
     let expiresAtUnix: number;
     if (expiresAt instanceof Date) {
         expiresAtUnix = Math.floor(expiresAt.getTime() / 1000);
     } else if (typeof expiresAt === 'number') {
-        // Assume milliseconds if it looks like a JS timestamp
         expiresAtUnix = expiresAt > 10000000000 ? Math.floor(expiresAt / 1000) : expiresAt;
     } else {
         throw new Error('expiresAt must be Date or number');
@@ -187,33 +181,10 @@ export async function signProof(options: SignProofOptions): Promise<SignedProof>
         contentHash,
     });
 
-    let signature_b64: string;
-
-    if (awsKmsKeyId) {
-        // ---------------- AWS KMS SIGNING PATH ----------------
-        // Initialize client (credentials are pulled from environment variables)
-        const kmsClient = new KMSClient(awsRegion ? { region: awsRegion } : {});
-        const signCmd = new SignCommand({
-            KeyId: awsKmsKeyId,
-            Message: payloadBytes,
-            MessageType: 'RAW', // Send raw bytes, KMS hashes it if necessary (EdDSA requires RAW)
-            SigningAlgorithm: 'EdDSA', // Ed25519 signing algorithm in KMS
-        });
-
-        const response = await kmsClient.send(signCmd);
-        if (!response.Signature) throw new Error('AWS KMS returned empty signature');
-        signature_b64 = toBase64Url(response.Signature);
-    } else if (privateKeyB64) {
-        // ---------------- LOCAL IN-MEMORY SIGNING PATH ----------------
-        const privBytes = fromBase64(privateKeyB64);
-        const priv32 = privBytes.length === 32 ? privBytes : privBytes.slice(0, 32);
-        
-        const sigBytes = await ed25519.sign(payloadBytes, priv32);
-        signature_b64 = toBase64Url(sigBytes);
-    } else {
-        throw new Error('Unreachable: Missing signing key material');
-    }
-
+    const privBytes = fromBase64(privateKeyB64);
+    const priv32 = privBytes.length === 32 ? privBytes : privBytes.slice(0, 32);
+    const sigBytes = await ed25519.sign(payloadBytes, priv32);
+    const signature_b64 = toBase64Url(sigBytes);
     const payload_b64 = toBase64Url(payloadBytes);
 
     return {
