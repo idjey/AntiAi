@@ -9,6 +9,7 @@ import * as ed25519 from '@noble/ed25519';
 import { sha512 } from '@noble/hashes/sha512';
 import { canonicalize } from 'json-canonicalize';
 import { randomBytes } from 'crypto';
+import { KMSClient, SignCommand } from '@aws-sdk/client-kms';
 
 // Required for @noble/ed25519 v1 sync operations
 ed25519.utils.sha512Sync = (...m) => sha512(ed25519.utils.concatBytes(...m));
@@ -24,6 +25,7 @@ export interface ProofPayload {
     nonce: string;
     youtube_video_id: string;
     youtube_channel_id: string;
+    content_hash?: string;
 }
 
 export interface SignedProof {
@@ -98,6 +100,7 @@ export interface BuildPayloadOptions {
     youtubeVideoId: string;
     youtubeChannelId: string;
     expiresAtUnix: number;
+    contentHash?: string;
 }
 
 /**
@@ -108,7 +111,7 @@ export function buildCanonicalPayload(options: BuildPayloadOptions): {
     canonicalJson: string;
     payloadBytes: Uint8Array;
 } {
-    const { kid, youtubeVideoId, youtubeChannelId, expiresAtUnix } = options;
+    const { kid, youtubeVideoId, youtubeChannelId, expiresAtUnix, contentHash } = options;
 
     if (!kid) throw new Error('kid is required');
     if (!youtubeVideoId) throw new Error('youtubeVideoId is required');
@@ -131,6 +134,9 @@ export function buildCanonicalPayload(options: BuildPayloadOptions): {
         youtube_video_id: youtubeVideoId,
         youtube_channel_id: youtubeChannelId,
     };
+    if (contentHash) {
+        payload.content_hash = contentHash;
+    }
 
     // Canonical JSON string per JCS (stable key ordering, minimal formatting)
     const canonicalJson = canonicalize(payload);
@@ -146,16 +152,21 @@ export interface SignProofOptions {
     youtubeVideoId: string;
     youtubeChannelId: string;
     expiresAt: Date | number; // Date object or unix timestamp in ms
-    privateKeyB64: string;
+    privateKeyB64?: string; // Optional if using KMS
+    awsKmsKeyId?: string; // AWS KMS Key ARN or ID
+    awsRegion?: string; // e.g., 'us-east-1'
+    contentHash?: string;
 }
 
 /**
  * Sign a proof for a video using Ed25519
  */
 export async function signProof(options: SignProofOptions): Promise<SignedProof> {
-    const { kid, youtubeVideoId, youtubeChannelId, expiresAt, privateKeyB64 } = options;
+    const { kid, youtubeVideoId, youtubeChannelId, expiresAt, privateKeyB64, awsKmsKeyId, awsRegion, contentHash } = options;
 
-    if (!privateKeyB64) throw new Error('privateKeyB64 is required');
+    if (!privateKeyB64 && !awsKmsKeyId) {
+        throw new Error('Either privateKeyB64 or awsKmsKeyId must be provided');
+    }
 
     // Normalize expiry to unix seconds
     let expiresAtUnix: number;
@@ -173,19 +184,37 @@ export async function signProof(options: SignProofOptions): Promise<SignedProof>
         youtubeVideoId,
         youtubeChannelId,
         expiresAtUnix,
+        contentHash,
     });
 
-    // Decode private key material
-    const privBytes = fromBase64(privateKeyB64);
-    // @noble/ed25519 expects 32-byte private key (seed)
-    const priv32 = privBytes.length === 32 ? privBytes : privBytes.slice(0, 32);
+    let signature_b64: string;
 
-    // Sign canonical payload bytes
-    const sigBytes = await ed25519.sign(payloadBytes, priv32);
+    if (awsKmsKeyId) {
+        // ---------------- AWS KMS SIGNING PATH ----------------
+        // Initialize client (credentials are pulled from environment variables)
+        const kmsClient = new KMSClient(awsRegion ? { region: awsRegion } : {});
+        const signCmd = new SignCommand({
+            KeyId: awsKmsKeyId,
+            Message: payloadBytes,
+            MessageType: 'RAW', // Send raw bytes, KMS hashes it if necessary (EdDSA requires RAW)
+            SigningAlgorithm: 'EdDSA', // Ed25519 signing algorithm in KMS
+        });
 
-    // Produce base64url outputs
+        const response = await kmsClient.send(signCmd);
+        if (!response.Signature) throw new Error('AWS KMS returned empty signature');
+        signature_b64 = toBase64Url(response.Signature);
+    } else if (privateKeyB64) {
+        // ---------------- LOCAL IN-MEMORY SIGNING PATH ----------------
+        const privBytes = fromBase64(privateKeyB64);
+        const priv32 = privBytes.length === 32 ? privBytes : privBytes.slice(0, 32);
+        
+        const sigBytes = await ed25519.sign(payloadBytes, priv32);
+        signature_b64 = toBase64Url(sigBytes);
+    } else {
+        throw new Error('Unreachable: Missing signing key material');
+    }
+
     const payload_b64 = toBase64Url(payloadBytes);
-    const signature_b64 = toBase64Url(sigBytes);
 
     return {
         alg: 'Ed25519',

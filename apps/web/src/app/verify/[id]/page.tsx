@@ -1,68 +1,78 @@
-'use client'
+import { Metadata, ResolvingMetadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
 
-import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
-import Link from 'next/link'
+export const dynamic = 'force-dynamic';
 
-interface VerificationData {
-    status: 'verified' | 'unverified' | 'expired' | 'revoked';
-    platform: string;
-    platform_id: string;
-    channel_name: string | null;
-    channel_handle: string | null;
-    avatar_url?: string | null;
-    public_creator_url: string | null;
-    message: string | null;
-    proof: {
+interface Props {
+    params: {
         id: string;
-        alg: string;
-        kid: string;
-        issued_at: string;
-        expires_at: string;
-        status: string;
-    } | null;
+    };
 }
 
-export default function VerificationPage() {
-    const params = useParams()
-    const [data, setData] = useState<VerificationData | null>(null)
-    const [isLoading, setIsLoading] = useState(true)
-    const [error, setError] = useState('')
+async function getVerificationData(id: string) {
+    try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/public/verify?youtube_video_id=${id}`, {
+            cache: 'no-store'
+        });
 
-    useEffect(() => {
-        const fetchVerification = async () => {
-            try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/public/verify?youtube_video_id=${params.id}`)
-
-                if (!res.ok) {
-                    if (res.status === 404) throw new Error('Video not found')
-                    throw new Error('Failed to verify video')
-                }
-
-                const data = await res.json()
-                setData(data)
-            } catch (err: any) {
-                console.error(err)
-                setError(err.message)
-            } finally {
-                setIsLoading(false)
-            }
+        if (!res.ok) {
+            return null;
         }
 
-        if (params.id) {
-            fetchVerification()
-        }
-    }, [params.id])
+        return await res.json();
+    } catch (err) {
+        return null;
+    }
+}
 
-    if (isLoading) {
-        return (
-            <div className="min-h-screen bg-background flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-            </div>
-        )
+export async function generateMetadata(
+    { params }: Props,
+    parent: ResolvingMetadata
+): Promise<Metadata> {
+    const data = await getVerificationData(params.id);
+
+    if (!data || data.status !== 'verified') {
+        return {
+            title: 'Verification Not Found | AntiAI',
+            description: 'The requested video verification could not be found.',
+        };
     }
 
-    if (error || !data) {
+    const title = `${data.channel_name || 'Creator'} | Verified on AntiAI`;
+    const description = `This video has been cryptographically signed and verified by AntiAI as authentic content from ${data.channel_name || 'its creator'}.`;
+    const imageUrl = `https://img.youtube.com/vi/${data.platform_id}/maxresdefault.jpg`;
+
+    return {
+        title,
+        description,
+        openGraph: {
+            title,
+            description,
+            url: `https://antiai.me/verify/${data.platform_id}`,
+            images: [
+                {
+                    url: imageUrl,
+                    width: 1280,
+                    height: 720,
+                    alt: 'Verified Video Thumbnail',
+                },
+            ],
+            type: 'video.other',
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title,
+            description,
+            images: [imageUrl],
+        },
+    };
+}
+
+export default async function VerificationPage({ params }: Props) {
+    const data = await getVerificationData(params.id);
+
+    if (!data) {
         return (
             <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
                 <div className="card max-w-md w-full p-8 text-center border-red-500/20">
@@ -72,13 +82,13 @@ export default function VerificationPage() {
                         </svg>
                     </div>
                     <h1 className="text-2xl font-bold mb-2">Verification Failed</h1>
-                    <p className="text-text-secondary mb-6">{error || 'Unable to verify this content.'}</p>
+                    <p className="text-text-secondary mb-6">Video not found or failed to verify.</p>
                     <Link href="/" className="btn-primary">
                         Return Home
                     </Link>
                 </div>
             </div>
-        )
+        );
     }
 
     if (data.status !== 'verified') {
@@ -97,13 +107,34 @@ export default function VerificationPage() {
                     </Link>
                 </div>
             </div>
-        )
+        );
     }
 
-    const { proof } = data
+    const { proof } = data;
+
+    // Structured Data for SEO
+    const jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'VideoObject',
+        'name': `Verified Content by ${data.channel_name || 'Creator'}`,
+        'thumbnailUrl': `https://img.youtube.com/vi/${data.platform_id}/maxresdefault.jpg`,
+        'uploadDate': proof ? new Date(proof.issued_at).toISOString() : new Date().toISOString(),
+        'author': {
+            '@type': 'Person',
+            'name': data.channel_name,
+            'url': data.public_creator_url || `https://youtube.com/@${data.channel_handle}`,
+        },
+        'verificationStatus': 'Verified',
+    };
 
     return (
         <div className="min-h-screen bg-background py-12 px-4 flex flex-col items-center">
+            {/* Inject JSON-LD Schema */}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
+
             {/* Certificate Card */}
             <div className="w-full max-w-2xl bg-surface border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
                 {/* Header */}
@@ -223,5 +254,5 @@ export default function VerificationPage() {
                 </div>
             </div>
         </div>
-    )
+    );
 }

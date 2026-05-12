@@ -1,7 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createHash } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProofsService } from '../proofs/proofs.service';
+import { FlagVideoDto } from './dto';
 
 @Injectable()
 export class PublicService {
@@ -230,12 +232,18 @@ export class PublicService {
      * Get Creator Directory (Trending and Recent)
      * GET /public/creators
      */
-    async getCreatorDirectory(): Promise<any> {
+    async getCreatorDirectory(category?: string): Promise<any> {
         // 1. Recently Verified (The Grid)
         // Find creators who have at least one verified channel, ordered by the channel's verifiedAt descending.
+        
+        const categoryFilter = category && category.toLowerCase() !== 'all' ? {
+            has: category
+        } : undefined;
+
         const recentProfiles = await this.prisma.creatorProfile.findMany({
             where: {
                 isPublic: true,
+                categories: categoryFilter,
                 user: {
                     channels: {
                         some: { verificationStatus: 'verified' }
@@ -295,6 +303,7 @@ export class PublicService {
         const trendingCandidates = await this.prisma.creatorProfile.findMany({
             where: {
                 isPublic: true,
+                categories: categoryFilter,
                 OR: [
                     { isFeatured: true },
                     { id: { in: Array.from(viewCountMap.keys()) } }
@@ -336,6 +345,7 @@ export class PublicService {
             const fallbackProfiles = await this.prisma.creatorProfile.findMany({
                 where: {
                     isPublic: true,
+                    categories: categoryFilter,
                     id: { notIn: excludeIds }
                 },
                 orderBy: { createdAt: 'desc' },
@@ -359,6 +369,45 @@ export class PublicService {
             trending,
             recent
         };
+    }
+
+    /**
+     * Get all public creators and verified videos for sitemap generation
+     */
+    async getSitemapData() {
+        const creators = await this.prisma.creatorProfile.findMany({
+            where: { isPublic: true },
+            select: { handle: true, updatedAt: true }
+        });
+
+        const verifiedVideos = await this.prisma.video.findMany({
+            where: {
+                proofs: { some: { status: 'active' } },
+                platform: 'youtube'
+            },
+            select: { platformId: true, registeredAt: true }
+        });
+
+        return {
+            creators: creators.map(c => ({
+                url: `https://antiai.me/${c.handle}`,
+                lastModified: c.updatedAt
+            })),
+            videos: verifiedVideos.map(v => ({
+                url: `https://antiai.me/verify/${v.platformId}`,
+                lastModified: v.registeredAt
+            }))
+        };
+    }
+
+    /**
+     * Get recent transparency logs
+     */
+    async getTransparencyLogs() {
+        return this.prisma.transparencyLog.findMany({
+            orderBy: { eventTime: 'desc' },
+            take: 50,
+        });
     }
 
     private async formatProfileResponse(profile: any) {
@@ -450,6 +499,54 @@ export class PublicService {
             expires_at: proof.expiresAt.toISOString(),
             status: proof.status,
         };
+    }
+
+    async flagVideo(dto: FlagVideoDto, ip: string) {
+        const video = await this.prisma.video.findUnique({
+            where: {
+                platform_platformId: { platform: dto.platform, platformId: dto.platform_id }
+            }
+        });
+
+        if (!video) {
+            throw new NotFoundException('Video not found');
+        }
+
+        // Hash the IP to protect PII
+        const ipHashBuffer = createHash('sha256').update(ip).digest();
+
+        // Enforce max 3 flags per IP per video per day
+        const MAX_FLAGS_PER_DAY = 3;
+        const oneDayAgo = new Date();
+        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+
+        const recentFlags = await this.prisma.contentFlag.count({
+            where: {
+                videoId: video.id,
+                ipHash: ipHashBuffer,
+                createdAt: {
+                    gte: oneDayAgo
+                }
+            }
+        });
+
+        if (recentFlags >= MAX_FLAGS_PER_DAY) {
+            throw new HttpException(
+                'Rate limit exceeded. You can only flag this video a limited number of times per day.', 
+                HttpStatus.TOO_MANY_REQUESTS
+            );
+        }
+
+        await this.prisma.contentFlag.create({
+            data: {
+                videoId: video.id,
+                ipHash: ipHashBuffer,
+                reason: dto.reason,
+                status: 'pending'
+            }
+        });
+
+        return { success: true, message: 'Video flagged successfully for review.' };
     }
 
     private getCreatorUrl(handle: string | null): string | null {

@@ -56,6 +56,19 @@ export class ProofsService {
             throw new BadRequestException('Proof issuance is currently disabled.');
         }
 
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            include: { subscription: true }
+        });
+
+        if (!user || user.isSuspended) {
+            throw new ForbiddenException('Account is suspended or not found');
+        }
+
+        if (!user.subscription || user.subscription.status !== 'active') {
+            throw new ForbiddenException('Active subscription required to issue proofs');
+        }
+
         // Verify video ownership
         const video = await this.videosService.getVideoWithChannel(dto.video_id, userId);
         if (!video) {
@@ -77,16 +90,10 @@ export class ProofsService {
         // Get signing key
         const kid = this.configService.get<string>('SIGNING_KEY_ID');
         const privateKeyB64 = this.configService.get<string>('SIGNING_PRIVATE_KEY_B64');
+        const awsKmsKeyId = this.configService.get<string>('SIGNING_KMS_KEY_ID');
+        const awsRegion = this.configService.get<string>('AWS_REGION');
 
-        console.log('--- DEBUG ENV VARS ---');
-        console.log('ConfigService KID:', kid);
-        console.log('ConfigService PrivateKey Length:', privateKeyB64?.length);
-        console.log('Process.env KID:', process.env.SIGNING_KEY_ID);
-        console.log('Process.env PrivateKey Length:', process.env.SIGNING_PRIVATE_KEY_B64?.length);
-        console.log('All Env Keys:', Object.keys(process.env).filter(k => k.startsWith('SIGNING_')));
-        console.log('----------------------');
-
-        if (!kid || !privateKeyB64) {
+        if (!kid || (!privateKeyB64 && !awsKmsKeyId)) {
             throw new BadRequestException('Signing keys not configured');
         }
 
@@ -97,7 +104,12 @@ export class ProofsService {
         }
 
         // Sign the proof
-        const expiresAt = new Date(dto.expires_at);
+        let durationDays = 30;
+        if (user.subscription.plan === 'pro') durationDays = 365;
+        else if (user.subscription.plan === 'elite') durationDays = 365 * 3; // 3 years for elite
+
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + durationDays);
         let signedProof;
         try {
             signedProof = await signProof({
@@ -106,6 +118,8 @@ export class ProofsService {
                 youtubeChannelId: video.channel.platformId,
                 expiresAt,
                 privateKeyB64,
+                awsKmsKeyId,
+                awsRegion,
             });
         } catch (error) {
             console.error('Crypto Signing Error:', error);
@@ -148,6 +162,19 @@ export class ProofsService {
     }
 
     async reissueProof(userId: string, dto: ReissueProofDto) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            include: { subscription: true }
+        });
+
+        if (!user || user.isSuspended) {
+            throw new ForbiddenException('Account is suspended or not found');
+        }
+
+        if (!user.subscription || user.subscription.status !== 'active') {
+            throw new ForbiddenException('Active subscription required to reissue proofs');
+        }
+
         // Verify video ownership
         const video = await this.videosService.getVideoWithChannel(dto.video_id, userId);
         if (!video) {
@@ -169,19 +196,28 @@ export class ProofsService {
         // Get signing key
         const kid = this.configService.get<string>('SIGNING_KEY_ID');
         const privateKeyB64 = this.configService.get<string>('SIGNING_PRIVATE_KEY_B64');
+        const awsKmsKeyId = this.configService.get<string>('SIGNING_KMS_KEY_ID');
+        const awsRegion = this.configService.get<string>('AWS_REGION');
 
-        if (!kid || !privateKeyB64) {
+        if (!kid || (!privateKeyB64 && !awsKmsKeyId)) {
             throw new BadRequestException('Signing keys not configured');
         }
 
         // Sign new proof
-        const expiresAt = new Date(dto.expires_at);
+        let durationDays = 30;
+        if (user.subscription.plan === 'pro') durationDays = 365;
+        else if (user.subscription.plan === 'elite') durationDays = 365 * 3;
+
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + durationDays);
         const signedProof = await signProof({
             kid,
             youtubeVideoId: video.platformId,
             youtubeChannelId: video.channel.platformId,
             expiresAt,
             privateKeyB64,
+            awsKmsKeyId,
+            awsRegion,
         });
 
         // Create new proof and supersede old one in transaction

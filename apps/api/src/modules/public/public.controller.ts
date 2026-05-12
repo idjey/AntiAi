@@ -1,5 +1,7 @@
-import { Controller, Get, Query, Param, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Req, Query, Param, NotFoundException, HttpException, HttpStatus } from '@nestjs/common';
+import { Request } from 'express';
 import { PublicService } from './public.service';
+import { FlagVideoDto } from './dto';
 
 @Controller('public')
 export class PublicController {
@@ -67,8 +69,26 @@ export class PublicController {
      * GET /public/creators
      */
     @Get('creators')
-    async getCreatorDirectory() {
-        return this.publicService.getCreatorDirectory();
+    async getCreatorDirectory(@Query('category') category?: string) {
+        return this.publicService.getCreatorDirectory(category);
+    }
+
+    /**
+     * Get all public creators and videos for sitemap generation
+     * GET /public/sitemap
+     */
+    @Get('sitemap')
+    async getSitemapData() {
+        return this.publicService.getSitemapData();
+    }
+
+    /**
+     * Get recent transparency logs (proof issuances, revocations, etc.)
+     * GET /public/transparency
+     */
+    @Get('transparency')
+    async getTransparencyLogs() {
+        return this.publicService.getTransparencyLogs();
     }
 
     /**
@@ -97,5 +117,20 @@ export class PublicController {
         return result;
     }
 
+    /**
+     * Flag a video for abuse/deepfake
+     * POST /public/flag
+     */
+    @Post('flag')
+    async flagVideo(
+        @Body() dto: FlagVideoDto,
+        @Req() req: Request
+    ) {
+        // Express trust proxy must be configured for this to be the real client IP
+        const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '0.0.0.0';
+        // handle comma separated list from x-forwarded-for
+        const clientIp = ip.split(',')[0].trim();
+        return this.publicService.flagVideo(dto, clientIp);
+    }
 }
 
