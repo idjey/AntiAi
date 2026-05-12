@@ -1,0 +1,17 @@
+feat: core technical SEO implementation and infrastructure hardening
+
+This commit resolves critical SEO indexing blockers and introduces core infrastructure updates:
+
+1. Technical SEO & Indexability
+- Refactored verify/[id]/page.tsx and creators/page.tsx to Server Components for direct HTML server-side rendering, making them fully crawlable.
+- Added dynamic /public/sitemap endpoint and sitemap.ts to surface all creator profiles and verified videos.
+- Injected Schema.org JSON-LD (Person and VideoObject) into Creator and Verification pages for rich Google Search results.
+- Added dynamic Open Graph and Twitter Card metadata for rich social sharing.
+- Created rel="canonical" tags for creator profile pages to consolidate domain authority.
+- Added dynamic SSR directory paths for filtering creators by category (/creators/category/[category]).
+- Developed a public Transparency Log (/transparency) to automatically feed real-time proof issuances and key rotations to crawlers.
+
+2. Infrastructure & Security Hardening
+- Finalized database schema for content flagging and abuse reporting.
+- Implemented robust IP-based rate limiting on the /public/flag endpoint to prevent platform spam and protect content creators.
+- Updated cryptographic signing capabilities within the crypto package.
