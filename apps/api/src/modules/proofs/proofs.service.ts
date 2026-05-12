@@ -90,10 +90,8 @@ export class ProofsService {
         // Get signing key
         const kid = this.configService.get<string>('SIGNING_KEY_ID');
         const privateKeyB64 = this.configService.get<string>('SIGNING_PRIVATE_KEY_B64');
-        const awsKmsKeyId = this.configService.get<string>('SIGNING_KMS_KEY_ID');
-        const awsRegion = this.configService.get<string>('AWS_REGION');
 
-        if (!kid || (!privateKeyB64 && !awsKmsKeyId)) {
+        if (!kid || !privateKeyB64) {
             throw new BadRequestException('Signing keys not configured');
         }
 
@@ -118,8 +116,6 @@ export class ProofsService {
                 youtubeChannelId: video.channel.platformId,
                 expiresAt,
                 privateKeyB64,
-                awsKmsKeyId,
-                awsRegion,
             });
         } catch (error) {
             console.error('Crypto Signing Error:', error);
@@ -196,10 +192,8 @@ export class ProofsService {
         // Get signing key
         const kid = this.configService.get<string>('SIGNING_KEY_ID');
         const privateKeyB64 = this.configService.get<string>('SIGNING_PRIVATE_KEY_B64');
-        const awsKmsKeyId = this.configService.get<string>('SIGNING_KMS_KEY_ID');
-        const awsRegion = this.configService.get<string>('AWS_REGION');
 
-        if (!kid || (!privateKeyB64 && !awsKmsKeyId)) {
+        if (!kid || !privateKeyB64) {
             throw new BadRequestException('Signing keys not configured');
         }
 
@@ -216,8 +210,6 @@ export class ProofsService {
             youtubeChannelId: video.channel.platformId,
             expiresAt,
             privateKeyB64,
-            awsKmsKeyId,
-            awsRegion,
         });
 
         // Create new proof and supersede old one in transaction
