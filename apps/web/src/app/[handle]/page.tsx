@@ -105,5 +105,28 @@ export default async function PublicProfilePage({ params }: Props) {
         notFound();
     }
 
-    return <PublicProfile creator={creator} />;
+    const jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'Person',
+        'name': creator.display_name || creator.handle,
+        'url': isCustomDomain ? `https://${identifier}` : `https://antiai.me/${creator.handle}`,
+        'image': creator.avatar_url,
+        'description': creator.bio,
+        'sameAs': creator.links?.map((l: any) => l.url) || [],
+    };
+
+    return (
+        <>
+            {isCustomDomain && (
+                <head>
+                    <link rel="canonical" href={`https://antiai.me/${creator.handle}`} />
+                </head>
+            )}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
+            <PublicProfile creator={creator} />
+        </>
+    );
 }

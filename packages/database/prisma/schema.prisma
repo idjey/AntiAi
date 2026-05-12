@@ -274,6 +274,9 @@ model Proof {
   expiresAt DateTime    @map("expires_at")
   status    ProofStatus @default(active)
 
+  schemaVersion Int     @default(1) @map("schema_version")
+  contentHash   String? @map("content_hash")
+
   // Version lineage for re-issue
   supersedesProofId String?   @unique @map("supersedes_proof_id") @db.Uuid
   supersededAt      DateTime? @map("superseded_at")
@@ -578,6 +581,7 @@ model ContentFlag {
   id        String   @id @default(uuid()) @db.Uuid
   videoId   String   @map("video_id") @db.Uuid // Foreign key to Video.id
   userId    String?  @map("user_id") @db.Uuid // Optional: ID of the user flagging it
+  ipHash    Bytes?   @map("ip_hash")
   reason    String // E.g., "Deepfake", "Voice Clone"
   status    String   @default("pending") // pending, approved, rejected
   createdAt DateTime @default(now()) @map("created_at")
