@@ -10,7 +10,8 @@
         "start:debug": "nest start --debug --watch",
         "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
         "test": "jest",
-        "test:cov": "jest --coverage"
+        "test:cov": "jest --coverage",
+        "test:e2e": "jest --config ./test/jest-e2e.json"
     },
     "dependencies": {
         "@antiai/crypto": "*",
@@ -26,6 +27,7 @@
         "@nestjs/platform-socket.io": "^11.1.19",
         "@nestjs/schedule": "^6.1.1",
         "@nestjs/serve-static": "^5.0.4",
+        "@nestjs/swagger": "^7.4.2",
         "@nestjs/throttler": "^5.2.0",
         "@nestjs/websockets": "^11.1.19",
         "@prisma/client": "^5.22.0",
@@ -45,6 +47,7 @@
         "sharp": "^0.33.5",
         "socket.io": "^4.8.3",
         "stripe": "^14.16.0",
+        "swagger-ui-express": "^5.0.1",
         "ua-parser-js": "^2.0.9"
     },
     "devDependencies": {
@@ -62,8 +65,10 @@
         "@types/passport-google-oauth20": "^2.0.17",
         "@types/passport-jwt": "^4.0.1",
         "@types/sharp": "^0.31.1",
+        "@types/supertest": "^7.2.0",
         "@types/ua-parser-js": "^0.7.39",
         "jest": "^29.7.0",
+        "supertest": "^7.2.2",
         "ts-jest": "^29.1.2",
         "ts-loader": "^9.5.1",
         "ts-node": "^10.9.2",

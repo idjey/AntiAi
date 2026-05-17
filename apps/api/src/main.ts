@@ -9,11 +9,16 @@ import { ValidationPipe } from '@nestjs/common';
 import 'dotenv/config';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule, {
         rawBody: true,
     });
+
+    // Global Exception Filter
+    app.useGlobalFilters(new GlobalExceptionFilter());
 
     // Global validation pipe
     app.useGlobalPipes(
@@ -54,6 +59,18 @@ async function bootstrap() {
         },
         credentials: true,
     });
+
+    // Swagger Documentation
+    if (process.env.NODE_ENV !== 'production') {
+        const config = new DocumentBuilder()
+            .setTitle('AntiAI.me API')
+            .setDescription('The core API for AntiAI cryptographic proofs and verification.')
+            .setVersion('1.0')
+            .addBearerAuth()
+            .build();
+        const document = SwaggerModule.createDocument(app, config);
+        SwaggerModule.setup('api-docs', app, document);
+    }
 
     const port = process.env.PORT || 4000;
     await app.listen(port);
