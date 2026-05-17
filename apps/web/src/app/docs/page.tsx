@@ -113,10 +113,10 @@ export default function DocsPage() {
                             <h2 className="text-3xl font-bold">Introduction</h2>
                         </div>
                         <p className="text-text-secondary leading-relaxed mb-4">
-                            In the era of generative AI and deepfakes, establishing the authenticity of digital media is more critical than ever. AntiAI is a decentralized trust protocol designed to cryptographically verify content at its source.
+                            In the era of generative AI and deepfakes, establishing the authenticity of digital media is more critical than ever. We are using <strong>The AntiAI Verification Protocol (AAVP)</strong>.
                         </p>
                         <p className="text-text-secondary leading-relaxed">
-                            Instead of relying on imperfect AI detection models that constantly chase the latest generation techniques, AntiAI flips the paradigm: we use immutable cryptographic signatures to prove that a piece of media was explicitly authorized by the claimed creator.
+                            AAVP is a decentralized security framework built to distinguish authentic, creator-verified content from deepfakes and AI-generated fabrications. Instead of relying on imperfect AI detection models, we use immutable cryptographic signatures to prove that a piece of media was explicitly authorized by the claimed creator.
                         </p>
                     </section>
 
@@ -130,20 +130,16 @@ export default function DocsPage() {
                         </div>
                         <div className="grid sm:grid-cols-2 gap-6 mb-8">
                             <div className="bg-surface p-6 rounded-2xl border border-white/5">
-                                <div className="text-xl font-bold mb-2">1. Authenticated Registration</div>
-                                <p className="text-sm text-text-secondary">Creators log into the AntiAI platform and securely link their social accounts (e.g., YouTube) via OAuth.</p>
+                                <div className="text-xl font-bold mb-2">1. Cryptographic Signatures</div>
+                                <p className="text-sm text-text-secondary">Creators sign their content using secure Ed25519 keys. The protocol establishes a unique mathematical identity that cannot be spoofed by AI or bad actors.</p>
                             </div>
                             <div className="bg-surface p-6 rounded-2xl border border-white/5">
-                                <div className="text-xl font-bold mb-2">2. Cryptographic Signing</div>
-                                <p className="text-sm text-text-secondary">When a creator uploads a video, our backend generates an asymmetric cryptographic signature (JWS) tying the video ID to the creator's identity.</p>
+                                <div className="text-xl font-bold mb-2">2. Tamper-Proof Ledger</div>
+                                <p className="text-sm text-text-secondary">When a video is verified, AntiAI takes a unique fingerprint (a hash) of that specific content and records it immutably. Once logged, the record cannot be altered.</p>
                             </div>
-                            <div className="bg-surface p-6 rounded-2xl border border-white/5">
-                                <div className="text-xl font-bold mb-2">3. Immutable Issuance</div>
-                                <p className="text-sm text-text-secondary">The signed token is published to our public registry and issued as a verifiable Certificate of Authenticity.</p>
-                            </div>
-                            <div className="bg-surface p-6 rounded-2xl border border-white/5">
-                                <div className="text-xl font-bold mb-2">4. Client-Side Validation</div>
-                                <p className="text-sm text-text-secondary">The AntiAI browser extension automatically fetches these public keys and verifies the signature in real-time as users browse.</p>
+                            <div className="bg-surface p-6 rounded-2xl border border-white/5 sm:col-span-2">
+                                <div className="text-xl font-bold mb-2">3. Real-Time Verification</div>
+                                <p className="text-sm text-text-secondary">The browser extension reads video data in real-time and asks the AAVP: "Does this hash match the creator's signature?" If yes, you see the green Authenticated badge.</p>
                             </div>
                         </div>
                     </section>
@@ -157,14 +153,14 @@ export default function DocsPage() {
                             <h2 className="text-3xl font-bold">Cryptographic Proofs</h2>
                         </div>
                         <p className="text-text-secondary leading-relaxed mb-6">
-                            Every verified piece of content is backed by a JSON Web Signature (JWS) using the <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded">RS256</code> algorithm. This ensures that the proof cannot be tampered with or forged.
+                            Every verified piece of content is backed by a JSON Web Signature (JWS) using the <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded">EdDSA</code> (Ed25519) algorithm. This ensures that the proof cannot be tampered with or forged.
                         </p>
                         <div className="bg-[#0d1117] border border-white/10 rounded-xl p-5 overflow-x-auto">
                             <pre className="text-sm font-mono text-slate-300">
                                 <code>{`{
-  "alg": "RS256",
+  "alg": "EdDSA",
   "typ": "JWT",
-  "kid": "antiai-key-v1"
+  "kid": "antiai-key-ed25519"
 }
 .
 {
@@ -210,7 +206,7 @@ export default function DocsPage() {
                                     <code className="text-sm font-mono text-white">/public/keys</code>
                                 </div>
                                 <div className="p-4 text-sm text-text-secondary">
-                                    Retrieves the active public RSA keys (in JWKS format) required to independently validate the cryptographic signatures generated by the AntiAI protocol.
+                                    Retrieves the active public Ed25519 keys (in JWKS format) required to independently validate the cryptographic signatures generated by the AntiAI protocol.
                                 </div>
                             </div>
                         </div>
