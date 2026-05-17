@@ -850,7 +850,7 @@ export default function CreatorCardPage() {
         );
     }
 
-    const NEXT_PUBLIC_FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL && process.env.NEXT_PUBLIC_FRONTEND_URL !== '' ? process.env.NEXT_PUBLIC_FRONTEND_URL : (typeof window !== 'undefined' ? window.location.origin : '');
+    const NEXT_PUBLIC_FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || '';
     const publicUrl = profile ? `${NEXT_PUBLIC_FRONTEND_URL}/${profile.handle}` : '';
 
     const handleRandomize = () => {

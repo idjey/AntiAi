@@ -612,7 +612,7 @@ export const PublicProfile = ({ creator }: Props) => {
                     {/* Share Button (Absolute Top Right) */}
                     <div className="absolute top-4 right-4 z-50">
                         <ShareDialog
-                            url={typeof window !== 'undefined' ? window.location.href : `https://antiai.me/${creator.handle}`}
+                            url={`https://antiai.me/${creator.handle}`}
                             handle={creator.handle}
                             enableQr={creator.plan === 'pro' || creator.plan === 'elite'}
                             buttonClassName={`p-2 rounded-full backdrop-blur-md border transition-all hover:scale-110 active:scale-95 shadow-lg ${isLightMode ? 'bg-white/50 border-black/10 text-black hover:bg-white/80' : 'bg-black/30 border-white/10 text-white hover:bg-black/50'}`}
