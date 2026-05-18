@@ -518,7 +518,7 @@ export default function SettingsPage() {
                         </div>
                         {['free', 'pro', ''].includes(profile.plan) && (
                             <span className="bg-purple-500/10 text-purple-400 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                                ELITE Feature
+                                BUSINESS Feature
                             </span>
                         )}
                     </div>
@@ -560,7 +560,7 @@ export default function SettingsPage() {
                                 onClick={() => router.push('/dashboard/billing')}
                                 className="w-full btn-primary bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white border-none"
                             >
-                                Upgrade to ELITE to unlock
+                                Upgrade to BUSINESS to unlock
                             </button>
                         ) : (
                             <button

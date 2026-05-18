@@ -32,7 +32,7 @@ export default function UpgradePage() {
 
                 const data = await res.json()
 
-                if (data.plan === 'pro' || data.plan === 'elite') {
+                if (data.plan === 'pro' || data.plan === 'business' || data.plan === 'elite') {
                     setPlan(data.plan)
                     setStatus('subscribed')
                 } else {

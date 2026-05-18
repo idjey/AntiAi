@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Modal from '../../../components/Modal'
 
 interface BillingStatus {
-    plan: 'free' | 'pro' | 'elite'
+    plan: 'free' | 'pro' | 'business' | 'elite'
     interval: 'month' | 'year'
     status: 'active' | 'past_due' | 'canceled' | 'unpaid' | 'trialing'
     current_period_end: string | null
@@ -18,21 +18,28 @@ const PLANS = {
         name: 'Free',
         prices: { month: '$0', year: '$0' },
         savings: null,
-        features: ['10 videos/month', '1 Shop Product', 'Public Creator Page', 'Content Verification', 'Basic Color Themes'],
-        limit: 10
+        features: ['5 videos/month', '1 Shop Product', 'Public Creator Page', 'Content Verification', 'Basic Color Themes'],
+        limit: 5
     },
     pro: {
         name: 'Pro',
-        prices: { month: '$15.99', year: '$155.88' },
-        savings: '$36.00',
+        prices: { month: '$24.99', year: '$239.88' },
+        savings: '$60.00',
         features: ['100 videos/month', 'Unlimited Shop Products', 'Analytics Dashboard', 'Custom Backgrounds & Effects', 'Change Your Handle', 'Email Support'],
         limit: 100
     },
+    business: {
+        name: 'Business',
+        prices: { month: '$49.99', year: '$479.88' },
+        savings: '$120.00',
+        features: ['500 videos/month', 'Everything in Pro', 'Live Proof challenges', 'Custom Domain Support', 'API access (10,000 calls)', 'Priority Support'],
+        limit: 500
+    },
     elite: {
         name: 'Elite',
-        prices: { month: '$99.99', year: '$1,079.88' },
-        savings: '$120.00',
-        features: ['Unlimited Videos & Products', 'Everything in Pro', 'Custom Domain Support', 'White-label (Hide Logo)', 'Email Support'],
+        prices: { month: '$99.99', year: '$959.88' },
+        savings: '$240.00',
+        features: ['Unlimited Videos & Products', 'Everything in Business', 'Unlimited API calls', 'White-label (Hide Logo)', 'Transparency log export', 'Featured in directory'],
         limit: Infinity
     }
 }
@@ -123,7 +130,7 @@ export default function BillingPage() {
         }
     }
 
-    const handleUpgrade = async (plan: 'pro' | 'elite') => {
+    const handleUpgrade = async (plan: 'pro' | 'business' | 'elite') => {
         setIsActionLoading(true)
         setError('')
         const token = localStorage.getItem('token')
@@ -306,14 +313,14 @@ export default function BillingPage() {
                     >
                         Yearly
                         <span className="text-[10px] font-bold bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                            Save up to $120
+                            Save up to $240
                         </span>
                     </button>
                 </div>
             </div>
 
             {/* Plans */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                 {(Object.keys(PLANS) as Array<keyof typeof PLANS>).map((planKey) => {
                     const plan = PLANS[planKey]
                     const isCurrent = currentPlan === planKey && (planKey === 'free' || currentInterval === billingInterval)
@@ -353,7 +360,7 @@ export default function BillingPage() {
                             </ul>
 
                             <button
-                                onClick={() => planKey === 'free' ? handleManageSubscription() : handleUpgrade(planKey as 'pro' | 'elite')}
+                                onClick={() => planKey === 'free' ? handleManageSubscription() : handleUpgrade(planKey as 'pro' | 'business' | 'elite')}
                                 disabled={isCurrent || isActionLoading}
                                 className={`w-full py-2.5 rounded-lg font-medium transition-colors ${isCurrent
                                     ? 'bg-surface-light text-text-muted cursor-default'

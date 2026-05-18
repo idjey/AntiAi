@@ -1,3 +1,6 @@
+-- CreateExtension
+CREATE EXTENSION IF NOT EXISTS citext WITH SCHEMA public;
+
 -- CreateEnum
 CREATE TYPE "UserRole" AS ENUM ('creator', 'admin');
 
@@ -423,3 +426,4 @@ ALTER TABLE "reports" ADD CONSTRAINT "reports_challenge_id_fkey" FOREIGN KEY ("c
 
 -- AddForeignKey
 ALTER TABLE "reports" ADD CONSTRAINT "reports_reviewed_by_fkey" FOREIGN KEY ("reviewed_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
