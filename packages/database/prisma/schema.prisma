@@ -63,6 +63,7 @@ enum SubscriptionStatus {
 enum PlanTier {
   free
   pro
+  business
   elite
 }
 

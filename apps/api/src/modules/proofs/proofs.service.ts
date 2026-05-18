@@ -10,6 +10,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { VideosService } from '../videos/videos.service';
 import { signProof } from '@antiai/crypto';
 import { IssueProofDto, ReissueProofDto } from './dto';
+import { getPlanLimits } from '@antiai/shared';
 
 @Injectable()
 export class ProofsService {
@@ -87,6 +88,15 @@ export class ProofsService {
             throw new ConflictException('Active proof already exists. Use reissue endpoint.');
         }
 
+        // ── Plan quota enforcement ──
+        const limits = getPlanLimits(user.subscription.plan);
+
+        if (limits.videosPerMonth !== -1 && user.subscription.videosThisMonth >= limits.videosPerMonth) {
+            throw new BadRequestException(
+                `Monthly proof limit reached (${limits.videosPerMonth} videos). Please upgrade your plan.`
+            );
+        }
+
         // Get signing key
         const kid = this.configService.get<string>('SIGNING_KEY_ID');
         const privateKeyB64 = this.configService.get<string>('SIGNING_PRIVATE_KEY_B64');
@@ -101,13 +111,9 @@ export class ProofsService {
             await this.ensureSigningKey(kid, publicKeyB64);
         }
 
-        // Sign the proof
-        let durationDays = 30;
-        if (user.subscription.plan === 'pro') durationDays = 365;
-        else if (user.subscription.plan === 'elite') durationDays = 365 * 3; // 3 years for elite
-
+        // Sign the proof — expiry is server-computed from plan limits
         const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + durationDays);
+        expiresAt.setDate(expiresAt.getDate() + limits.proofExpiryDays);
         let signedProof;
         try {
             signedProof = await signProof({
@@ -154,6 +160,12 @@ export class ProofsService {
             },
         });
 
+        // Increment monthly usage counter
+        await this.prisma.subscription.update({
+            where: { userId },
+            data: { videosThisMonth: { increment: 1 } },
+        });
+
         return this.formatProof(proof);
     }
 
@@ -197,13 +209,10 @@ export class ProofsService {
             throw new BadRequestException('Signing keys not configured');
         }
 
-        // Sign new proof
-        let durationDays = 30;
-        if (user.subscription.plan === 'pro') durationDays = 365;
-        else if (user.subscription.plan === 'elite') durationDays = 365 * 3;
-
+        // Sign new proof — expiry is server-computed from plan limits
+        const limits = getPlanLimits(user.subscription.plan);
         const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + durationDays);
+        expiresAt.setDate(expiresAt.getDate() + limits.proofExpiryDays);
         const signedProof = await signProof({
             kid,
             youtubeVideoId: video.platformId,
