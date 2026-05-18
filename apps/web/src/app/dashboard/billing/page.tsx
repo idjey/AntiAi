@@ -209,7 +209,11 @@ export default function BillingPage() {
                 }
             })
 
-            if (!res.ok) throw new Error('Failed to cancel subscription')
+            const data = await res.json().catch(() => null)
+
+            if (!res.ok) {
+                throw new Error(data?.message || 'Failed to cancel subscription')
+            }
 
             // Refresh status
             await fetchStatus()

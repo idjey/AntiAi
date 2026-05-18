@@ -4,6 +4,7 @@ import Stripe from 'stripe';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CheckoutDto } from './dto';
 import { PLAN_LIMITS, getPlanLimits } from '@antiai/shared';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class BillingService {
@@ -12,6 +13,7 @@ export class BillingService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly configService: ConfigService,
+        private readonly emailService: EmailService,
     ) {
         const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
         if (secretKey) {
@@ -230,6 +232,12 @@ export class BillingService {
                 stripeSubscriptionId: session.subscription as string,
             },
         });
+
+        // Send confirmation email
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (user) {
+            await this.emailService.sendSubscriptionConfirmationEmail(user.email, plan);
+        }
     }
 
     private async syncSubscription(stripeSubscription: Stripe.Subscription) {
@@ -283,15 +291,19 @@ export class BillingService {
                 console.log(`[STRIPE] Subscription renewed! Resetting usage for user ${subscription.userId}`);
             }
 
+            const isCanceled = mappedStatus === 'canceled';
+
             await this.prisma.subscription.update({
                 where: { id: subscription.id },
                 data: {
-                    ...(mappedPlan ? { plan: mappedPlan as any } : {}),
-                    status: mappedStatus,
+                    ...(isCanceled ? { plan: 'free', status: 'active', cancelAtPeriodEnd: false } : {
+                        ...(mappedPlan ? { plan: mappedPlan as any } : {}),
+                        status: mappedStatus,
+                        cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+                    }),
                     interval,
                     currentPeriodEnd: newPeriodEnd,
-                    cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-                    ...(isRenewal ? { videosThisMonth: 0 } : {}),
+                    ...(isRenewal && !isCanceled ? { videosThisMonth: 0 } : {}),
                 },
             });
         } catch (error) {
@@ -325,10 +337,21 @@ export class BillingService {
                 data: { cancelAtPeriodEnd: true },
             });
 
+            // Send cancellation email
+            const user = await this.prisma.user.findUnique({ where: { id: userId } });
+            if (user && subscription.currentPeriodEnd) {
+                await this.emailService.sendSubscriptionCancellationEmail(
+                    user.email,
+                    subscription.plan,
+                    subscription.currentPeriodEnd
+                );
+            }
+
             return { message: 'Subscription will be canceled at the end of the billing period.' };
         } catch (error: any) {
             console.error('[STRIPE] Error canceling subscription:', error);
-            throw new BadRequestException('Failed to cancel subscription');
+            const errorMessage = error.message || 'Failed to cancel subscription';
+            throw new BadRequestException(errorMessage);
         }
     }
 
