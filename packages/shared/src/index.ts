@@ -1,3 +1,101 @@
+// ==================== PLAN LIMITS (Single Source of Truth) ====================
+
+export type PlanTier = 'free' | 'pro' | 'business' | 'elite';
+
+export interface PlanLimits {
+    videosPerMonth: number;        // -1 = unlimited
+    shopProducts: number;          // -1 = unlimited
+    apiCallsPerMonth: number;      // -1 = unlimited
+    challengeAccess: boolean;      // Liveness / Dynamic Proof feature
+    customDomain: boolean;
+    whiteLabelBadge: boolean;
+    analyticsAccess: boolean;
+    customHandle: boolean;
+    customBackgrounds: boolean;
+    transparencyLogExport: boolean;
+    proofExpiryDays: number;       // How long issued proofs remain active
+}
+
+export const PLAN_LIMITS_CONFIG: Record<PlanTier, PlanLimits> = {
+    free: {
+        videosPerMonth: 5,
+        shopProducts: 1,
+        apiCallsPerMonth: 0,
+        challengeAccess: false,
+        customDomain: false,
+        whiteLabelBadge: false,
+        analyticsAccess: false,
+        customHandle: false,
+        customBackgrounds: false,
+        transparencyLogExport: false,
+        proofExpiryDays: 90,
+    },
+    pro: {
+        videosPerMonth: 100,
+        shopProducts: -1,
+        apiCallsPerMonth: 0,
+        challengeAccess: false,
+        customDomain: false,
+        whiteLabelBadge: false,
+        analyticsAccess: true,
+        customHandle: true,
+        customBackgrounds: true,
+        transparencyLogExport: false,
+        proofExpiryDays: 365,
+    },
+    business: {
+        videosPerMonth: 500,
+        shopProducts: -1,
+        apiCallsPerMonth: 10_000,
+        challengeAccess: true,       // KEY differentiator vs Pro
+        customDomain: true,
+        whiteLabelBadge: false,
+        analyticsAccess: true,
+        customHandle: true,
+        customBackgrounds: true,
+        transparencyLogExport: false,
+        proofExpiryDays: 365,
+    },
+    elite: {
+        videosPerMonth: -1,
+        shopProducts: -1,
+        apiCallsPerMonth: -1,
+        challengeAccess: true,
+        customDomain: true,
+        whiteLabelBadge: true,
+        analyticsAccess: true,
+        customHandle: true,
+        customBackgrounds: true,
+        transparencyLogExport: true,
+        proofExpiryDays: 365,
+    },
+};
+
+/**
+ * Returns the plan limits for a given tier.
+ * Falls back to free limits if tier is unrecognised.
+ */
+export function getPlanLimits(tier: PlanTier | string): PlanLimits {
+    return PLAN_LIMITS_CONFIG[tier as PlanTier] ?? PLAN_LIMITS_CONFIG.free;
+}
+
+// Legacy compatibility: simple video limit lookup
+export const PLAN_LIMITS: Record<string, number> = {
+    free: 5,
+    pro: 100,
+    business: 500,
+    elite: Infinity,
+} as const;
+
+export const PRODUCT_LIMITS: Record<string, number> = {
+    free: 1,
+    pro: Infinity,
+    business: Infinity,
+    elite: Infinity,
+} as const;
+
+export const PROOF_DEFAULT_EXPIRY_DAYS = 90;
+
 // ==================== API TYPES ====================
 
 // Auth
@@ -85,12 +183,12 @@ export interface Proof {
 
 export interface ProofIssueRequest {
     video_id: string;
-    expires_at: string;
+    // expires_at is now server-computed from plan limits — never client-supplied
 }
 
 export interface ProofReissueRequest {
     video_id: string;
-    expires_at: string;
+    // expires_at is now server-computed from plan limits — never client-supplied
     reason: 'extend_expiry' | 'key_rotation' | 'security_incident';
     note?: string;
 }
@@ -123,13 +221,13 @@ export interface SigningKey {
 
 // Billing
 export interface BillingCheckoutRequest {
-    plan: 'pro' | 'elite';
+    plan: 'pro' | 'business' | 'elite';
     success_url: string;
     cancel_url: string;
 }
 
 export interface BillingStatusResponse {
-    plan: 'free' | 'pro' | 'elite';
+    plan: 'free' | 'pro' | 'business' | 'elite';
     status: 'trialing' | 'active' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete' | 'incomplete_expired';
     current_period_end: string | null;
     videos_used: number;
@@ -142,19 +240,3 @@ export interface ApiError {
     message: string;
     details?: Record<string, unknown>;
 }
-
-// ==================== CONSTANTS ====================
-
-export const PLAN_LIMITS = {
-    free: 10,
-    pro: 100,
-    elite: Infinity,
-} as const;
-
-export const PRODUCT_LIMITS = {
-    free: 1,
-    pro: Infinity,
-    elite: Infinity,
-} as const;
-
-export const PROOF_DEFAULT_EXPIRY_DAYS = 90;

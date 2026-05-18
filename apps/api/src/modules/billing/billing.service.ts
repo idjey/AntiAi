@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CheckoutDto } from './dto';
-import { PLAN_LIMITS } from '@antiai/shared';
+import { PLAN_LIMITS, getPlanLimits } from '@antiai/shared';
 
 @Injectable()
 export class BillingService {
@@ -94,6 +94,10 @@ export class BillingService {
             priceId = isYearly
                 ? this.configService.get<string>('STRIPE_PRICE_PRO_YEAR')
                 : this.configService.get<string>('STRIPE_PRICE_PRO_MONTH');
+        } else if (dto.plan === 'business') {
+            priceId = isYearly
+                ? this.configService.get<string>('STRIPE_PRICE_BUSINESS_ANNUAL')
+                : this.configService.get<string>('STRIPE_PRICE_BUSINESS_MONTHLY');
         } else {
             priceId = isYearly
                 ? this.configService.get<string>('STRIPE_PRICE_ELITE_YEAR')
@@ -207,7 +211,7 @@ export class BillingService {
 
     private async handleCheckoutComplete(session: Stripe.Checkout.Session) {
         const userId = session.metadata?.userId;
-        const plan = session.metadata?.plan as 'pro' | 'elite';
+        const plan = session.metadata?.plan as 'pro' | 'business' | 'elite';
         const interval = session.metadata?.interval as 'month' | 'year' || 'month';
 
         if (!userId || !plan) {
@@ -251,6 +255,22 @@ export class BillingService {
 
             const mappedStatus = statusMap[stripeSubscription.status] || 'active';
 
+            // Map Stripe price nickname to PlanTier
+            const planNickname = stripeSubscription.items.data[0]?.price?.nickname?.toLowerCase() || '';
+            const planMap: Record<string, string> = {
+                'free': 'free',
+                'pro': 'pro',
+                'pro monthly': 'pro',
+                'pro annual': 'pro',
+                'business': 'business',
+                'business monthly': 'business',
+                'business annual': 'business',
+                'elite': 'elite',
+                'elite monthly': 'elite',
+                'elite annual': 'elite',
+            };
+            const mappedPlan = planMap[planNickname];
+
             // Extract interval from the first item's price
             const interval = stripeSubscription.items.data[0]?.price.recurring?.interval || 'month';
 
@@ -266,6 +286,7 @@ export class BillingService {
             await this.prisma.subscription.update({
                 where: { id: subscription.id },
                 data: {
+                    ...(mappedPlan ? { plan: mappedPlan as any } : {}),
                     status: mappedStatus,
                     interval,
                     currentPeriodEnd: newPeriodEnd,

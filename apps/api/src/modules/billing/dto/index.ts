@@ -1,8 +1,8 @@
 import { IsString, IsEnum, IsUrl, IsOptional } from 'class-validator';
 
 export class CheckoutDto {
-    @IsEnum(['pro', 'elite'], { message: 'Plan must be pro or elite' })
-    plan: 'pro' | 'elite';
+    @IsEnum(['pro', 'business', 'elite'], { message: 'Plan must be pro, business, or elite' })
+    plan: 'pro' | 'business' | 'elite';
 
     @IsEnum(['month', 'year'], { message: 'Interval must be month or year' })
     interval: 'month' | 'year';
