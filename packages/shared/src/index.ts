@@ -13,6 +13,7 @@ export interface PlanLimits {
     customHandle: boolean;
     customBackgrounds: boolean;
     transparencyLogExport: boolean;
+    featuredInDirectory: boolean;  // Added for Creator Directory feature
     proofExpiryDays: number;       // How long issued proofs remain active
 }
 
@@ -28,6 +29,7 @@ export const PLAN_LIMITS_CONFIG: Record<PlanTier, PlanLimits> = {
         customHandle: false,
         customBackgrounds: false,
         transparencyLogExport: false,
+        featuredInDirectory: false,
         proofExpiryDays: 90,
     },
     pro: {
@@ -41,6 +43,7 @@ export const PLAN_LIMITS_CONFIG: Record<PlanTier, PlanLimits> = {
         customHandle: true,
         customBackgrounds: true,
         transparencyLogExport: false,
+        featuredInDirectory: false,
         proofExpiryDays: 365,
     },
     business: {
@@ -54,6 +57,7 @@ export const PLAN_LIMITS_CONFIG: Record<PlanTier, PlanLimits> = {
         customHandle: true,
         customBackgrounds: true,
         transparencyLogExport: false,
+        featuredInDirectory: false,
         proofExpiryDays: 365,
     },
     elite: {
@@ -67,6 +71,7 @@ export const PLAN_LIMITS_CONFIG: Record<PlanTier, PlanLimits> = {
         customHandle: true,
         customBackgrounds: true,
         transparencyLogExport: true,
+        featuredInDirectory: true,
         proofExpiryDays: 365,
     },
 };
