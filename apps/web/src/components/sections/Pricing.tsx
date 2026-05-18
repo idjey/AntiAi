@@ -399,31 +399,33 @@ export default function Pricing() {
                                         <span className="text-xs">{f}</span>
                                     </div>
                                 ))}
-                                <div className="flex flex-col gap-3 shrink-0">
-                                    <a href="mailto:enterprise@antiai.me" className="btn-primary text-sm px-8">Contact Us</a>
-                                </div>
                             </div>
                         </div>
-
-                        {/* Feature Comparison Table */}
-                        <FeatureTable />
-
-                        {/* FAQ */}
-                        <PricingFAQ />
-
-                        {/* Enterprise CTA Strip */}
-                        <div className="mt-16 -mx-4 sm:-mx-6 lg:-mx-8 bg-surface border-y border-border py-12 px-6 text-center">
-                            <h3 className="text-2xl font-bold mb-2">Protecting content at scale?</h3>
-                            <p className="text-sm text-text-secondary max-w-xl mx-auto mb-6">
-                                Newsrooms, talent agencies, and political campaigns use AntiAI.me to verify content across entire rosters of creators.
-                            </p>
-                            <div className="flex flex-wrap items-center justify-center gap-4">
-                                <a href="mailto:enterprise@antiai.me" className="btn-primary text-sm">Book a Demo →</a>
-                                <a href="#pricing" className="btn-secondary text-sm">View Enterprise Features →</a>
-                            </div>
-                            <p className="text-xs text-text-muted mt-4">Trusted by creators in 38 countries. No credit card required to start.</p>
+                        <div className="flex flex-col gap-3 shrink-0">
+                            <a href="mailto:enterprise@antiai.me" className="btn-primary text-sm px-8">Contact Us</a>
                         </div>
                     </div>
-                </section>
-                )
+                </div>
+
+                {/* Feature Comparison Table */}
+                <FeatureTable />
+
+                {/* FAQ */}
+                <PricingFAQ />
+
+                {/* Enterprise CTA Strip */}
+                <div className="mt-16 -mx-4 sm:-mx-6 lg:-mx-8 bg-surface border-y border-border py-12 px-6 text-center">
+                    <h3 className="text-2xl font-bold mb-2">Protecting content at scale?</h3>
+                    <p className="text-sm text-text-secondary max-w-xl mx-auto mb-6">
+                        Newsrooms, talent agencies, and political campaigns use AntiAI.me to verify content across entire rosters of creators.
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-4">
+                        <a href="mailto:enterprise@antiai.me" className="btn-primary text-sm">Book a Demo →</a>
+                        <a href="#pricing" className="btn-secondary text-sm">View Enterprise Features →</a>
+                    </div>
+                    <p className="text-xs text-text-muted mt-4">Trusted by creators in 38 countries. No credit card required to start.</p>
+                </div>
+            </div>
+        </section>
+    )
 }
