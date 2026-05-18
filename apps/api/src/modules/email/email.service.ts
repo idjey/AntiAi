@@ -538,4 +538,82 @@ export class EmailService {
         const textFallback = `We received a request to reset your password.\n\nYour reset code is: ${otp}\n\nThis code will expire in 10 minutes.`;
         await this.sendEmailGeneric(to, `Reset your AntiAI.me password`, html, textFallback, false);
     }
+    async sendSubscriptionConfirmationEmail(to: string, plan: string) {
+        const planCapitalized = plan.charAt(0).toUpperCase() + plan.slice(1);
+        const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <meta name="supported-color-schemes" content="dark">
+    <title>Subscription Confirmed</title>
+</head>
+<body style="background-color: #0a0a0a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; margin: 0; padding: 0; -webkit-font-smoothing: antialiased;">
+    <div style="max-width: 560px; margin: 0 auto; padding: 48px 24px;">
+        <div style="text-align: center; margin-bottom: 40px;">
+            <a href="https://antiai.me" style="text-decoration: none;">
+                <span style="font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">anti</span><span style="font-size: 22px; font-weight: 700; color: #22C55E; letter-spacing: -0.5px;">ai</span><span style="font-size: 22px; font-weight: 700; color: #64748B; letter-spacing: -0.5px;">.me</span>
+            </a>
+        </div>
+        <div style="background-color: #111827; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 48px 40px; text-align: center;">
+            <div style="width: 48px; height: 48px; border-radius: 24px; background-color: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); margin: 0 auto 24px auto; display: flex; align-items: center; justify-content: center;">
+                <span style="color: #22C55E; font-size: 24px;">✓</span>
+            </div>
+            <h1 style="font-size: 26px; font-weight: 700; margin: 0 0 12px 0; color: #ffffff;">Welcome to ${planCapitalized}!</h1>
+            <p style="font-size: 15px; color: #94A3B8; margin: 0 0 36px 0; line-height: 1.6;">
+                Thank you for subscribing to the <strong>${planCapitalized}</strong> plan. Your account has been upgraded and your new limits are now active.
+            </p>
+            <a href="https://antiai.me/dashboard" style="display: inline-block; background-color: #22C55E; color: #000000; font-weight: 700; padding: 14px 36px; border-radius: 10px; text-decoration: none; font-size: 15px; letter-spacing: 0.3px;">Go to Dashboard</a>
+        </div>
+        ${this.getEmailFooter(to)}
+    </div>
+</body>
+</html>`;
+        const textFallback = `Welcome to the ${planCapitalized} plan!\n\nYour account has been successfully upgraded and your new limits are active.\n\nGo to Dashboard: https://antiai.me/dashboard`;
+        await this.sendEmailGeneric(to, `Subscription Confirmed: AntiAI ${planCapitalized}`, html, textFallback, false);
+    }
+
+    async sendSubscriptionCancellationEmail(to: string, plan: string, endDate: Date) {
+        const planCapitalized = plan.charAt(0).toUpperCase() + plan.slice(1);
+        const dateStr = endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <meta name="supported-color-schemes" content="dark">
+    <title>Subscription Canceled</title>
+</head>
+<body style="background-color: #0a0a0a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; margin: 0; padding: 0; -webkit-font-smoothing: antialiased;">
+    <div style="max-width: 560px; margin: 0 auto; padding: 48px 24px;">
+        <div style="text-align: center; margin-bottom: 40px;">
+            <a href="https://antiai.me" style="text-decoration: none;">
+                <span style="font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">anti</span><span style="font-size: 22px; font-weight: 700; color: #22C55E; letter-spacing: -0.5px;">ai</span><span style="font-size: 22px; font-weight: 700; color: #64748B; letter-spacing: -0.5px;">.me</span>
+            </a>
+        </div>
+        <div style="background-color: #111827; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 48px 40px; text-align: center;">
+            <h1 style="font-size: 26px; font-weight: 700; margin: 0 0 12px 0; color: #ffffff;">Subscription Canceled</h1>
+            <p style="font-size: 15px; color: #94A3B8; margin: 0 0 24px 0; line-height: 1.6;">
+                Your cancellation request for the <strong>${planCapitalized}</strong> plan has been processed.
+            </p>
+            <div style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; padding: 16px; margin-bottom: 32px;">
+                <p style="font-size: 14px; color: #FCA5A5; margin: 0; line-height: 1.5;">
+                    You will continue to have access to your premium features until the end of your current billing period on <strong>${dateStr}</strong>. After that date, your account will be automatically switched to the Free plan.
+                </p>
+            </div>
+            <p style="font-size: 14px; color: #64748B; margin: 0; line-height: 1.5;">
+                Changed your mind? You can reactivate your subscription anytime before the expiration date in your dashboard.
+            </p>
+        </div>
+        ${this.getEmailFooter(to)}
+    </div>
+</body>
+</html>`;
+        const textFallback = `Your subscription cancellation has been processed.\n\nYou will continue to have access to your ${planCapitalized} plan features until the end of your billing period on ${dateStr}. After this date, your account will be switched to the Free plan.\n\nChanged your mind? You can reactivate your subscription in your dashboard.`;
+        await this.sendEmailGeneric(to, `Subscription Canceled: AntiAI ${planCapitalized}`, html, textFallback, false);
+    }
 }
