@@ -52,7 +52,8 @@ export class EmailService {
                         from: `AntiAI <${fromEmail}>`,
                         to: [to],
                         subject: 'Verify your email - AntiAI.me',
-                        html: this.getOtpTemplate(otp)
+                        html: this.getOtpTemplate(otp),
+                        text: `Welcome to AntiAI.me!\n\nTo complete your signup and verify this email address, your verification code is: ${otp}\n\nThis code will expire in 10 minutes.`
                     })
                 });
 
@@ -73,6 +74,7 @@ export class EmailService {
                 to,
                 subject: 'Verify your email - AntiAI.me',
                 html: this.getOtpTemplate(otp),
+                text: `Welcome to AntiAI.me!\n\nTo complete your signup and verify this email address, your verification code is: ${otp}\n\nThis code will expire in 10 minutes.`,
             });
             this.logger.log(`Email sent successfully via SMTP: ${info.messageId}`);
         } catch (error) {
@@ -312,7 +314,7 @@ export class EmailService {
 
     // ─── Coupon Emails ───
 
-    public async sendEmailGeneric(to: string, subject: string, html: string, textFallback?: string) {
+    public async sendEmailGeneric(to: string, subject: string, html: string, textFallback?: string, isBulk: boolean = true) {
         const apiKey = this.configService.get<string>('SMTP_PASS');
         const host = this.configService.get<string>('SMTP_HOST');
         const fromEmail = this.configService.get<string>('SMTP_FROM') || 'noreply@antiai.me';
@@ -337,12 +339,18 @@ export class EmailService {
                         subject,
                         html,
                         text: textFallback || this.stripHtml(html),
-                        headers: {
-                            'List-Unsubscribe': `<${unsubscribeUrl}>`,
-                            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-                            'Precedence': 'bulk',
-                            'X-Mailer': 'AntiAI Platform',
-                        }
+                        ...(isBulk ? {
+                            headers: {
+                                'List-Unsubscribe': `<${unsubscribeUrl}>`,
+                                'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+                                'Precedence': 'bulk',
+                                'X-Mailer': 'AntiAI Platform',
+                            }
+                        } : {
+                            headers: {
+                                'X-Mailer': 'AntiAI Platform',
+                            }
+                        })
                     })
                 });
                 if (!response.ok) {
@@ -358,11 +366,13 @@ export class EmailService {
                 subject,
                 html,
                 text: textFallback || this.stripHtml(html),
-                headers: {
-                    'List-Unsubscribe': `<${unsubscribeUrl}>`,
-                    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-                    'Precedence': 'bulk',
-                },
+                ...(isBulk ? {
+                    headers: {
+                        'List-Unsubscribe': `<${unsubscribeUrl}>`,
+                        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+                        'Precedence': 'bulk',
+                    }
+                } : {}),
             });
         } catch (error) {
             this.logger.error(`Failed to send email to ${to}: ${error.message}`);
@@ -526,6 +536,6 @@ export class EmailService {
 </body>
 </html>`;
         const textFallback = `We received a request to reset your password.\n\nYour reset code is: ${otp}\n\nThis code will expire in 10 minutes.`;
-        await this.sendEmailGeneric(to, `Reset your AntiAI.me password`, html, textFallback);
+        await this.sendEmailGeneric(to, `Reset your AntiAI.me password`, html, textFallback, false);
     }
 }
