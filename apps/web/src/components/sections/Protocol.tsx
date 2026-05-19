@@ -10,12 +10,12 @@ export default function Protocol() {
         {
             icon: <Network className="w-8 h-8" />,
             title: "Tamper-Proof Ledger",
-            description: "When a video is verified, AntiAI takes a unique fingerprint (a hash) of that specific content and records it immutably. Once logged, the record cannot be altered."
+            description: "When content is verified, AntiAI takes a unique fingerprint (a hash) of that specific asset and records it immutably. Once logged, the record cannot be altered."
         },
         {
             icon: <ShieldCheck className="w-8 h-8" />,
             title: "Real-Time Verification",
-            description: "The browser extension reads video data in real-time and asks the AAVP: 'Does this hash match the creator's signature?' If yes, you see the green Authenticated badge."
+            description: "The browser extension reads media data in real-time and asks the AAVP: 'Does this hash match the creator's signature?' If yes, you see the green Authenticated badge."
         }
     ]
 
@@ -35,11 +35,11 @@ export default function Protocol() {
                     </div>
 
                     <h2 className="text-3xl md:text-5xl font-bold mb-6 tracking-tight">
-                        The AntiAI Verification Protocol
+                        The AntiAI Authenticity Protocol
                     </h2>
 
                     <p className="text-lg md:text-xl text-slate-400 leading-relaxed">
-                        A decentralized security framework built to distinguish authentic, creator-verified content from deepfakes and AI-generated fabrications.
+                        A decentralized trust layer built to distinguish authentic, cryptographically signed digital media from deepfakes and AI-generated fabrications.
                     </p>
                 </header>
 
