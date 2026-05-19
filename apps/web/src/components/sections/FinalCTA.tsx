@@ -24,13 +24,12 @@ export default function FinalCTA() {
                         <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-6">
                             Protect your audience.
                             <br />
-                            <span className="text-gradient">Prove your videos are real.</span>
+                            <span className="text-gradient">Verify your media with cryptographic proof.</span>
                         </h2>
 
                         {/* Subtext */}
                         <p className="text-lg text-text-secondary leading-relaxed mb-8 max-w-xl mx-auto">
-                            Start verifying your content today. Set up takes less than 2 minutes.
-                            No credit card required.
+                            Join the AntiAI Authenticity Protocol and establish tamper-proof content provenance today. Set up takes less than 2 minutes. No credit card required.
                         </p>
 
                         {/* CTA buttons */}

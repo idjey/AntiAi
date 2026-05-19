@@ -76,7 +76,7 @@ export default function PlatformShowcase() {
                         <span style={{ color: '#22C55E' }}>every platform.</span>
                     </h2>
                     <p className="text-lg md:text-xl text-text-secondary max-w-2xl mx-auto leading-relaxed">
-                        AntiAI protects your content wherever your audience watches YouTube, TikTok, Instagram, and Facebook.
+                        The AntiAI Authenticity Protocol establishes tamper-proof content provenance wherever your audience watches YouTube, TikTok, Instagram, and Facebook.
                     </p>
                 </header>
 

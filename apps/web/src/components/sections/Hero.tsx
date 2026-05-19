@@ -34,11 +34,11 @@ export default function Hero() {
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.1 }}
-                        className="text-5xl sm:text-6xl lg:text-8xl font-bold leading-[1.05] tracking-tight mb-8"
+                        className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-bold leading-[1.05] tracking-tight mb-8"
                     >
-                        Prove your videos{' '}
+                        Tamper-proof digital media{' '}
                         <br className="hidden sm:block" />
-                        are <span style={{ color: '#22C55E' }}>real.</span>
+                        <span style={{ color: '#22C55E' }}>verification.</span>
                     </motion.h1>
 
                     {/* Subtext */}
@@ -48,8 +48,8 @@ export default function Hero() {
                         transition={{ duration: 0.6, delay: 0.2 }}
                         className="text-xl sm:text-2xl text-text-secondary leading-relaxed mb-12 max-w-2xl mx-auto"
                     >
-                        Cryptographic verification for creators on YouTube, TikTok, Instagram, and Facebook.
-                        Stop deepfakes. Protect your audience.
+                        AntiAI helps verify authentic digital media using cryptographic signatures. 
+                        Establish content provenance and protect your audience from deepfakes.
                     </motion.p>
 
                     {/* Handle input + CTA */}

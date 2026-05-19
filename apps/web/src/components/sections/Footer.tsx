@@ -22,7 +22,7 @@ export default function Footer() {
     return (
         <footer className="border-t border-white/5 bg-background">
             <div className="container-custom py-12 lg:py-16">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-12">
                     {/* Brand column */}
                     <div className="col-span-2 md:col-span-1">
                         <Link href="/" className="flex items-center gap-2 mb-4">
@@ -36,7 +36,7 @@ export default function Footer() {
                             </span>
                         </Link>
                         <p className="text-sm text-text-secondary leading-relaxed max-w-xs">
-                            The authenticity badge for real creators. Protect your audience from deepfakes.
+                            The Cryptographic Media Verification platform. Establish content provenance and protect your audience from deepfakes.
                         </p>
                     </div>
 
@@ -56,6 +56,18 @@ export default function Footer() {
                                     </Link>
                                 </li>
                             ))}
+                        </ul>
+                    </div>
+
+                    {/* Solutions links (SEO) */}
+                    <div>
+                        <h4 className="text-sm font-semibold text-text-primary mb-4">
+                            Solutions
+                        </h4>
+                        <ul className="space-y-2">
+                            <li><Link href="/solutions/ai-media-verification" className="text-sm text-text-secondary hover:text-text-primary transition-colors">AI Media Verification</Link></li>
+                            <li><Link href="/solutions/deepfake-proof" className="text-sm text-text-secondary hover:text-text-primary transition-colors">Deepfake Proof</Link></li>
+                            <li><Link href="/solutions/content-provenance" className="text-sm text-text-secondary hover:text-text-primary transition-colors">Content Provenance</Link></li>
                         </ul>
                     </div>
 
