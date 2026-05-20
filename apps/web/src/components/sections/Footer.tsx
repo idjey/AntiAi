@@ -10,6 +10,8 @@ export default function Footer() {
         company: [
             { label: 'About', href: '/about' },
             { label: 'Creator Directory', href: '/creators' },
+            { label: 'Developers / Docs', href: '/docs' },
+            { label: 'Technical Whitepaper', href: '/whitepaper' },
             { label: 'Contact', href: '/contact' },
         ],
         legal: [

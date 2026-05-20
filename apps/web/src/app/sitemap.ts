@@ -23,6 +23,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.7,
         },
         {
+            url: 'https://antiai.me/docs/what-is-c2pa',
+            lastModified: new Date(),
+            changeFrequency: 'monthly' as const,
+            priority: 0.7,
+        },
+        {
+            url: 'https://antiai.me/whitepaper',
+            lastModified: new Date(),
+            changeFrequency: 'monthly' as const,
+            priority: 0.9,
+        },
+        {
+            url: 'https://antiai.me/solutions/ai-media-verification',
+            lastModified: new Date(),
+            changeFrequency: 'monthly' as const,
+            priority: 0.8,
+        },
+        {
+            url: 'https://antiai.me/solutions/deepfake-proof',
+            lastModified: new Date(),
+            changeFrequency: 'monthly' as const,
+            priority: 0.8,
+        },
+        {
+            url: 'https://antiai.me/solutions/content-provenance',
+            lastModified: new Date(),
+            changeFrequency: 'monthly' as const,
+            priority: 0.8,
+        },
+        {
             url: 'https://antiai.me/creators',
             lastModified: new Date(),
             changeFrequency: 'daily' as const,
