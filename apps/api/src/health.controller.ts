@@ -1,4 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
+import { openApiSpec } from './openapi';
 
 @Controller()
 export class HealthController {
@@ -9,5 +10,10 @@ export class HealthController {
             timestamp: new Date().toISOString(),
             service: 'antiai-api',
         };
+    }
+
+    @Get('openapi.json')
+    getOpenApiSpec() {
+        return openApiSpec;
     }
 }
