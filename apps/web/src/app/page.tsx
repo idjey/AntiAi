@@ -1,5 +1,6 @@
 import Hero from '@/components/sections/Hero'
 import ProblemStatement from '@/components/sections/ProblemStatement'
+import Comparison from '@/components/sections/Comparison'
 import HowItWorks from '@/components/sections/HowItWorks'
 import PlatformShowcase from '@/components/sections/PlatformShowcase'
 import Protocol from '@/components/sections/Protocol'
@@ -16,6 +17,7 @@ export default function HomePage() {
             <Navbar />
             <Hero />
             <ProblemStatement />
+            <Comparison />
             <HowItWorks />
             <PlatformShowcase />
             <Protocol />
