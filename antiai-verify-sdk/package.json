@@ -1,5 +1,5 @@
 {
-  "name": "@antiai/verify-sdk",
+  "name": "antiai-verify-sdk",
   "version": "1.0.0",
   "description": "Official AntiAI cryptographic media verification SDK",
   "main": "dist/index.js",
