@@ -698,3 +698,27 @@ model EmailEvent {
   @@index([email])
   @@map("email_events")
 }
+
+// ==================== LOG INTEGRATIONS ====================
+
+model LogSinkConfig {
+  id               String    @id @default(uuid()) @db.Uuid
+  name             String
+  type             String
+  enabled          Boolean   @default(false)
+  config           String
+  
+  filterMethods    String[]  @default([])
+  filterMinStatus  Int?
+  filterPaths      String[]  @default([])
+  
+  lastForwardedAt  DateTime? @map("last_forwarded_at")
+  lastForwardedId  String?   @map("last_forwarded_id")
+  lastError        String?   @map("last_error")
+  errorCount       Int       @default(0) @map("error_count")
+  
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  @@map("log_sink_configs")
+}
