@@ -1,6 +1,6 @@
 [build]
 builder = "RAILPACK"
-buildCommand = "npm run build:packages && npm run build --workspace=@antiai/web"
+buildCommand = "npm install --include=dev && npm run build:packages && npm run build --workspace=@antiai/api && npm run build --workspace=@antiai/web"
 
 [deploy]
 # This command runs after the build is complete but before the new deployment starts taking traffic.
