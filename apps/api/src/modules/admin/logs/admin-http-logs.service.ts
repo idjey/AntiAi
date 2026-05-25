@@ -19,8 +19,12 @@ export class AdminHttpLogsService {
         minDuration?: number;
         startDate?: string;
         endDate?: string;
+        sortBy?: string;
+        sortOrder?: string;
+        device?: string;
+        country?: string;
     }) {
-        const { skip, take, method, statusCode, statusGroup, path, ipAddress, userId, minDuration, startDate, endDate } = params;
+        const { skip, take, method, statusCode, statusGroup, path, ipAddress, userId, minDuration, startDate, endDate, sortBy, sortOrder, device, country } = params;
 
         const where: Prisma.HttpLogWhereInput = {};
 
@@ -49,6 +53,14 @@ export class AdminHttpLogsService {
             where.userId = userId;
         }
 
+        if (device) {
+            where.device = { equals: device, mode: 'insensitive' };
+        }
+
+        if (country) {
+            where.country = { equals: country, mode: 'insensitive' };
+        }
+
         if (minDuration !== undefined) {
             where.durationMs = { gte: minDuration };
         }
@@ -63,12 +75,35 @@ export class AdminHttpLogsService {
             }
         }
 
+        let orderBy: any = { timestamp: 'desc' };
+        if (sortBy) {
+            const direction = sortOrder === 'asc' ? 'asc' : 'desc';
+            switch (sortBy) {
+                case 'duration':
+                    orderBy = { durationMs: direction };
+                    break;
+                case 'status':
+                    orderBy = { statusCode: direction };
+                    break;
+                case 'method':
+                    orderBy = { method: direction };
+                    break;
+                case 'path':
+                    orderBy = { path: direction };
+                    break;
+                case 'time':
+                default:
+                    orderBy = { timestamp: direction };
+                    break;
+            }
+        }
+
         const [logs, total] = await Promise.all([
             this.prisma.httpLog.findMany({
                 skip,
                 take,
                 where,
-                orderBy: { timestamp: 'desc' },
+                orderBy,
             }),
             this.prisma.httpLog.count({ where }),
         ]);
