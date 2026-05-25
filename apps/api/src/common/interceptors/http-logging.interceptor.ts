@@ -96,7 +96,7 @@ export class HttpLoggingInterceptor implements NestInterceptor {
                             referer,
                             userId,
                             country: geo.country || null,
-                            city: geo.city || null,
+                            city: geo.city ? (geo.region ? `${geo.city}, ${geo.region}` : geo.city) : null,
                             device,
                             correlationId,
                         },

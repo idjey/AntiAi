@@ -408,7 +408,7 @@ export function HttpLogsPanel() {
                                         <TableHead>Status</TableHead>
                                         <TableHead className="text-right">Duration</TableHead>
                                         <TableHead>IP Address</TableHead>
-                                        <TableHead>Country</TableHead>
+                                        <TableHead>Location</TableHead>
                                         <TableHead>Device</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -447,8 +447,8 @@ export function HttpLogsPanel() {
                                             <TableCell className="font-mono text-xs max-w-[120px] truncate" title={log.ipAddress}>
                                                 {log.ipAddress || '-'}
                                             </TableCell>
-                                            <TableCell className="text-xs">
-                                                {log.country || '-'}
+                                            <TableCell className="text-xs max-w-[150px] truncate" title={log.city ? `${log.city}, ${log.country}` : log.country}>
+                                                {log.city ? `${log.city}, ` : ''}{log.country || '-'}
                                             </TableCell>
                                             <TableCell className="text-xs">
                                                 {capitalize(log.device || '')}
@@ -553,7 +553,7 @@ export function HttpLogsPanel() {
                             <div>
                                 <h4 className="text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wider">Geo &amp; Device</h4>
                                 <div className="grid grid-cols-2 gap-3 text-sm">
-                                    <DetailField label="Country" value={selectedLog.country} />
+                                    <DetailField label="Location" value={selectedLog.city ? `${selectedLog.city}, ${selectedLog.country}` : selectedLog.country} />
                                     <DetailField label="Device" value={capitalize(selectedLog.device || '')} />
                                 </div>
                             </div>
