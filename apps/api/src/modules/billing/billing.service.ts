@@ -325,6 +325,14 @@ export class BillingService {
             throw new BadRequestException('No active subscription found');
         }
 
+        if (subscription.status === 'canceled') {
+            throw new BadRequestException('Subscription is already canceled');
+        }
+
+        if (subscription.cancelAtPeriodEnd) {
+            throw new BadRequestException('Subscription is already set to cancel at the end of the billing period');
+        }
+
         try {
             // Cancel at period end
             await this.stripe.subscriptions.update(subscription.stripeSubscriptionId, {
@@ -350,6 +358,18 @@ export class BillingService {
             return { message: 'Subscription will be canceled at the end of the billing period.' };
         } catch (error: any) {
             console.error('[STRIPE] Error canceling subscription:', error);
+
+            if (error.message?.includes('A canceled subscription can only update')) {
+                await this.prisma.subscription.update({
+                    where: { id: subscription.id },
+                    data: { 
+                        status: 'canceled',
+                        cancelAtPeriodEnd: true
+                    },
+                });
+                return { message: 'Subscription was already canceled.' };
+            }
+
             const errorMessage = error.message || 'Failed to cancel subscription';
             throw new BadRequestException(errorMessage);
         }

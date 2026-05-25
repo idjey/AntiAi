@@ -2,10 +2,37 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { User, Prisma } from '@antiai/database';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AdminService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private emailService: EmailService
+    ) { }
+
+    async deleteUser(userId: string): Promise<any> {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) throw new Error('User not found');
+
+        // Delete user (Prisma cascade will handle related records if configured, 
+        // otherwise we might need a manual cleanup, but standard setup cascades)
+        await this.prisma.user.delete({ where: { id: userId } });
+
+        // Send email to deleted user
+        try {
+            await this.emailService.sendEmailGeneric(
+                user.email,
+                'Your AntiAI account has been removed',
+                `Hello,<br/><br/>Your AntiAI account and all associated data have been permanently deleted by an administrator.<br/><br/>If you believe this was in error, please reply to this email.`,
+                `Hello, Your AntiAI account and all associated data have been permanently deleted by an administrator.`
+            );
+        } catch (err) {
+            console.error('Failed to send deletion email', err);
+        }
+
+        return { success: true, message: 'User completely wiped.' };
+    }
 
     async findAllUsers(params: {
         skip?: number;

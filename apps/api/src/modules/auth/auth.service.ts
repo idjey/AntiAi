@@ -80,6 +80,9 @@ export class AuthService {
                     }
                 }
             },
+            include: {
+                profile: true,
+            }
         });
 
         // Send OTP
@@ -90,9 +93,21 @@ export class AuthService {
             console.error('Welcome coupon generation failed:', err.message);
         });
 
+        // Send alert to admin
+        try {
+            await this.emailService.sendEmailGeneric(
+                'admin@antiai.me',
+                `New Creator Signup: ${dto.email}`,
+                `A new creator has signed up for AntiAI.<br/><br/>Email: ${dto.email}<br/>Handle: ${user.profile?.handle || dto.handle}<br/>Time: ${new Date().toISOString()}`,
+                `A new creator has signed up for AntiAI. Email: ${dto.email}, Handle: ${user.profile?.handle || dto.handle}`
+            );
+        } catch (err) {
+            console.error('Failed to send admin signup alert', err);
+        }
+
         return {
             message: 'Signup successful. Please verify your email with the OTP sent.',
-            email: user.email,
+            email: user.email
         };
     }
 
