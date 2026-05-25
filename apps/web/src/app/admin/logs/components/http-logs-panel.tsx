@@ -155,6 +155,21 @@ export function HttpLogsPanel() {
     const [autoRefresh, setAutoRefresh] = useState(false)
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+    const handleSort = (column: string) => {
+        if (sortBy === column) {
+            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+        } else {
+            setSortBy(column)
+            setSortOrder('desc')
+        }
+        setPage(1)
+    }
+
+    const SortIcon = ({ column }: { column: string }) => {
+        if (sortBy !== column) return <span className="ml-1 text-muted-foreground/30 text-[10px]">↕</span>
+        return <span className="ml-1 text-primary text-[10px]">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+    }
+
     const fetchLogs = useCallback(async () => {
         try {
             const query = new URLSearchParams()
@@ -367,27 +382,6 @@ export function HttpLogsPanel() {
                     value={country}
                     onChange={e => { setCountry(e.target.value); setPage(1) }}
                 />
-
-                <select
-                    value={sortBy}
-                    onChange={e => { setSortBy(e.target.value); setPage(1) }}
-                    className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                    <option value="time">Sort by Time</option>
-                    <option value="duration">Sort by Duration</option>
-                    <option value="status">Sort by Status</option>
-                    <option value="method">Sort by Method</option>
-                    <option value="path">Sort by Path</option>
-                </select>
-
-                <select
-                    value={sortOrder}
-                    onChange={e => { setSortOrder(e.target.value); setPage(1) }}
-                    className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                    <option value="desc">Descending</option>
-                    <option value="asc">Ascending</option>
-                </select>
             </div>
 
             {/* Table */}
@@ -402,13 +396,13 @@ export function HttpLogsPanel() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Time</TableHead>
-                                        <TableHead>Method</TableHead>
-                                        <TableHead>Path</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead className="text-right">Duration</TableHead>
+                                        <TableHead className="cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('time')}>Time <SortIcon column="time" /></TableHead>
+                                        <TableHead className="cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('method')}>Method <SortIcon column="method" /></TableHead>
+                                        <TableHead className="cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('path')}>Path <SortIcon column="path" /></TableHead>
+                                        <TableHead className="cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('status')}>Status <SortIcon column="status" /></TableHead>
+                                        <TableHead className="text-right cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('duration')}>Duration <SortIcon column="duration" /></TableHead>
                                         <TableHead>IP Address</TableHead>
-                                        <TableHead>Location</TableHead>
+                                        <TableHead className="cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('country')}>Location <SortIcon column="country" /></TableHead>
                                         <TableHead>Device</TableHead>
                                     </TableRow>
                                 </TableHeader>
