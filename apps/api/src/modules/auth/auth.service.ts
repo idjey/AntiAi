@@ -161,6 +161,9 @@ export class AuthService {
                 failedOtpAttempts: 0,
                 otpLockedUntil: null,
                 isEmailVerified: true,
+                isSuspended: false,
+                verificationReminderCount: 0,
+                lastVerificationReminderSentAt: null,
             },
         });
 
@@ -222,6 +225,10 @@ export class AuthService {
 
         if (!user || !user.passwordHash) {
             throw new UnauthorizedException('Invalid email or password');
+        }
+
+        if (user.isSuspended) {
+            throw new UnauthorizedException('Account suspended. Please verify your email or contact support to restore access.');
         }
 
         // Verify password

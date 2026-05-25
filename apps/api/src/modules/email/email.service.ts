@@ -616,4 +616,91 @@ export class EmailService {
         const textFallback = `Your subscription cancellation has been processed.\n\nYou will continue to have access to your ${planCapitalized} plan features until the end of your billing period on ${dateStr}. After this date, your account will be switched to the Free plan.\n\nChanged your mind? You can reactivate your subscription in your dashboard.`;
         await this.sendEmailGeneric(to, `Subscription Canceled: AntiAI ${planCapitalized}`, html, textFallback, false);
     }
+
+    async sendVerificationReminderEmail(to: string, otp: string, reminderNumber: number) {
+        let reminderTitle = "Reminder: Verify your email address";
+        if (reminderNumber > 1) {
+            reminderTitle = `Final Reminder (${reminderNumber}/4): Verify your email address`;
+        }
+
+        const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <meta name="supported-color-schemes" content="dark">
+    <title>${reminderTitle}</title>
+</head>
+<body style="background-color: #0a0a0a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; margin: 0; padding: 0; -webkit-font-smoothing: antialiased;">
+    <div style="max-width: 560px; margin: 0 auto; padding: 48px 24px;">
+        <div style="text-align: center; margin-bottom: 40px;">
+            <a href="https://antiai.me" style="text-decoration: none;">
+                <span style="font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">anti</span><span style="font-size: 22px; font-weight: 700; color: #22C55E; letter-spacing: -0.5px;">ai</span><span style="font-size: 22px; font-weight: 700; color: #64748B; letter-spacing: -0.5px;">.me</span>
+            </a>
+        </div>
+        <div style="background-color: #111827; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 48px 40px; text-align: center;">
+            <h1 style="font-size: 26px; font-weight: 700; margin: 0 0 12px 0; color: #ffffff;">Action Required: Verify Email</h1>
+            <p style="font-size: 15px; color: #94A3B8; margin: 0 0 16px 0; line-height: 1.6;">
+                We noticed you haven't verified your email address yet. To keep your creator account active, please enter the following verification code.
+            </p>
+            <div style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; padding: 16px; margin-bottom: 32px;">
+                <p style="font-size: 14px; color: #FCA5A5; margin: 0; line-height: 1.5;">
+                    <strong>Notice:</strong> Unverified accounts are automatically suspended after 2 days to prevent abuse.
+                </p>
+            </div>
+            <div style="background-color: #0a0a0a; border-radius: 12px; padding: 20px 24px; margin-bottom: 32px; border: 1px dashed rgba(34,197,94,0.4);">
+                <p style="font-size: 28px; font-weight: 800; letter-spacing: 6px; color: #22C55E; margin: 0; font-family: 'Courier New', Courier, monospace;">${otp}</p>
+            </div>
+            <p style="margin-top: 28px; font-size: 13px; color: #64748B; line-height: 1.5;">
+                This code will expire in 10 minutes. If you already verified, you can ignore this email.
+            </p>
+        </div>
+        ${this.getEmailFooter(to)}
+    </div>
+</body>
+</html>`;
+        const textFallback = `Action Required: Verify Email\n\nWe noticed you haven't verified your email address yet. Unverified accounts are automatically suspended after 2 days.\n\nYour verification code is: ${otp}\n\nThis code will expire in 10 minutes.`;
+        await this.sendEmailGeneric(to, reminderTitle, html, textFallback, false);
+    }
+
+    async sendAccountSuspensionEmail(to: string) {
+        const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <meta name="supported-color-schemes" content="dark">
+    <title>Account Suspended: Unverified Email</title>
+</head>
+<body style="background-color: #0a0a0a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; margin: 0; padding: 0; -webkit-font-smoothing: antialiased;">
+    <div style="max-width: 560px; margin: 0 auto; padding: 48px 24px;">
+        <div style="text-align: center; margin-bottom: 40px;">
+            <a href="https://antiai.me" style="text-decoration: none;">
+                <span style="font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">anti</span><span style="font-size: 22px; font-weight: 700; color: #EF4444; letter-spacing: -0.5px;">ai</span><span style="font-size: 22px; font-weight: 700; color: #64748B; letter-spacing: -0.5px;">.me</span>
+            </a>
+        </div>
+        <div style="background-color: #111827; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 48px 40px; text-align: center;">
+            <div style="width: 48px; height: 48px; border-radius: 24px; background-color: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); margin: 0 auto 24px auto; display: flex; align-items: center; justify-content: center;">
+                <span style="color: #EF4444; font-size: 24px;">⚠</span>
+            </div>
+            <h1 style="font-size: 26px; font-weight: 700; margin: 0 0 12px 0; color: #ffffff;">Account Suspended</h1>
+            <p style="font-size: 15px; color: #94A3B8; margin: 0 0 24px 0; line-height: 1.6;">
+                Your creator account has been automatically suspended because the email address was not verified within 48 hours of sign-up.
+            </p>
+            <p style="font-size: 14px; color: #64748B; margin: 0 0 24px 0; line-height: 1.5;">
+                You can restore access to your account instantly by requesting a new verification code from the login page.
+            </p>
+            <a href="https://antiai.me/login" style="display: inline-block; background-color: #ffffff; color: #000000; font-weight: 700; padding: 14px 36px; border-radius: 10px; text-decoration: none; font-size: 15px; letter-spacing: 0.3px;">Request New OTP</a>
+        </div>
+        ${this.getEmailFooter(to)}
+    </div>
+</body>
+</html>`;
+        const textFallback = `Account Suspended\n\nYour creator account has been suspended because the email address was not verified within 48 hours.\n\nYou can restore access instantly by requesting a new verification code from the login page: https://antiai.me/login`;
+        await this.sendEmailGeneric(to, `Account Suspended - Verification Required`, html, textFallback, false);
+    }
 }
