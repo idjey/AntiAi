@@ -1,5 +1,6 @@
 [build]
-builder = "NIXPACKS"
+builder = "RAILPACK"
+buildCommand = "npm run build:packages && npm run build --workspace=@antiai/web"
 
 [deploy]
 # This command runs after the build is complete but before the new deployment starts taking traffic.
