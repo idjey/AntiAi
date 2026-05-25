@@ -56,11 +56,11 @@ export class HttpLoggingInterceptor implements NestInterceptor {
         const routePattern = (req as any).route?.path || null;
         const device = userAgent ? parseDevice(userAgent) : null;
 
-        let geo: { country?: string; city?: string } = {};
+        let geo: { country?: string; city?: string; region?: string } = {};
         if (ipAddress) {
             const lookup = geoip.lookup(ipAddress);
             if (lookup) {
-                geo = { country: lookup.country, city: lookup.city };
+                geo = { country: lookup.country, city: lookup.city, region: lookup.region };
             }
         }
 
