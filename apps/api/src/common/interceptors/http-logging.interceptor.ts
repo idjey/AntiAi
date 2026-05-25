@@ -1,6 +1,6 @@
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { tap, catchError, finalize } from 'rxjs/operators';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -71,42 +71,40 @@ export class HttpLoggingInterceptor implements NestInterceptor {
                 errorMessage = err?.message || err?.toString() || 'Unknown error';
                 throw err;
             }),
-            tap({
-                finalize: () => {
-                    const durationMs = Date.now() - startTime;
-                    const statusCode = res.statusCode;
-                    const responseContentLength = res.getHeader('content-length')
-                        ? parseInt(res.getHeader('content-length') as string, 10)
-                        : null;
+            finalize(() => {
+                const durationMs = Date.now() - startTime;
+                const statusCode = res.statusCode;
+                const responseContentLength = res.getHeader('content-length')
+                    ? parseInt(res.getHeader('content-length') as string, 10)
+                    : null;
 
-                    this.prisma.httpLog
-                        .create({
-                            data: {
-                                method,
-                                path: path.split('?')[0],
-                                routePattern,
-                                queryString,
-                                requestContentLength: contentLength,
-                                statusCode,
-                                responseContentLength,
-                                durationMs,
-                                errorMessage,
-                                ipAddress,
-                                userAgent,
-                                origin,
-                                referer,
-                                userId,
-                                country: geo.country || null,
-                                city: geo.city || null,
-                                device,
-                                correlationId,
-                            },
-                        })
-                        .catch((err) => {
-                            this.logger.error('Failed to write HTTP log', err?.message);
-                        });
-                },
-            }),
+                this.prisma.httpLog
+                    .create({
+                        data: {
+                            method,
+                            path: path.split('?')[0],
+                            routePattern,
+                            queryString,
+                            requestContentLength: contentLength,
+                            statusCode,
+                            responseContentLength,
+                            durationMs,
+                            errorMessage,
+                            ipAddress,
+                            userAgent,
+                            origin,
+                            referer,
+                            userId,
+                            country: geo.country || null,
+                            city: geo.city || null,
+                            device,
+                            correlationId,
+                        },
+                    })
+                    .catch((err) => {
+                        this.logger.error('Failed to write HTTP log', err?.message);
+                    });
+            })
         );
     }
 }
