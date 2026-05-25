@@ -132,8 +132,14 @@ export function HttpLogsPanel() {
     const [statusFilter, setStatusFilter] = useState('')
     const [path, setPath] = useState('')
     const [minDuration, setMinDuration] = useState('')
+    const [sortBy, setSortBy] = useState('time')
+    const [sortOrder, setSortOrder] = useState('desc')
+    const [device, setDevice] = useState('')
+    const [country, setCountry] = useState('')
+
     const debouncedPath = useDebounce(path, 500)
     const debouncedMinDuration = useDebounce(minDuration, 500)
+    const debouncedCountry = useDebounce(country, 500)
 
     // Data
     const [logs, setLogs] = useState<HttpLog[]>([])
@@ -158,6 +164,10 @@ export function HttpLogsPanel() {
             if (statusFilter) query.set('statusGroup', statusFilter)
             if (debouncedPath) query.set('path', debouncedPath)
             if (debouncedMinDuration) query.set('minDuration', debouncedMinDuration)
+            if (sortBy) query.set('sortBy', sortBy)
+            if (sortOrder) query.set('sortOrder', sortOrder)
+            if (device) query.set('device', device)
+            if (debouncedCountry) query.set('country', debouncedCountry)
 
             const res = await fetch(`${API_URL}/admin/logs/http?${query.toString()}`, {
                 headers: {
@@ -173,7 +183,7 @@ export function HttpLogsPanel() {
         } catch (error) {
             console.error('Failed to fetch HTTP logs', error)
         }
-    }, [page, method, statusFilter, debouncedPath, debouncedMinDuration])
+    }, [page, method, statusFilter, debouncedPath, debouncedMinDuration, sortBy, sortOrder, device, debouncedCountry])
 
     const fetchStats = useCallback(async () => {
         try {
@@ -335,6 +345,49 @@ export function HttpLogsPanel() {
                     value={minDuration}
                     onChange={e => { setMinDuration(e.target.value); setPage(1) }}
                 />
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3 items-center">
+                <select
+                    value={device}
+                    onChange={e => { setDevice(e.target.value); setPage(1) }}
+                    className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                    <option value="">All Devices</option>
+                    <option value="desktop">Desktop</option>
+                    <option value="mobile">Mobile</option>
+                    <option value="tablet">Tablet</option>
+                    <option value="bot">Bot</option>
+                </select>
+
+                <Input
+                    type="text"
+                    placeholder="Country Code (e.g. US)"
+                    className="max-w-[150px]"
+                    value={country}
+                    onChange={e => { setCountry(e.target.value); setPage(1) }}
+                />
+
+                <select
+                    value={sortBy}
+                    onChange={e => { setSortBy(e.target.value); setPage(1) }}
+                    className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                    <option value="time">Sort by Time</option>
+                    <option value="duration">Sort by Duration</option>
+                    <option value="status">Sort by Status</option>
+                    <option value="method">Sort by Method</option>
+                    <option value="path">Sort by Path</option>
+                </select>
+
+                <select
+                    value={sortOrder}
+                    onChange={e => { setSortOrder(e.target.value); setPage(1) }}
+                    className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                    <option value="desc">Descending</option>
+                    <option value="asc">Ascending</option>
+                </select>
             </div>
 
             {/* Table */}

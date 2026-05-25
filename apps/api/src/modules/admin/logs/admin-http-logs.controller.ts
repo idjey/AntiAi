@@ -25,6 +25,10 @@ export class AdminHttpLogsController {
         @Query('minDuration') minDuration?: string,
         @Query('startDate') startDate?: string,
         @Query('endDate') endDate?: string,
+        @Query('sortBy') sortBy?: string,
+        @Query('sortOrder') sortOrder?: string,
+        @Query('device') device?: string,
+        @Query('country') country?: string,
     ) {
         const skipNum = skip ? parseInt(skip) : 0;
         const takeNum = take ? parseInt(take) : 50;
@@ -41,6 +45,10 @@ export class AdminHttpLogsController {
             minDuration: minDuration ? parseInt(minDuration) : undefined,
             startDate,
             endDate,
+            sortBy,
+            sortOrder,
+            device,
+            country,
         });
     }
 
