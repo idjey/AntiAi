@@ -454,6 +454,51 @@ model TransparencyLog {
   @@map("transparency_log")
 }
 
+// ==================== HTTP REQUEST LOGS ====================
+
+model HttpLog {
+  id                    String   @id @default(uuid()) @db.Uuid
+  timestamp             DateTime @default(now())
+
+  // Request
+  method                String   @db.VarChar(10)
+  path                  String
+  routePattern          String?  @map("route_pattern")
+  queryString           String?  @map("query_string")
+  requestContentLength  Int?     @map("request_content_length")
+
+  // Response
+  statusCode            Int      @map("status_code")
+  responseContentLength Int?     @map("response_content_length")
+  durationMs            Int      @map("duration_ms")
+  errorMessage          String?  @map("error_message")
+
+  // Client Identity
+  ipAddress             String?  @map("ip_address")
+  userAgent             String?  @map("user_agent")
+  origin                String?
+  referer               String?
+
+  // Authenticated User (nullable for public/unauthenticated routes)
+  userId                String?  @map("user_id") @db.Uuid
+
+  // Geo & Device (parsed server-side from IP + UA)
+  country               String?
+  city                  String?
+  device                String?
+
+  // Tracing
+  correlationId         String?  @map("correlation_id") @db.Uuid
+
+  @@index([timestamp(sort: Desc)])
+  @@index([statusCode, timestamp(sort: Desc)])
+  @@index([method, timestamp(sort: Desc)])
+  @@index([userId, timestamp(sort: Desc)])
+  @@index([ipAddress, timestamp(sort: Desc)])
+  @@index([path, timestamp(sort: Desc)])
+  @@map("http_logs")
+}
+
 // ==================== ANALYTICS ====================
 
 model AnalyticsEvent {
