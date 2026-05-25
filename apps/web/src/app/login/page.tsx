@@ -11,6 +11,9 @@ function LoginContent() {
     const [password, setPassword] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState('')
+    const [step, setStep] = useState<'login' | '2fa'>('login')
+    const [tempToken, setTempToken] = useState('')
+    const [twoFactorCode, setTwoFactorCode] = useState('')
     const registered = searchParams.get('registered')
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -43,6 +46,13 @@ function LoginContent() {
             }
 
             const data = await res.json()
+
+            if (data.requires2FA) {
+                setTempToken(data.tempToken)
+                setStep('2fa')
+                return
+            }
+
             // Store JWT in cookie or local storage (MVP uses simple storage for now, ideal is httpOnly cookie)
             localStorage.setItem('token', data.access_token)
 
@@ -60,6 +70,118 @@ function LoginContent() {
         } finally {
             setIsLoading(false)
         }
+    }
+
+    const handle2FASubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setIsLoading(true)
+        setError('')
+
+        if (!twoFactorCode) {
+            setError('Please enter your 2FA code')
+            setIsLoading(false)
+            return
+        }
+
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/auth/2fa/verify-login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tempToken, code: twoFactorCode }),
+            })
+
+            if (!res.ok) {
+                const data = await res.json()
+                throw new Error(data.message || 'Invalid 2FA code')
+            }
+
+            const data = await res.json()
+            localStorage.setItem('token', data.access_token)
+
+            const plan = searchParams.get('plan')
+            const interval = searchParams.get('interval')
+
+            if (plan && interval) {
+                router.push(`/checkout/init?plan=${plan}&interval=${interval}`)
+            } else {
+                router.push('/dashboard')
+            }
+        } catch (err: any) {
+            setError(err.message)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    if (step === '2fa') {
+        return (
+            <div className="w-full max-w-md relative z-10">
+                <Link href="/" className="flex items-center justify-center gap-2 mb-8">
+                    <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                        <svg className="w-5 h-5 text-background" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+                        </svg>
+                    </div>
+                    <span className="text-xl font-bold tracking-tight">
+                        antiai<span className="text-primary">.me</span>
+                    </span>
+                </Link>
+
+                <div className="bg-surface border border-white/10 rounded-2xl p-8 shadow-card backdrop-blur-sm">
+                    <h1 className="text-2xl font-bold text-center mb-2">Two-Factor Authentication</h1>
+                    <p className="text-text-secondary text-center text-sm mb-8">
+                        Enter the 6-digit code from your authenticator app.
+                    </p>
+
+                    {error && (
+                        <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                            {error}
+                        </div>
+                    )}
+
+                    <form onSubmit={handle2FASubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                                Authentication Code
+                            </label>
+                            <input
+                                type="text"
+                                required
+                                maxLength={6}
+                                value={twoFactorCode}
+                                onChange={(e) => setTwoFactorCode(e.target.value.replace(/[^0-9]/g, ''))}
+                                className="w-full px-4 py-2.5 bg-surface-light border border-white/5 rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all font-mono text-center tracking-widest text-lg"
+                                placeholder="000000"
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={isLoading || twoFactorCode.length !== 6}
+                            className="w-full btn-primary py-2.5 mt-2 disabled:opacity-50"
+                        >
+                            {isLoading ? (
+                                <div className="w-5 h-5 border-2 border-background/30 border-t-background rounded-full animate-spin mx-auto" />
+                            ) : (
+                                'Verify Code'
+                            )}
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setStep('login')
+                                setTwoFactorCode('')
+                                setError('')
+                            }}
+                            className="w-full mt-4 text-sm text-text-secondary hover:text-white transition-colors"
+                        >
+                            Back to Login
+                        </button>
+                    </form>
+                </div>
+            </div>
+        )
     }
 
     return (

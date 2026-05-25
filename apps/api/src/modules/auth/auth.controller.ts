@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Throttle } from '@nestjs/throttler';
+import { Request } from 'express';
 
 import { AuthService } from './auth.service';
 import { SignupDto, LoginDto } from './dto';
@@ -31,8 +32,8 @@ export class AuthController {
     @Post('login')
     // @Throttle({ default: { limit: 5, ttl: 60000 } })
     @HttpCode(HttpStatus.OK)
-    async login(@Body() dto: LoginDto) {
-        return this.authService.login(dto);
+    async login(@Body() dto: LoginDto, @Req() req: Request) {
+        return this.authService.login(dto, req);
     }
 
     @Get('me')
@@ -92,5 +93,37 @@ export class AuthController {
         // Use environment variable for frontend URL in production
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
         res.redirect(`${frontendUrl}/auth/callback?token=${result.access_token}`);
+    }
+
+    // --- 2FA Endpoints ---
+
+    @Post('2fa/generate')
+    @UseGuards(AuthGuard('jwt'))
+    async generate2fa(@CurrentUser() user: any) {
+        return this.authService.generate2faSecret(user.id);
+    }
+
+    @Post('2fa/enable')
+    @UseGuards(AuthGuard('jwt'))
+    @HttpCode(HttpStatus.OK)
+    async enable2fa(@CurrentUser() user: any, @Body('code') code: string) {
+        return this.authService.enable2fa(user.id, code);
+    }
+
+    @Post('2fa/disable')
+    @UseGuards(AuthGuard('jwt'))
+    @HttpCode(HttpStatus.OK)
+    async disable2fa(@CurrentUser() user: any, @Body('code') code: string) {
+        return this.authService.disable2fa(user.id, code);
+    }
+
+    @Post('2fa/verify-login')
+    @HttpCode(HttpStatus.OK)
+    async verify2faLogin(
+        @Body('tempToken') tempToken: string,
+        @Body('code') code: string,
+        @Req() req: Request
+    ) {
+        return this.authService.verify2faLogin(tempToken, code, req);
     }
 }
