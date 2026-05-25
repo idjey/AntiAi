@@ -56,4 +56,9 @@ export class AdminHttpLogsController {
     async getStats() {
         return this.adminHttpLogsService.getStats();
     }
+
+    @Get('map-data')
+    async getMapData() {
+        return this.adminHttpLogsService.getMapData();
+    }
 }

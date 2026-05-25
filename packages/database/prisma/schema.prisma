@@ -86,6 +86,10 @@ model User {
   failedOtpAttempts Int       @default(0) @map("failed_otp_attempts")
   otpLockedUntil    DateTime? @map("otp_locked_until")
 
+  // 2FA Fields
+  twoFactorEnabled Boolean @default(false) @map("two_factor_enabled")
+  twoFactorSecret  String? @map("two_factor_secret")
+
   // Relations
   oauthAccounts     OAuthAccount[]
   channels          Channel[]
@@ -96,8 +100,30 @@ model User {
   profile           CreatorProfile?
   links             CreatorLink[]
   emailEvents       EmailEvent[]
+  authActivityLogs  AuthActivityLog[]
 
   @@map("users")
+}
+
+model AuthActivityLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String?  @map("user_id") @db.Uuid
+  email         String
+  status        String // 'SUCCESS', 'FAILED', 'BLOCKED'
+  failureReason String?  @map("failure_reason")
+  ipAddress     String   @map("ip_address")
+  userAgent     String?  @map("user_agent")
+  country       String?
+  city          String?
+  device        String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([email])
+  @@index([ipAddress])
+  @@index([createdAt])
+  @@map("auth_activity_logs")
 }
 
 // ==================== CREATOR PROFILES (Linktree-style) ====================

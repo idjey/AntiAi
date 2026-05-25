@@ -2,6 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { Prisma } from '@antiai/database';
+import * as geoip from 'geoip-lite';
 
 @Injectable()
 export class AdminHttpLogsService {
@@ -151,5 +152,47 @@ export class AdminHttpLogsService {
             errorRate24h: totalRequests24h > 0 ? Math.round((errorCount24h / totalRequests24h) * 10000) / 100 : 0,
             uniqueIps24h: Number(stats.unique_ips_24h),
         };
+    }
+
+    async getMapData() {
+        const rawData = await this.prisma.$queryRaw<
+            { ip_address: string; count: bigint }[]
+        >`
+            SELECT ip_address, COUNT(*) as count
+            FROM http_logs
+            WHERE timestamp > NOW() - INTERVAL '24 hours'
+            AND ip_address IS NOT NULL
+            GROUP BY ip_address
+        `;
+
+        const mapData = [];
+        for (const row of rawData) {
+            if (!row.ip_address) continue;
+            
+            // Clean IPv6-mapped IPv4 addresses (e.g. ::ffff:192.168.1.1)
+            let ipToLookup = row.ip_address;
+            if (ipToLookup.includes('::ffff:')) {
+                ipToLookup = ipToLookup.split('::ffff:')[1];
+            }
+            
+            // Handle localhost testing
+            if (ipToLookup === '127.0.0.1' || ipToLookup === '::1') {
+                continue;
+            }
+
+            const geo = geoip.lookup(ipToLookup);
+            if (geo && geo.ll && geo.ll.length === 2) {
+                mapData.push({
+                    ip: row.ip_address,
+                    lat: geo.ll[0],
+                    lon: geo.ll[1],
+                    country: geo.country,
+                    city: geo.city,
+                    count: Number(row.count)
+                });
+            }
+        }
+
+        return mapData;
     }
 }

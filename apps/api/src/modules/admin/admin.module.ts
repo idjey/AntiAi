@@ -20,6 +20,8 @@ import { AdminLogsController } from './logs/admin-logs.controller';
 import { AdminLogsService } from './logs/admin-logs.service';
 import { AdminHttpLogsController } from './logs/admin-http-logs.controller';
 import { AdminHttpLogsService } from './logs/admin-http-logs.service';
+import { AdminAuthLogsController } from './logs/admin-auth-logs.controller';
+import { AdminAuthLogsService } from './logs/admin-auth-logs.service';
 import { AdminSettingsController } from './settings/admin-settings.controller';
 import { AdminSettingsService } from './settings/admin-settings.service';
 import { ProofsModule } from '../proofs/proofs.module';
@@ -52,7 +54,7 @@ import { LogRetentionCronService } from './logs/sinks/log-retention.cron';
             inject: [ConfigService],
         }),
     ],
-    controllers: [AdminController, AdminChannelsController, AdminVideosController, AdminProofsController, AdminReportsController, AdminKeysController, AdminBillingController, AdminLogsController, AdminHttpLogsController, AdminSettingsController, LogSinkConfigController],
-    providers: [AdminService, AdminChannelsService, AdminVideosService, AdminProofsService, AdminReportsService, AdminKeysService, AdminBillingService, AdminLogsService, AdminHttpLogsService, AdminSettingsService, LogSinkConfigService, LogSinkManager, WebhookSink, PostgresqlSink, LogForwardingProcessor, LogForwarderCronService, LogRetentionCronService],
+    controllers: [AdminController, AdminChannelsController, AdminVideosController, AdminProofsController, AdminReportsController, AdminKeysController, AdminBillingController, AdminLogsController, AdminHttpLogsController, AdminAuthLogsController, AdminSettingsController, LogSinkConfigController],
+    providers: [AdminService, AdminChannelsService, AdminVideosService, AdminProofsService, AdminReportsService, AdminKeysService, AdminBillingService, AdminLogsService, AdminHttpLogsService, AdminAuthLogsService, AdminSettingsService, LogSinkConfigService, LogSinkManager, WebhookSink, PostgresqlSink, LogForwardingProcessor, LogForwarderCronService, LogRetentionCronService],
 })
 export class AdminModule { }

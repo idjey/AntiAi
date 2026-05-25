@@ -703,4 +703,62 @@ export class EmailService {
         const textFallback = `Account Suspended\n\nYour creator account has been suspended because the email address was not verified within 48 hours.\n\nYou can restore access instantly by requesting a new verification code from the login page: https://antiai.me/login`;
         await this.sendEmailGeneric(to, `Account Suspended - Verification Required`, html, textFallback, false);
     }
+
+    async sendNewLoginAlertEmail(to: string, ip: string, location: string, device: string) {
+        const time = new Date().toLocaleString('en-US', { timeZone: 'UTC', timeZoneName: 'short' });
+        const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <meta name="supported-color-schemes" content="dark">
+    <title>New Login Alert</title>
+</head>
+<body style="background-color: #0a0a0a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; margin: 0; padding: 0; -webkit-font-smoothing: antialiased;">
+    <div style="max-width: 560px; margin: 0 auto; padding: 48px 24px;">
+        <div style="text-align: center; margin-bottom: 40px;">
+            <a href="https://antiai.me" style="text-decoration: none;">
+                <span style="font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">anti</span><span style="font-size: 22px; font-weight: 700; color: #EF4444; letter-spacing: -0.5px;">ai</span><span style="font-size: 22px; font-weight: 700; color: #64748B; letter-spacing: -0.5px;">.me</span>
+            </a>
+        </div>
+        <div style="background-color: #111827; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 48px 40px; text-align: left;">
+            <h1 style="font-size: 20px; font-weight: 700; margin: 0 0 12px 0; color: #ffffff;">Security Alert: New Login</h1>
+            <p style="font-size: 15px; color: #94A3B8; margin: 0 0 24px 0; line-height: 1.6;">
+                We noticed a successful login to your account from a new location or device. If this was you, you can safely ignore this email.
+            </p>
+            
+            <div style="background-color: #0a0a0a; border-radius: 12px; padding: 20px 24px; margin-bottom: 32px; border: 1px solid rgba(255,255,255,0.05);">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; color: #64748B; font-size: 14px; width: 100px;">Time</td>
+                        <td style="padding: 8px 0; color: #e2e8f0; font-size: 14px;"><strong>${time}</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #64748B; font-size: 14px;">Location</td>
+                        <td style="padding: 8px 0; color: #e2e8f0; font-size: 14px;"><strong>${location}</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #64748B; font-size: 14px;">IP Address</td>
+                        <td style="padding: 8px 0; color: #e2e8f0; font-size: 14px;"><strong>${ip}</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #64748B; font-size: 14px;">Device</td>
+                        <td style="padding: 8px 0; color: #e2e8f0; font-size: 14px; text-transform: capitalize;"><strong>${device}</strong></td>
+                    </tr>
+                </table>
+            </div>
+
+            <p style="font-size: 14px; color: #64748B; margin: 0 0 24px 0; line-height: 1.5;">
+                If you did not authorize this login, please change your password immediately and contact support.
+            </p>
+        </div>
+        ${this.getEmailFooter(to)}
+    </div>
+</body>
+</html>`;
+        const textFallback = `Security Alert: New Login\n\nWe noticed a successful login to your account from a new location or device.\n\nTime: ${time}\nLocation: ${location}\nIP: ${ip}\nDevice: ${device}\n\nIf this was you, you can ignore this email. If not, please change your password immediately.`;
+        await this.sendEmailGeneric(to, `Security Alert: New Login from ${location}`, html, textFallback, false);
+    }
 }

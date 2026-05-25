@@ -21,6 +21,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog'
 import { LogsExportButtons } from './logs-export-buttons'
+import { WorldMap } from './world-map'
 import { useDebounce } from '@/hooks/use-debounce'
 import { format } from 'date-fns'
 import {
@@ -100,15 +101,20 @@ interface HttpStats {
 
 // --- Stats Card ---
 
-function StatCard({ icon: Icon, label, value, gradient, valueClassName }: {
+function StatCard({ icon: Icon, label, value, gradient, valueClassName, onClick, isClickable }: {
     icon: React.ElementType
     label: string
     value: string | number
     gradient: string
     valueClassName?: string
+    onClick?: () => void
+    isClickable?: boolean
 }) {
     return (
-        <Card className={`bg-gradient-to-br ${gradient} border-0`}>
+        <Card 
+            className={`bg-gradient-to-br ${gradient} border-0 ${isClickable ? 'cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all' : ''}`}
+            onClick={onClick}
+        >
             <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                     <div>
@@ -151,6 +157,11 @@ export function HttpLogsPanel() {
     // Detail dialog
     const [selectedLog, setSelectedLog] = useState<HttpLog | null>(null)
 
+    // Map dialog
+    const [isMapOpen, setIsMapOpen] = useState(false)
+    const [mapData, setMapData] = useState<any[]>([])
+    const [isMapLoading, setIsMapLoading] = useState(false)
+
     // Auto-refresh
     const [autoRefresh, setAutoRefresh] = useState(false)
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -166,8 +177,15 @@ export function HttpLogsPanel() {
     }
 
     const SortIcon = ({ column }: { column: string }) => {
-        if (sortBy !== column) return <span className="ml-1 text-muted-foreground/30 text-[10px]">↕</span>
-        return <span className="ml-1 text-primary text-[10px]">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+        const isActive = sortBy === column
+        const isAsc = isActive && sortOrder === 'asc'
+        const isDesc = isActive && sortOrder === 'desc'
+        return (
+            <span className="ml-1 inline-flex items-center text-xs font-bold font-mono">
+                <span className={isAsc ? 'text-primary' : 'text-muted-foreground/30'}>↑</span>
+                <span className={isDesc ? 'text-primary' : 'text-muted-foreground/30'}>↓</span>
+            </span>
+        )
     }
 
     const fetchLogs = useCallback(async () => {
@@ -214,6 +232,25 @@ export function HttpLogsPanel() {
             }
         } catch (error) {
             console.error('Failed to fetch HTTP stats', error)
+        }
+    }, [])
+
+    const fetchMapData = useCallback(async () => {
+        setIsMapLoading(true)
+        try {
+            const res = await fetch(`${API_URL}/admin/logs/http/map-data`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+            if (res.ok) {
+                const data = await res.json()
+                setMapData(data)
+            }
+        } catch (error) {
+            console.error('Failed to fetch Map Data', error)
+        } finally {
+            setIsMapLoading(false)
         }
     }, [])
 
@@ -313,6 +350,11 @@ export function HttpLogsPanel() {
                     label="Unique IPs"
                     value={stats?.uniqueIps24h?.toLocaleString() ?? '—'}
                     gradient="from-emerald-500/5 to-teal-500/5"
+                    isClickable={true}
+                    onClick={() => {
+                        setIsMapOpen(true)
+                        fetchMapData()
+                    }}
                 />
             </div>
 
@@ -396,13 +438,13 @@ export function HttpLogsPanel() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('time')}>Time <SortIcon column="time" /></TableHead>
-                                        <TableHead className="cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('method')}>Method <SortIcon column="method" /></TableHead>
-                                        <TableHead className="cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('path')}>Path <SortIcon column="path" /></TableHead>
-                                        <TableHead className="cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('status')}>Status <SortIcon column="status" /></TableHead>
-                                        <TableHead className="text-right cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('duration')}>Duration <SortIcon column="duration" /></TableHead>
+                                        <TableHead className="cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('time')}><div className="flex items-center">Time <SortIcon column="time" /></div></TableHead>
+                                        <TableHead className="cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('method')}><div className="flex items-center">Method <SortIcon column="method" /></div></TableHead>
+                                        <TableHead className="cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('path')}><div className="flex items-center">Path <SortIcon column="path" /></div></TableHead>
+                                        <TableHead className="cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('status')}><div className="flex items-center">Status <SortIcon column="status" /></div></TableHead>
+                                        <TableHead className="cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('duration')}><div className="flex items-center justify-end">Duration <SortIcon column="duration" /></div></TableHead>
                                         <TableHead>IP Address</TableHead>
-                                        <TableHead className="cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('country')}>Location <SortIcon column="country" /></TableHead>
+                                        <TableHead className="cursor-pointer hover:bg-muted/50 select-none" onClick={() => handleSort('country')}><div className="flex items-center">Location <SortIcon column="country" /></div></TableHead>
                                         <TableHead>Device</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -566,6 +608,35 @@ export function HttpLogsPanel() {
                             </div>
                         </div>
                     )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Map Dialog */}
+            <Dialog open={isMapOpen} onOpenChange={setIsMapOpen}>
+                <DialogContent className="max-w-4xl border-[#1E293B] bg-[#0B0F14] text-white">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl">Traffic Origins (Last 24h)</DialogTitle>
+                        <DialogDescription className="text-slate-400">
+                            Geographical distribution of unique IP addresses accessing the platform.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="mt-4">
+                        {isMapLoading ? (
+                            <div className="flex h-[500px] items-center justify-center border border-white/10 rounded-lg bg-[#0f172a]/50">
+                                <span className="relative flex h-4 w-4 mr-3">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500" />
+                                </span>
+                                <span className="text-slate-400">Resolving geolocation data...</span>
+                            </div>
+                        ) : mapData.length === 0 ? (
+                            <div className="flex h-[500px] items-center justify-center border border-white/10 rounded-lg">
+                                <span className="text-slate-500">No geographic data available.</span>
+                            </div>
+                        ) : (
+                            <WorldMap data={mapData} />
+                        )}
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>

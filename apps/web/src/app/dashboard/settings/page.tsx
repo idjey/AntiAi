@@ -26,7 +26,8 @@ export default function SettingsPage() {
         categories: [] as string[],
         plan: 'free',
         lastHandleChange: null as string | null,
-        customDomain: null as string | null
+        customDomain: null as string | null,
+        twoFactorEnabled: false
     })
 
     const [lastDomainChange, setLastDomainChange] = useState<string | null>(null)
@@ -43,12 +44,18 @@ export default function SettingsPage() {
     const [isDomainConfirmDialogOpen, setIsDomainConfirmDialogOpen] = useState(false)
     const [domainConfirmInput, setDomainConfirmInput] = useState('')
 
-    // Password State
     const [passwordData, setPasswordData] = useState({
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
     })
+
+    // 2FA State
+    const [is2faModalOpen, setIs2faModalOpen] = useState(false)
+    const [qrCodeUrl, setQrCodeUrl] = useState('')
+    const [twoFactorCode, setTwoFactorCode] = useState('')
+    const [isGenerating2fa, setIsGenerating2fa] = useState(false)
+    const [isVerifying2fa, setIsVerifying2fa] = useState(false)
 
     useEffect(() => {
         fetchProfile()
@@ -75,7 +82,8 @@ export default function SettingsPage() {
                         isPublic: data.profile.is_public || false,
                         plan: data.profile.plan || 'free',
                         lastHandleChange: data.profile.last_handle_change || null,
-                        customDomain: data.profile.custom_domain || null
+                        customDomain: data.profile.custom_domain || null,
+                        twoFactorEnabled: data.profile.twoFactorEnabled || false
                     })
                     setLastDomainChange(data.profile.last_domain_change || null)
                     setHandleInput(data.profile.handle || '')
@@ -270,6 +278,94 @@ export default function SettingsPage() {
 
             setMessage({ type: 'success', text: 'Password changed successfully' })
             setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
+        } catch (err: any) {
+            setMessage({ type: 'error', text: err.message })
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
+    const handleGenerate2FA = async () => {
+        setIsGenerating2fa(true)
+        setMessage(null)
+        try {
+            const token = localStorage.getItem('token')
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/auth/2fa/generate`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+
+            if (!res.ok) throw new Error('Failed to generate 2FA secret')
+
+            const data = await res.json()
+            setQrCodeUrl(data.qrCodeDataUrl)
+            setIs2faModalOpen(true)
+        } catch (err: any) {
+            setMessage({ type: 'error', text: err.message })
+        } finally {
+            setIsGenerating2fa(false)
+        }
+    }
+
+    const handleEnable2FA = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setIsVerifying2fa(true)
+        setMessage(null)
+
+        try {
+            const token = localStorage.getItem('token')
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/auth/2fa/enable`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ code: twoFactorCode })
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) throw new Error(data.message || 'Failed to verify 2FA code')
+
+            setMessage({ type: 'success', text: 'Two-Factor Authentication enabled successfully!' })
+            setProfile(prev => ({ ...prev, twoFactorEnabled: true }))
+            setIs2faModalOpen(false)
+            setTwoFactorCode('')
+            setQrCodeUrl('')
+        } catch (err: any) {
+            setMessage({ type: 'error', text: err.message })
+        } finally {
+            setIsVerifying2fa(false)
+        }
+    }
+
+    const handleDisable2FA = async () => {
+        const confirmDisable = window.confirm("Are you sure you want to disable 2FA? This will reduce your account security.")
+        if (!confirmDisable) return
+
+        const code = window.prompt("Enter your current 6-digit authenticator code to disable 2FA:")
+        if (!code) return
+
+        setIsSaving(true)
+        setMessage(null)
+
+        try {
+            const token = localStorage.getItem('token')
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/auth/2fa/disable`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ code })
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) throw new Error(data.message || 'Failed to disable 2FA')
+
+            setMessage({ type: 'success', text: 'Two-Factor Authentication disabled.' })
+            setProfile(prev => ({ ...prev, twoFactorEnabled: false }))
         } catch (err: any) {
             setMessage({ type: 'error', text: err.message })
         } finally {
@@ -623,6 +719,108 @@ export default function SettingsPage() {
                         </button>
                     </div>
                 </form>
+            )}
+
+            {activeTab === 'security' && (
+                <div className="max-w-xl mt-12 bg-surface border border-border rounded-xl p-6 space-y-4">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h2 className="text-xl font-bold text-text-primary">Two-Factor Authentication (2FA)</h2>
+                            <p className="text-sm text-text-secondary mt-1">Add an extra layer of security to your account.</p>
+                        </div>
+                        {profile.twoFactorEnabled ? (
+                            <span className="bg-green-500/10 text-green-500 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                                Enabled
+                            </span>
+                        ) : (
+                            <span className="bg-red-500/10 text-red-500 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                                Disabled
+                            </span>
+                        )}
+                    </div>
+
+                    <div className="pt-4">
+                        {profile.twoFactorEnabled ? (
+                            <div>
+                                <p className="text-sm text-text-secondary mb-4">Your account is secured with two-factor authentication.</p>
+                                <button
+                                    onClick={handleDisable2FA}
+                                    disabled={isSaving}
+                                    className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                                >
+                                    Disable 2FA
+                                </button>
+                            </div>
+                        ) : (
+                            <div>
+                                <p className="text-sm text-text-secondary mb-4">Protect your account from unauthorized access by requiring a second authentication method in addition to your password.</p>
+                                <button
+                                    onClick={handleGenerate2FA}
+                                    disabled={isGenerating2fa}
+                                    className="px-4 py-2 bg-primary hover:bg-primary/90 text-background rounded-lg text-sm font-bold transition-colors disabled:opacity-50"
+                                >
+                                    {isGenerating2fa ? 'Setting up...' : 'Setup Authenticator App'}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* 2FA Setup Dialog */}
+            {is2faModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4">
+                    <div className="bg-surface-dark border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl relative">
+                        <h3 className="text-xl font-bold text-white mb-2">Setup Authenticator</h3>
+                        <p className="text-sm text-text-secondary mb-6 leading-relaxed">
+                            Scan the QR code with your authenticator app (e.g., Google Authenticator, Authy, or 1Password) and enter the 6-digit code below.
+                        </p>
+
+                        {qrCodeUrl && (
+                            <div className="flex justify-center mb-6 p-4 bg-white rounded-xl mx-auto w-fit">
+                                <img src={qrCodeUrl} alt="2FA QR Code" className="w-48 h-48" />
+                            </div>
+                        )}
+
+                        <form onSubmit={handleEnable2FA} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-medium text-text-secondary mb-1">
+                                    6-Digit Code
+                                </label>
+                                <input
+                                    type="text"
+                                    value={twoFactorCode}
+                                    onChange={(e) => setTwoFactorCode(e.target.value.replace(/[^0-9]/g, ''))}
+                                    maxLength={6}
+                                    className="w-full bg-black/50 border border-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary transition-colors text-center text-xl tracking-widest font-mono"
+                                    placeholder="000000"
+                                    autoComplete="off"
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIs2faModalOpen(false)
+                                        setTwoFactorCode('')
+                                    }}
+                                    className="px-4 py-2 rounded-lg text-sm font-medium text-text-secondary hover:text-white hover:bg-white/5 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isVerifying2fa || twoFactorCode.length !== 6}
+                                    className={`px-4 py-2 rounded-lg text-sm font-bold btn-primary transition-colors ${(isVerifying2fa || twoFactorCode.length !== 6) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                    {isVerifying2fa ? 'Verifying...' : 'Verify & Enable'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             )}
 
             {/* Verification Dialog for Custom Domains */}

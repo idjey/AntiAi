@@ -10,6 +10,7 @@ import { LogsTable } from './components/logs-table'
 import { LogsExportButtons } from './components/logs-export-buttons'
 import { HttpLogsPanel } from './components/http-logs-panel'
 import { LogSinksPanel } from './components/log-sinks-panel'
+import { AuthLogsPanel } from './components/auth-logs-panel'
 import { useDebounce } from '@/hooks/use-debounce'
 
 export default function AdminLogsPage() {
@@ -90,12 +91,14 @@ export default function AdminLogsPage() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">
-                        {activeTab === 'http' ? 'HTTP Logs' : 'System Logs'}
+                        {activeTab === 'http' ? 'HTTP Logs' : activeTab === 'auth' ? 'Authentication Logs' : 'System Logs'}
                     </h1>
                     <p className="text-muted-foreground">
                         {activeTab === 'http'
                             ? 'Request and response monitoring'
-                            : 'Audit trail and transparency logs'
+                            : activeTab === 'auth'
+                                ? 'Login activity and security events'
+                                : 'Audit trail and transparency logs'
                         }
                     </p>
                 </div>
@@ -104,6 +107,7 @@ export default function AdminLogsPage() {
             <Tabs value={activeTab} onValueChange={handleTabChange}>
                 <TabsList>
                     <TabsTrigger value="audit">Audit Logs</TabsTrigger>
+                    <TabsTrigger value="auth">Auth Logs</TabsTrigger>
                     <TabsTrigger value="http">HTTP Logs</TabsTrigger>
                     <TabsTrigger value="integrations">Integrations</TabsTrigger>
                 </TabsList>
@@ -166,6 +170,10 @@ export default function AdminLogsPage() {
 
                 <TabsContent value="http">
                     <HttpLogsPanel />
+                </TabsContent>
+
+                <TabsContent value="auth">
+                    <AuthLogsPanel />
                 </TabsContent>
 
                 <TabsContent value="integrations">

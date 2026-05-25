@@ -9,6 +9,8 @@ import { GoogleStrategy } from './strategies/google.strategy';
 import { EmailModule } from '../email/email.module';
 import { CouponsModule } from '../coupons/coupons.module';
 import { EmailVerificationCronService } from './email-verification.cron';
+import { AuthLoggingService } from './auth-logging.service';
+import { SecurityAlertService } from './security-alert.service';
 
 @Module({
     imports: [
@@ -27,7 +29,14 @@ import { EmailVerificationCronService } from './email-verification.cron';
         CouponsModule,
     ],
     controllers: [AuthController],
-    providers: [AuthService, JwtStrategy, GoogleStrategy, EmailVerificationCronService],
-    exports: [AuthService, JwtModule],
+    providers: [
+        AuthService, 
+        JwtStrategy, 
+        GoogleStrategy, 
+        EmailVerificationCronService, 
+        AuthLoggingService, 
+        SecurityAlertService
+    ],
+    exports: [AuthService, JwtModule, AuthLoggingService],
 })
 export class AuthModule { }

@@ -773,6 +773,7 @@ export class ProfilesService {
         return {
             id: profile.id,
             plan: profile.user?.subscription?.plan || 'free',
+            twoFactorEnabled: profile.user?.twoFactorEnabled || false,
             handle: profile.handle,
             display_name: profile.displayName,
             bio: profile.bio,
