@@ -18,15 +18,19 @@ import { AdminBillingController } from './billing/admin-billing.controller';
 import { AdminBillingService } from './billing/admin-billing.service';
 import { AdminLogsController } from './logs/admin-logs.controller';
 import { AdminLogsService } from './logs/admin-logs.service';
+import { AdminHttpLogsController } from './logs/admin-http-logs.controller';
+import { AdminHttpLogsService } from './logs/admin-http-logs.service';
 import { AdminSettingsController } from './settings/admin-settings.controller';
 import { AdminSettingsService } from './settings/admin-settings.service';
 import { ProofsModule } from '../proofs/proofs.module';
 import { AdminModerationModule } from './moderation/admin-moderation.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
     imports: [
         AdminModerationModule,
         ProofsModule,
+        EmailModule,
         JwtModule.registerAsync({
             imports: [ConfigModule],
             useFactory: async (configService: ConfigService) => ({
@@ -36,7 +40,7 @@ import { AdminModerationModule } from './moderation/admin-moderation.module';
             inject: [ConfigService],
         }),
     ],
-    controllers: [AdminController, AdminChannelsController, AdminVideosController, AdminProofsController, AdminReportsController, AdminKeysController, AdminBillingController, AdminLogsController, AdminSettingsController],
-    providers: [AdminService, AdminChannelsService, AdminVideosService, AdminProofsService, AdminReportsService, AdminKeysService, AdminBillingService, AdminLogsService, AdminSettingsService],
+    controllers: [AdminController, AdminChannelsController, AdminVideosController, AdminProofsController, AdminReportsController, AdminKeysController, AdminBillingController, AdminLogsController, AdminHttpLogsController, AdminSettingsController],
+    providers: [AdminService, AdminChannelsService, AdminVideosService, AdminProofsService, AdminReportsService, AdminKeysService, AdminBillingService, AdminLogsService, AdminHttpLogsService, AdminSettingsService],
 })
 export class AdminModule { }

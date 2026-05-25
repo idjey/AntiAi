@@ -5,15 +5,19 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from "@/components/ui/card"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { LogsTable } from './components/logs-table'
 import { LogsExportButtons } from './components/logs-export-buttons'
+import { HttpLogsPanel } from './components/http-logs-panel'
 import { useDebounce } from '@/hooks/use-debounce'
 
 export default function AdminLogsPage() {
     const router = useRouter()
     const searchParams = useSearchParams()
 
-    // State
+    const activeTab = searchParams.get('tab') || 'audit'
+
+    // Audit Logs State
     const [eventType, setEventType] = useState(searchParams.get('eventType') || '')
     const [entityType, setEntityType] = useState(searchParams.get('entityType') || '')
 
@@ -28,6 +32,8 @@ export default function AdminLogsPage() {
 
     // Fetch data
     useEffect(() => {
+        if (activeTab !== 'audit') return
+
         const fetchData = async () => {
             setIsLoading(true)
             try {
@@ -57,7 +63,7 @@ export default function AdminLogsPage() {
         }
 
         fetchData()
-    }, [debouncedEventType, debouncedEntityType, page])
+    }, [debouncedEventType, debouncedEntityType, page, activeTab])
 
     // Update URL
     useEffect(() => {
@@ -72,66 +78,94 @@ export default function AdminLogsPage() {
         router.push(`/admin/logs?${query.toString()}`, { scroll: false })
     }, [debouncedEventType, debouncedEntityType, router, searchParams])
 
+    const handleTabChange = (value: string) => {
+        const query = new URLSearchParams()
+        query.set('tab', value)
+        router.push(`/admin/logs?${query.toString()}`, { scroll: false })
+    }
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">System Logs</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">
+                        {activeTab === 'http' ? 'HTTP Logs' : 'System Logs'}
+                    </h1>
                     <p className="text-muted-foreground">
-                        Audit trail and transparency logs
+                        {activeTab === 'http'
+                            ? 'Request and response monitoring'
+                            : 'Audit trail and transparency logs'
+                        }
                     </p>
                 </div>
-                <LogsExportButtons logs={logs} />
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 items-center">
-                <Input
-                    placeholder="Filter by Event Type..."
-                    className="max-w-xs"
-                    value={eventType}
-                    onChange={(e) => setEventType(e.target.value)}
-                />
-                <Input
-                    placeholder="Filter by Entity Type..."
-                    className="max-w-xs"
-                    value={entityType}
-                    onChange={(e) => setEntityType(e.target.value)}
-                />
-            </div>
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
+                <TabsList>
+                    <TabsTrigger value="audit">Audit Logs</TabsTrigger>
+                    <TabsTrigger value="http">HTTP Logs</TabsTrigger>
+                </TabsList>
 
-            <Card>
-                <CardContent className="p-0">
-                    {isLoading ? (
-                        <div className="p-8 text-center text-muted-foreground">Loading logs...</div>
-                    ) : (
-                        <LogsTable logs={logs} />
-                    )}
-                </CardContent>
-            </Card>
+                <TabsContent value="audit">
+                    <div className="space-y-6">
+                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <div className="flex flex-col sm:flex-row gap-4 items-center">
+                                <Input
+                                    placeholder="Filter by Event Type..."
+                                    className="max-w-xs"
+                                    value={eventType}
+                                    onChange={(e) => setEventType(e.target.value)}
+                                />
+                                <Input
+                                    placeholder="Filter by Entity Type..."
+                                    className="max-w-xs"
+                                    value={entityType}
+                                    onChange={(e) => setEntityType(e.target.value)}
+                                />
+                            </div>
+                            <LogsExportButtons logs={logs} logType="audit" />
+                        </div>
 
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <div>
-                    Showing {logs.length} of {total} logs
-                </div>
-                <div className="flex gap-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPage(p => Math.max(1, p - 1))}
-                        disabled={page === 1}
-                    >
-                        Previous
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPage(p => p + 1)}
-                        disabled={page * 50 >= total}
-                    >
-                        Next
-                    </Button>
-                </div>
-            </div>
+                        <Card>
+                            <CardContent className="p-0">
+                                {isLoading ? (
+                                    <div className="p-8 text-center text-muted-foreground">Loading logs...</div>
+                                ) : (
+                                    <LogsTable logs={logs} />
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                            <div>
+                                Showing {logs.length} of {total} logs
+                            </div>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                                    disabled={page === 1}
+                                >
+                                    Previous
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setPage(p => p + 1)}
+                                    disabled={page * 50 >= total}
+                                >
+                                    Next
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="http">
+                    <HttpLogsPanel />
+                </TabsContent>
+            </Tabs>
         </div>
     )
 }
