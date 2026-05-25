@@ -33,6 +33,7 @@ import { WebhookSink } from './logs/sinks/webhook.sink';
 import { PostgresqlSink } from './logs/sinks/postgresql.sink';
 import { LogForwardingProcessor } from './logs/sinks/log-forwarding.processor';
 import { LogForwarderCronService } from './logs/sinks/log-forwarder.cron';
+import { LogRetentionCronService } from './logs/sinks/log-retention.cron';
 
 @Module({
     imports: [
@@ -52,6 +53,6 @@ import { LogForwarderCronService } from './logs/sinks/log-forwarder.cron';
         }),
     ],
     controllers: [AdminController, AdminChannelsController, AdminVideosController, AdminProofsController, AdminReportsController, AdminKeysController, AdminBillingController, AdminLogsController, AdminHttpLogsController, AdminSettingsController, LogSinkConfigController],
-    providers: [AdminService, AdminChannelsService, AdminVideosService, AdminProofsService, AdminReportsService, AdminKeysService, AdminBillingService, AdminLogsService, AdminHttpLogsService, AdminSettingsService, LogSinkConfigService, LogSinkManager, WebhookSink, PostgresqlSink, LogForwardingProcessor, LogForwarderCronService],
+    providers: [AdminService, AdminChannelsService, AdminVideosService, AdminProofsService, AdminReportsService, AdminKeysService, AdminBillingService, AdminLogsService, AdminHttpLogsService, AdminSettingsService, LogSinkConfigService, LogSinkManager, WebhookSink, PostgresqlSink, LogForwardingProcessor, LogForwarderCronService, LogRetentionCronService],
 })
 export class AdminModule { }
