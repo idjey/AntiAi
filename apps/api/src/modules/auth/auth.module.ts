@@ -8,6 +8,7 @@ import { JwtStrategy } from './jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { EmailModule } from '../email/email.module';
 import { CouponsModule } from '../coupons/coupons.module';
+import { EmailVerificationCronService } from './email-verification.cron';
 
 @Module({
     imports: [
@@ -26,7 +27,7 @@ import { CouponsModule } from '../coupons/coupons.module';
         CouponsModule,
     ],
     controllers: [AuthController],
-    providers: [AuthService, JwtStrategy, GoogleStrategy],
+    providers: [AuthService, JwtStrategy, GoogleStrategy, EmailVerificationCronService],
     exports: [AuthService, JwtModule],
 })
 export class AuthModule { }

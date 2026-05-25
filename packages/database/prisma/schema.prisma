@@ -75,6 +75,8 @@ model User {
   passwordHash      String?   @map("password_hash")
   role              UserRole  @default(creator)
   isEmailVerified   Boolean   @default(false) @map("is_email_verified")
+  verificationReminderCount Int @default(0) @map("verification_reminder_count")
+  lastVerificationReminderSentAt DateTime? @map("last_verification_reminder_sent_at")
   isSuspended       Boolean   @default(false) @map("is_suspended")
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
