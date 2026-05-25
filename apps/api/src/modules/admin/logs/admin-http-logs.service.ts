@@ -91,6 +91,10 @@ export class AdminHttpLogsService {
                 case 'path':
                     orderBy = { path: direction };
                     break;
+                case 'location':
+                case 'country':
+                    orderBy = { country: direction };
+                    break;
                 case 'time':
                 default:
                     orderBy = { timestamp: direction };
