@@ -1,0 +1,7 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+# This command runs after the build is complete but before the new deployment starts taking traffic.
+# The UI timeline refers to this as "Post-deploy", but the settings panel calls it "Pre-deploy".
+preDeployCommand = "npm run db:push"
