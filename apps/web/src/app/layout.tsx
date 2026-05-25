@@ -91,7 +91,7 @@ export default function RootLayout({
                     }}
                 />
             </head>
-            <body className="bg-background text-text-primary antialiased">
+            <body className="bg-background text-text-primary antialiased" suppressHydrationWarning>
                 <ThemeProvider
                     attribute="class"
                     defaultTheme="dark"

@@ -40,9 +40,10 @@ async function bootstrap() {
             if (!origin) return callback(null, true);
             if (process.env.NODE_ENV === 'production') {
                 if (
-                    ['https://antiai.me', 'https://www.antiai.me'].includes(origin) ||
+                    ['https://antiai.me', 'https://www.antiai.me', 'http://localhost:3000'].includes(origin) ||
                     origin.startsWith('chrome-extension://') ||
-                    origin.startsWith('moz-extension://')
+                    origin.startsWith('moz-extension://') ||
+                    origin.startsWith('http://localhost')
                 ) {
                     return callback(null, true);
                 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { UserRole } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -57,6 +57,11 @@ export class AdminController {
     @Post('users/:id/suspend')
     async suspendUser(@Param('id') id: string) {
         return this.adminService.suspendUser(id);
+    }
+
+    @Delete('users/:id')
+    async deleteUser(@Param('id') id: string) {
+        return this.adminService.deleteUser(id);
     }
 
     @Post('users/:id/plan')
