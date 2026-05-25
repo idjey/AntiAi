@@ -25,12 +25,23 @@ import { AdminSettingsService } from './settings/admin-settings.service';
 import { ProofsModule } from '../proofs/proofs.module';
 import { AdminModerationModule } from './moderation/admin-moderation.module';
 import { EmailModule } from '../email/email.module';
+import { BullModule } from '@nestjs/bull';
+import { LogSinkConfigController } from './logs/sinks/log-sink-config.controller';
+import { LogSinkConfigService } from './logs/sinks/log-sink-config.service';
+import { LogSinkManager } from './logs/sinks/log-sink.manager';
+import { WebhookSink } from './logs/sinks/webhook.sink';
+import { PostgresqlSink } from './logs/sinks/postgresql.sink';
+import { LogForwardingProcessor } from './logs/sinks/log-forwarding.processor';
+import { LogForwarderCronService } from './logs/sinks/log-forwarder.cron';
 
 @Module({
     imports: [
         AdminModerationModule,
         ProofsModule,
         EmailModule,
+        BullModule.registerQueue({
+            name: 'log-forwarding'
+        }),
         JwtModule.registerAsync({
             imports: [ConfigModule],
             useFactory: async (configService: ConfigService) => ({
@@ -40,7 +51,7 @@ import { EmailModule } from '../email/email.module';
             inject: [ConfigService],
         }),
     ],
-    controllers: [AdminController, AdminChannelsController, AdminVideosController, AdminProofsController, AdminReportsController, AdminKeysController, AdminBillingController, AdminLogsController, AdminHttpLogsController, AdminSettingsController],
-    providers: [AdminService, AdminChannelsService, AdminVideosService, AdminProofsService, AdminReportsService, AdminKeysService, AdminBillingService, AdminLogsService, AdminHttpLogsService, AdminSettingsService],
+    controllers: [AdminController, AdminChannelsController, AdminVideosController, AdminProofsController, AdminReportsController, AdminKeysController, AdminBillingController, AdminLogsController, AdminHttpLogsController, AdminSettingsController, LogSinkConfigController],
+    providers: [AdminService, AdminChannelsService, AdminVideosService, AdminProofsService, AdminReportsService, AdminKeysService, AdminBillingService, AdminLogsService, AdminHttpLogsService, AdminSettingsService, LogSinkConfigService, LogSinkManager, WebhookSink, PostgresqlSink, LogForwardingProcessor, LogForwarderCronService],
 })
 export class AdminModule { }

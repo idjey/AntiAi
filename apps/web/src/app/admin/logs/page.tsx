@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { LogsTable } from './components/logs-table'
 import { LogsExportButtons } from './components/logs-export-buttons'
 import { HttpLogsPanel } from './components/http-logs-panel'
+import { LogSinksPanel } from './components/log-sinks-panel'
 import { useDebounce } from '@/hooks/use-debounce'
 
 export default function AdminLogsPage() {
@@ -104,6 +105,7 @@ export default function AdminLogsPage() {
                 <TabsList>
                     <TabsTrigger value="audit">Audit Logs</TabsTrigger>
                     <TabsTrigger value="http">HTTP Logs</TabsTrigger>
+                    <TabsTrigger value="integrations">Integrations</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="audit">
@@ -164,6 +166,10 @@ export default function AdminLogsPage() {
 
                 <TabsContent value="http">
                     <HttpLogsPanel />
+                </TabsContent>
+
+                <TabsContent value="integrations">
+                    <LogSinksPanel />
                 </TabsContent>
             </Tabs>
         </div>
