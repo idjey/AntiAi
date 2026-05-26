@@ -53,7 +53,7 @@ export class EmailService {
                         to: [to],
                         subject: 'Verify your email - AntiAI.me',
                         html: this.getOtpTemplate(otp),
-                        text: `Welcome to AntiAI.me!\n\nTo complete your signup and verify this email address, your verification code is: ${otp}\n\nThis code will expire in 10 minutes.`
+                        text: `Welcome to AntiAI.me!\n\nTo complete your signup and verify this email address, your verification code is: ${otp}\n\nVerify your email now: https://antiai.me/login?verify=true\n\nThis code will expire in 10 minutes.`
                     })
                 });
 
@@ -194,6 +194,8 @@ export class EmailService {
                     ${otp}
                 </p>
             </div>
+            
+            <a href="https://antiai.me/login?verify=true" style="display: inline-block; background-color: #22C55E; color: #000000; font-weight: 700; padding: 14px 36px; border-radius: 10px; text-decoration: none; font-size: 15px; letter-spacing: 0.3px; margin-bottom: 32px;">Verify Email Now</a>
             
             <p class="description" style="margin-bottom: 0; font-size: 13px; color: #94A3B8; line-height: 1.5;">
                 This code will expire in 10 minutes. If you didn't request this email, you can safely ignore it.
@@ -653,6 +655,7 @@ export class EmailService {
             <div style="background-color: #0a0a0a; border-radius: 12px; padding: 20px 24px; margin-bottom: 32px; border: 1px dashed rgba(34,197,94,0.4);">
                 <p style="font-size: 28px; font-weight: 800; letter-spacing: 6px; color: #22C55E; margin: 0; font-family: 'Courier New', Courier, monospace;">${otp}</p>
             </div>
+            <a href="https://antiai.me/login?verify=true" style="display: inline-block; background-color: #22C55E; color: #000000; font-weight: 700; padding: 14px 36px; border-radius: 10px; text-decoration: none; font-size: 15px; letter-spacing: 0.3px; margin-bottom: 32px;">Verify Email Now</a>
             <p style="margin-top: 28px; font-size: 13px; color: #64748B; line-height: 1.5;">
                 This code will expire in 10 minutes. If you already verified, you can ignore this email.
             </p>
@@ -661,7 +664,7 @@ export class EmailService {
     </div>
 </body>
 </html>`;
-        const textFallback = `Action Required: Verify Email\n\nWe noticed you haven't verified your email address yet. Unverified accounts are automatically suspended after 2 days.\n\nYour verification code is: ${otp}\n\nThis code will expire in 10 minutes.`;
+        const textFallback = `Action Required: Verify Email\n\nWe noticed you haven't verified your email address yet. Unverified accounts are automatically suspended after 2 days.\n\nYour verification code is: ${otp}\n\nVerify your email now: https://antiai.me/login?verify=true\n\nThis code will expire in 10 minutes.`;
         await this.sendEmailGeneric(to, reminderTitle, html, textFallback, false);
     }
 
