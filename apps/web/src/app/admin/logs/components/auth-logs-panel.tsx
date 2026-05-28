@@ -190,7 +190,7 @@ export function AuthLogsPanel() {
                                                 )}
                                             </td>
                                             <td className="p-4 align-middle font-medium capitalize">
-                                                {log.action.replace('_', ' ')}
+                                                {(log.action || 'login').replace('_', ' ')}
                                             </td>
                                             <td className="p-4 align-middle">
                                                 <Badge variant={
