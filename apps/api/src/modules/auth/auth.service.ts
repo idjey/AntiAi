@@ -1,7 +1,7 @@
-import {
     Injectable,
     BadRequestException,
     UnauthorizedException,
+    OnModuleInit,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -17,7 +17,7 @@ import { AuthLoggingService } from './auth-logging.service';
 import { SecurityAlertService } from './security-alert.service';
 
 @Injectable()
-export class AuthService {
+export class AuthService implements OnModuleInit {
     constructor(
         private readonly prisma: PrismaService,
         private readonly jwtService: JwtService,
@@ -27,6 +27,22 @@ export class AuthService {
         private readonly authLoggingService: AuthLoggingService,
         private readonly securityAlertService: SecurityAlertService,
     ) { }
+
+    async onModuleInit() {
+        try {
+            await this.prisma.user.updateMany({
+                where: { role: 'admin' },
+                data: {
+                    isSuspended: false,
+                    isEmailVerified: true,
+                    verificationReminderCount: 0
+                }
+            });
+            console.log('Admins verified and unsuspended automatically on startup.');
+        } catch (error) {
+            console.error('Failed to run admin unsuspension check', error);
+        }
+    }
 
     private normalizeEmail(email: string): string {
         let [localPart, domain] = email.toLowerCase().trim().split('@');
