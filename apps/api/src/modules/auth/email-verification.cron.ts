@@ -38,6 +38,7 @@ export class EmailVerificationCronService {
                 isSuspended: false,
                 createdAt: { lt: tenMinutesAgo },
                 verificationReminderCount: 0,
+                role: 'creator',
             },
             take: 50,
         });
@@ -49,6 +50,7 @@ export class EmailVerificationCronService {
                 isSuspended: false,
                 verificationReminderCount: { gt: 0, lt: 4 },
                 lastVerificationReminderSentAt: { lt: twelveHoursAgo },
+                role: 'creator',
             },
             take: 50,
         });
@@ -89,6 +91,7 @@ export class EmailVerificationCronService {
                 isSuspended: false,
                 createdAt: { lt: fortyEightHoursAgo },
                 verificationReminderCount: { gte: 4 },
+                role: 'creator',
             },
             take: 50,
         });
