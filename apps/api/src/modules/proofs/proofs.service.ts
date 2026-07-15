@@ -272,8 +272,8 @@ export class ProofsService {
     }
 
     async getActiveProofByPlatformId(platform: string, platformId: string): Promise<any> {
-        const video = await this.prisma.video.findUnique({
-            where: { platform_platformId: { platform, platformId } },
+        const video = await this.prisma.video.findFirst({
+            where: { platform, platformId },
             include: {
                 channel: {
                     include: {
@@ -351,8 +351,8 @@ export class ProofsService {
 
     async getPublicProofByPlatformId(platform: string, platformId: string) {
         // Find video by Platform ID
-        const video = await this.prisma.video.findUnique({
-            where: { platform_platformId: { platform, platformId } },
+        let video = await this.prisma.video.findFirst({
+            where: { platform, platformId },
             include: {
                 channel: {
                     include: {

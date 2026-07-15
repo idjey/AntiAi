@@ -11,6 +11,7 @@ import {
     HttpCode,
     HttpStatus,
     BadRequestException,
+    Res,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ProfilesService } from './profiles.service';
@@ -157,6 +158,13 @@ export class ProfilesController {
     @Get('check-handle/:handle')
     async checkHandle(@Param('handle') handle: string) {
         return this.profilesService.checkHandleAvailability(handle);
+    }
+
+    // ==================== EXPORTS ====================
+
+    @Get('transparency/export')
+    async exportTransparencyLogs(@CurrentUser() user: any, @Res() res: any) {
+        return this.profilesService.exportTransparencyLogs(user.id, res);
     }
 }
 

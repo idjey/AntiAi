@@ -85,8 +85,8 @@ export class VideosService {
         await this.checkUsageLimits(userId);
 
         // Check if video already exists
-        const existing = await this.prisma.video.findUnique({
-            where: { platform_platformId: { platform: 'youtube', platformId: videoId } },
+        const existing = await this.prisma.video.findFirst({
+            where: { platform: 'youtube', platformId: videoId },
         });
 
         if (existing) {

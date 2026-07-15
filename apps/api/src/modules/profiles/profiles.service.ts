@@ -7,7 +7,8 @@ import {
     InternalServerErrorException,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
-import { PRODUCT_LIMITS } from '@antiai/shared';
+import { ConfigService } from '@nestjs/config';
+import { getPlanLimits, PRODUCT_LIMITS } from '@antiai/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
     CreateProfileDto,
@@ -239,8 +240,8 @@ export class ProfilesService {
         }
 
         const plan = profile.user?.subscription?.plan || 'free';
-        if (!['pro', 'elite'].includes(plan)) {
-            throw new ForbiddenException('You must have a PRO or ELITE subscription to change your handle.');
+        if (!['pro', 'business', 'elite'].includes(plan)) {
+            throw new ForbiddenException('You must have a PRO, BUSINESS, or ELITE subscription to change your handle.');
         }
 
         const normalized = newHandle.toLowerCase().trim();
@@ -284,8 +285,8 @@ export class ProfilesService {
         }
 
         const plan = profile.user?.subscription?.plan || 'free';
-        if (plan !== 'elite') {
-            throw new ForbiddenException('You must have an ELITE subscription to use custom domains.');
+        if (!['business', 'elite'].includes(plan)) {
+            throw new ForbiddenException('You must have a BUSINESS or ELITE subscription to use custom domains.');
         }
 
         // Enforce 90-day cooldown
@@ -833,5 +834,44 @@ export class ProfilesService {
             sort_order: link.sortOrder,
             is_active: link.isActive,
         };
+    }
+
+    // ==================== EXPORTS ====================
+
+    async exportTransparencyLogs(userId: string, res: any) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            include: { subscription: true, channels: { select: { id: true, videos: { select: { id: true } } } } }
+        });
+
+        if (!user) throw new NotFoundException('User not found');
+
+        const limits = getPlanLimits(user.subscription?.plan || 'free');
+        if (!limits.transparencyLogExport) {
+            throw new ForbiddenException('Your current plan does not support exporting Transparency Logs.');
+        }
+
+        const entityIds = [];
+        for (const c of user.channels) {
+            entityIds.push(c.id);
+            for (const v of c.videos) {
+                entityIds.push(v.id);
+            }
+        }
+
+        const logs = await this.prisma.transparencyLog.findMany({
+            where: { entityId: { in: entityIds } },
+            orderBy: { eventTime: 'desc' }
+        });
+
+        let csv = 'ID,Event Time,Event Type,Entity Type,Entity ID,Data\n';
+        for (const log of logs) {
+            const dataStr = JSON.stringify(log.data).replace(/"/g, '""');
+            csv += `"${log.id}","${log.eventTime.toISOString()}","${log.eventType}","${log.entityType}","${log.entityId}","${dataStr}"\n`;
+        }
+
+        res.header('Content-Type', 'text/csv');
+        res.attachment(`transparency-logs-${new Date().toISOString().split('T')[0]}.csv`);
+        return res.send(csv);
     }
 }

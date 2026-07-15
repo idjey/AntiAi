@@ -44,8 +44,8 @@ function CheckoutInitContent() {
                     throw new Error(data.message || 'Failed to start checkout')
                 }
 
-                if (data.checkout_url) {
-                    window.location.href = data.checkout_url
+                if (data.checkout_url || data.url) {
+                    window.location.href = data.checkout_url || data.url
                 } else {
                     throw new Error('Invalid response from server')
                 }

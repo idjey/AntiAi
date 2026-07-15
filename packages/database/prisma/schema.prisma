@@ -65,6 +65,7 @@ enum PlanTier {
   pro
   business
   elite
+  enterprise
 }
 
 // ==================== USERS ====================
@@ -101,6 +102,7 @@ model User {
   links             CreatorLink[]
   emailEvents       EmailEvent[]
   authActivityLogs  AuthActivityLog[]
+  apiKeys           ApiKey[]
 
   @@map("users")
 }
@@ -241,7 +243,7 @@ model Channel {
   reports    Report[]
 
   @@unique([userId, platform, platformId])
-  @@unique([platform, platformId])
+  // @@unique([platform, platformId])
   @@index([userId])
   @@index([verificationStatus])
   @@map("channels")
@@ -270,7 +272,7 @@ model Video {
   flags      ContentFlag[]
   context    VideoContext?
 
-  @@unique([platform, platformId])
+  // @@unique([platform, platformId])
   @@index([channelId])
   @@index([publishedAt])
   @@map("videos")
@@ -409,6 +411,7 @@ model Subscription {
 
   // Usage tracking
   videosThisMonth  Int      @default(0) @map("videos_this_month")
+  apiCallsThisMonth Int     @default(0) @map("api_calls_this_month")
   usagePeriodStart DateTime @default(now()) @map("usage_period_start")
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -419,6 +422,23 @@ model Subscription {
 
   @@index([status])
   @@map("subscriptions")
+}
+
+// ==================== API KEYS ====================
+
+model ApiKey {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  name      String
+  keyHash   String   @unique @map("key_hash")
+  lastUsed  DateTime? @map("last_used")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("api_keys")
 }
 
 // ==================== AUDIT LOGS ====================

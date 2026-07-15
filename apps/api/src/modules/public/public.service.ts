@@ -4,6 +4,7 @@ import { createHash } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProofsService } from '../proofs/proofs.service';
 import { FlagVideoDto } from './dto';
+import { getPlanLimits } from '@antiai/shared';
 
 @Injectable()
 export class PublicService {
@@ -43,6 +44,10 @@ export class PublicService {
 
         // Extract true AntiAI Handle if it exists
         const antiAiHandle = video.channel?.user?.profile?.handle || null;
+        
+        // Check for White Label Badge
+        const plan = video.channel?.user?.subscription?.plan || 'free';
+        const isWhiteLabel = getPlanLimits(plan).whiteLabelBadge;
 
         // Check if proof is expired
         if (proof.expiresAt < now) {
@@ -55,6 +60,7 @@ export class PublicService {
                 avatar_url: video.channel.avatarUrl,
                 proof: this.formatProof(proof),
                 public_creator_url: this.getCreatorUrl(antiAiHandle),
+                is_white_label: isWhiteLabel,
                 message: 'Verification proof has expired',
             };
         }
@@ -70,6 +76,7 @@ export class PublicService {
                 avatar_url: video.channel.avatarUrl,
                 proof: this.formatProof(proof),
                 public_creator_url: null,
+                is_white_label: false,
                 message: 'Channel verification has been revoked',
             };
         }
@@ -83,6 +90,7 @@ export class PublicService {
             avatar_url: video.channel.avatarUrl,
             proof: this.formatProof(proof),
             public_creator_url: this.getCreatorUrl(antiAiHandle),
+            is_white_label: isWhiteLabel,
             message: null,
         };
     }
@@ -502,10 +510,8 @@ export class PublicService {
     }
 
     async flagVideo(dto: FlagVideoDto, ip: string) {
-        const video = await this.prisma.video.findUnique({
-            where: {
-                platform_platformId: { platform: dto.platform, platformId: dto.platform_id }
-            }
+        const video = await this.prisma.video.findFirst({
+            where: { platform: dto.platform, platformId: dto.platform_id }
         });
 
         if (!video) {
@@ -553,6 +559,53 @@ export class PublicService {
         if (!handle) return null;
         const webUrl = this.configService.get<string>('WEB_URL') || 'https://antiai.me';
         return `${webUrl}/${handle}`;
+    }
+
+    async getFeaturedCreators() {
+        const publicUsers = await this.prisma.user.findMany({
+            where: {
+                profile: { isPublic: true },
+            },
+            include: {
+                profile: true,
+                subscription: true,
+            },
+            take: 100, // Limit to reasonable number
+        });
+
+        const mappedUsers = publicUsers.map(user => {
+            const plan = user.subscription?.plan || 'free';
+            const limits = getPlanLimits(plan);
+            
+            return {
+                id: user.id,
+                name: user.profile?.displayName || 'Anonymous',
+                handle: user.profile?.handle || '',
+                bio: user.profile?.bio || '',
+                avatarUrl: user.profile?.avatarUrl || null,
+                categories: user.profile?.categories || [],
+                verifiedCount: 0,
+                plan: plan,
+                isFeatured: limits.featuredInDirectory,
+            };
+        });
+
+        // Split into trending and recent (for mock purposes, we'll just sort differently)
+        const featuredUsers = mappedUsers.filter(u => u.isFeatured);
+        const regularUsers = mappedUsers.filter(u => !u.isFeatured);
+
+        // Sort trending by verified count
+        const trending = [...featuredUsers, ...regularUsers]
+            .sort((a, b) => b.verifiedCount - a.verifiedCount)
+            .slice(0, 20);
+
+        // Recent just uses the default DB order (or we could sort by createdAt if we included it)
+        const recent = [...featuredUsers, ...regularUsers].slice(0, 20);
+
+        return {
+            trending,
+            recent
+        };
     }
 }
 

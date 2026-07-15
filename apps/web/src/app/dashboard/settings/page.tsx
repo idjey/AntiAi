@@ -11,7 +11,7 @@ const AVAILABLE_CATEGORIES = [
 
 export default function SettingsPage() {
     const router = useRouter()
-    const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile')
+    const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'data'>('profile')
     const [isLoading, setIsLoading] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
@@ -403,6 +403,15 @@ export default function SettingsPage() {
                         }`}
                 >
                     Security
+                </button>
+                <button
+                    onClick={() => setActiveTab('data')}
+                    className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'data'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-text-secondary hover:text-text-primary'
+                        }`}
+                >
+                    Data & Exports
                 </button>
             </div>
 
@@ -871,6 +880,54 @@ export default function SettingsPage() {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+            {/* Data & Exports Tab */}
+            {activeTab === 'data' && (
+                <div className="space-y-6 max-w-2xl">
+                    <div className="bg-surface-dark border border-border p-6 rounded-2xl space-y-4">
+                        <div>
+                            <h3 className="text-lg font-bold text-white">Transparency Logs Export</h3>
+                            <p className="text-sm text-text-secondary mt-1">
+                                Download a CSV file containing all your video verification logs, public challenges, and cryptographic signatures.
+                            </p>
+                        </div>
+                        
+                        {(profile.plan === 'elite' || profile.plan === 'enterprise') ? (
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        const token = localStorage.getItem('token')
+                                        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/profile/transparency/export`, {
+                                            headers: { 'Authorization': `Bearer ${token}` }
+                                        })
+                                        if (!res.ok) throw new Error('Failed to generate export')
+                                        const blob = await res.blob()
+                                        const url = window.URL.createObjectURL(blob)
+                                        const a = document.createElement('a')
+                                        a.href = url
+                                        a.download = `transparency_logs_${new Date().toISOString().split('T')[0]}.csv`
+                                        document.body.appendChild(a)
+                                        a.click()
+                                        window.URL.revokeObjectURL(url)
+                                        document.body.removeChild(a)
+                                        setMessage({ type: 'success', text: 'Transparency logs exported successfully.' })
+                                    } catch (err: any) {
+                                        setMessage({ type: 'error', text: err.message || 'Error exporting logs' })
+                                    }
+                                }}
+                                className="px-4 py-2 rounded-lg text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                            >
+                                Download CSV Export
+                            </button>
+                        ) : (
+                            <div className="bg-surface/50 border border-border p-4 rounded-lg">
+                                <p className="text-sm text-text-secondary">
+                                    Transparency log exports are available on <span className="text-primary font-medium">Elite</span> and <span className="text-primary font-medium">Enterprise</span> plans.
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
