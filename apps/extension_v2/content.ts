@@ -136,7 +136,7 @@ const adapters: PlatformAdapter[] = [
                     
                     const textNode = document.createTextNode(
                         isVerified 
-                        ? 'This video has a cryptographic proof on the AntiAI Transparency Log.' 
+                        ? (data?.is_white_label ? 'This video has a cryptographic proof on the Transparency Log.' : 'This video has a cryptographic proof on the AntiAI Transparency Log.')
                         : 'No cryptographic proof found for this video.'
                     )
                     

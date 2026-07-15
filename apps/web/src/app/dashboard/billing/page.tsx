@@ -11,6 +11,7 @@ interface BillingStatus {
     current_period_end: string | null
     videos_used: number
     videos_limit: number | null // Infinity becomes null in JSON
+    cancel_at_period_end?: boolean
 }
 
 const PLANS = {
@@ -18,33 +19,66 @@ const PLANS = {
         name: 'Free',
         prices: { month: '$0', year: '$0' },
         savings: null,
-        features: ['5 videos/month', '1 Shop Product', 'Public Creator Page', 'Content Verification', 'Basic Color Themes'],
+        features: [
+            'View cryptographic badges on verified videos',
+            '5 verified videos per month',
+            'Public creator profile page',
+            '1 shop product',
+            'Basic colour themes'
+        ],
         limit: 5
     },
     pro: {
         name: 'Pro',
         prices: { month: '$24.99', year: '$239.88' },
         savings: '$60.00',
-        features: ['100 videos/month', 'Unlimited Shop Products', 'Analytics Dashboard', 'Custom Backgrounds & Effects', 'Change Your Handle', 'Email Support'],
+        features: [
+            'Cryptographic proof badge on every video',
+            '100 verified videos per month',
+            'Tamper-proof Ed25519 digital signature',
+            'Public verification URL for every video',
+            'Analytics dashboard',
+            'Unlimited shop products',
+            'Custom backgrounds & effects',
+            'Change your @handle',
+            'Email support'
+        ],
         limit: 100
     },
     business: {
         name: 'Business',
         prices: { month: '$49.99', year: '$479.88' },
         savings: '$120.00',
-        features: ['500 videos/month', 'Everything in Pro', 'Live Proof challenges', 'Custom Domain Support', 'API access (10,000 calls)', 'Priority Support'],
+        features: [
+            'Everything in Pro',
+            '500 verified videos per month',
+            'Live Proof challenges (liveness verification)',
+            'Custom domain for your creator profile',
+            'API access (10,000 calls/month)',
+            'Priority email support'
+        ],
         limit: 500
     },
     elite: {
         name: 'Elite',
         prices: { month: '$99.99', year: '$959.88' },
         savings: '$240.00',
-        features: ['Unlimited Videos & Products', 'Everything in Business', 'Unlimited API calls', 'White-label (Hide Logo)', 'Transparency log export', 'Featured in directory'],
+        features: [
+            'Everything in Business',
+            'Unlimited verified videos',
+            'Unlimited API calls',
+            'White-label badge (hide AntiAI.me branding)',
+            'Transparency log export (CSV)',
+            'Featured in creator directory',
+            'Dedicated support'
+        ],
         limit: Infinity
     }
 }
 
-export default function BillingPage() {
+import { Suspense } from 'react'
+
+function BillingContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [status, setStatus] = useState<BillingStatus | null>(null)
@@ -151,8 +185,13 @@ export default function BillingPage() {
             })
 
             const data = await res.json()
-            if (data.checkout_url) {
-                window.location.href = data.checkout_url
+            
+            if (!res.ok) {
+                throw new Error(data.message || 'Failed to start checkout')
+            }
+
+            if (data.checkout_url || data.url) {
+                window.location.href = data.checkout_url || data.url
             } else {
                 throw new Error('Failed to start checkout')
             }
@@ -290,9 +329,15 @@ export default function BillingPage() {
                             />
                         </div>
                     )}
-                    <p className="text-xs text-text-muted">
-                        Resets on {status?.current_period_end ? new Date(status.current_period_end).toLocaleDateString() : 'next billing cycle'}
-                    </p>
+                    {status?.cancel_at_period_end ? (
+                        <p className="text-xs text-red-400">
+                            Your subscription will end on {status?.current_period_end ? new Date(status.current_period_end).toLocaleDateString() : 'the end of your billing cycle'}.
+                        </p>
+                    ) : (
+                        <p className="text-xs text-text-muted">
+                            Resets on {status?.current_period_end ? new Date(status.current_period_end).toLocaleDateString() : 'next billing cycle'}
+                        </p>
+                    )}
                 </div>
             </div>
 
@@ -379,7 +424,7 @@ export default function BillingPage() {
             </div>
 
             {/* Cancel Subscription (Paid Plans Only) */}
-            {currentPlan !== 'free' && (
+            {currentPlan !== 'free' && !status?.cancel_at_period_end && (
                 <div className="flex justify-center mt-12">
                     <button
                         onClick={handleCancelClick}
@@ -430,5 +475,23 @@ export default function BillingPage() {
                 </div>
             </Modal>
         </div>
+    )
+}
+
+export default function BillingPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center animate-pulse">
+                        <svg className="w-5 h-5 text-background" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        }>
+            <BillingContent />
+        </Suspense>
     )
 }

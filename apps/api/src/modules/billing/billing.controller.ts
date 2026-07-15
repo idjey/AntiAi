@@ -33,6 +33,13 @@ export class BillingController {
         return this.billingService.createCheckout(user.id, dto);
     }
 
+    @Post('checkout/api-quota')
+    @UseGuards(AuthGuard('jwt'))
+    @HttpCode(HttpStatus.OK)
+    async checkoutApiQuota(@CurrentUser() user: any, @Body() body: { return_url: string }) {
+        return this.billingService.createApiQuotaCheckout(user.id, body.return_url);
+    }
+
     @Post('portal')
     @UseGuards(AuthGuard('jwt'))
     @HttpCode(HttpStatus.OK)

@@ -159,26 +159,29 @@ export default function DocsPage() {
                             <h2 className="text-3xl font-bold">Cryptographic Proofs</h2>
                         </div>
                         <p className="text-text-secondary leading-relaxed mb-6">
-                            Every verified piece of content is backed by a JSON Web Signature (JWS) using the <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded">EdDSA</code> (Ed25519) algorithm. This ensures that the proof cannot be tampered with or forged.
+                            Every verified piece of content is backed by a cryptographic JSON proof using the <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded">EdDSA</code> (Ed25519) algorithm. This ensures that the proof cannot be tampered with or forged.
                         </p>
                         <div className="bg-[#0d1117] border border-white/10 rounded-xl p-5 overflow-x-auto">
                             <pre className="text-sm font-mono text-slate-300">
                                 <code>{`{
-  "alg": "EdDSA",
-  "typ": "JWT",
-  "kid": "antiai-key-ed25519"
-}
-.
-{
-  "sub": "youtube_channel_id",
-  "platform": "youtube",
-  "platform_id": "dQw4w9WgXcQ",
-  "iat": 1715846400,
-  "exp": 1747382400,
-  "iss": "https://antiai.me"
-}
-.
-[Cryptographic Signature]`}</code>
+  "alg": "Ed25519",
+  "kid": "antiai-key-ed25519",
+  "payload_json": {
+    "v": 1,
+    "iss": "https://antiai.me",
+    "kid": "antiai-key-ed25519",
+    "iat": 1715846400,
+    "exp": 1747382400,
+    "nonce": "LgXyZ3hBw...",
+    "youtube_video_id": "dQw4w9WgXcQ",
+    "youtube_channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
+    "content_hash": "a8f5f167f44f4964e6c998dee827110c..."
+  },
+  "payload_b64": "eyJ2IjoxLCJpc3MiOiJodHR...",
+  "signature_b64": "Afn39C_oWbZ...",
+  "issued_at_unix": 1715846400,
+  "expires_at_unix": 1747382400
+}`}</code>
                             </pre>
                         </div>
                     </section>

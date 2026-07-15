@@ -90,6 +90,14 @@ export class PublicController {
     async getTransparencyLogs() {
         return this.publicService.getTransparencyLogs();
     }
+    /**
+     * Get public creator directory
+     * GET /public/creators
+     */
+    @Get('creators')
+    async getFeaturedCreators() {
+        return this.publicService.getFeaturedCreators();
+    }
 
     /**
      * Get public creator profile by handle (Linktree-style page)

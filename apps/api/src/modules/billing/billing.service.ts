@@ -32,6 +32,7 @@ export class BillingService {
                 interval: 'month',
                 status: 'active',
                 current_period_end: null,
+                cancel_at_period_end: false,
                 videos_used: 0,
                 videos_limit: PLAN_LIMITS.free,
             };
@@ -42,6 +43,7 @@ export class BillingService {
             interval: subscription.interval,
             status: subscription.status,
             current_period_end: subscription.currentPeriodEnd?.toISOString() || null,
+            cancel_at_period_end: subscription.cancelAtPeriodEnd,
             videos_used: subscription.videosThisMonth,
             videos_limit: PLAN_LIMITS[subscription.plan],
         };
@@ -153,7 +155,66 @@ export class BillingService {
 
         const session = await this.stripe.checkout.sessions.create(sessionParams);
 
-        return { checkout_url: session.url };
+        return { url: session.url };
+    }
+
+    async createApiQuotaCheckout(userId: string, returnUrl: string) {
+        if (!this.stripe) {
+            throw new BadRequestException('Stripe not configured');
+        }
+
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            include: { subscription: true }
+        });
+
+        if (!user || !user.subscription) {
+            throw new BadRequestException('User or subscription not found');
+        }
+
+        let customerId = user.subscription.stripeCustomerId;
+
+        if (!customerId) {
+            const customer = await this.stripe.customers.create({
+                email: user.email,
+                metadata: { userId },
+            });
+            customerId = customer.id;
+            await this.prisma.subscription.update({
+                where: { userId },
+                data: { stripeCustomerId: customerId }
+            });
+        }
+
+        // We use price_data to dynamically charge $20 for 10,000 API calls
+        const sessionParams: Stripe.Checkout.SessionCreateParams = {
+            customer: customerId,
+            payment_method_types: ['card'],
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'usd',
+                        product_data: {
+                            name: 'Extra 10,000 API Calls',
+                            description: 'A one-time top-up of 10,000 developer API calls for your account.',
+                        },
+                        unit_amount: 2000, // $20.00
+                    },
+                    quantity: 1,
+                },
+            ],
+            mode: 'payment',
+            success_url: returnUrl,
+            cancel_url: returnUrl,
+            metadata: {
+                userId,
+                type: 'api_quota_topup',
+                amount: '10000'
+            },
+        };
+
+        const session = await this.stripe.checkout.sessions.create(sessionParams);
+        return { url: session.url };
     }
 
     async createPortalSession(userId: string, returnUrl: string) {
@@ -213,11 +274,35 @@ export class BillingService {
 
     private async handleCheckoutComplete(session: Stripe.Checkout.Session) {
         const userId = session.metadata?.userId;
+        const type = session.metadata?.type;
+
+        if (!userId) {
+            console.error('[STRIPE] Missing userId in checkout session');
+            return;
+        }
+
+        if (type === 'api_quota_topup') {
+            const amount = parseInt(session.metadata?.amount || '10000', 10);
+            console.log(`[STRIPE] Processing API Quota top-up for user ${userId} (+${amount} calls)`);
+            
+            // Subtracting from 'apiCallsThisMonth' effectively grants more quota.
+            // A better way would be adding a 'purchasedApiQuota' field, but for this sprint we'll decrement usage:
+            await this.prisma.subscription.update({
+                where: { userId },
+                data: {
+                    apiCallsThisMonth: {
+                        decrement: amount
+                    }
+                }
+            });
+            return;
+        }
+
         const plan = session.metadata?.plan as 'pro' | 'business' | 'elite';
         const interval = session.metadata?.interval as 'month' | 'year' || 'month';
 
-        if (!userId || !plan) {
-            console.error('[STRIPE] Missing metadata in checkout session', { userId, plan });
+        if (!plan) {
+            console.error('[STRIPE] Missing plan metadata in checkout session', { userId, plan });
             return;
         }
 

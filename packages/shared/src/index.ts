@@ -1,6 +1,6 @@
 // ==================== PLAN LIMITS (Single Source of Truth) ====================
 
-export type PlanTier = 'free' | 'pro' | 'business' | 'elite';
+export type PlanTier = 'free' | 'pro' | 'business' | 'elite' | 'enterprise';
 
 export interface PlanLimits {
     videosPerMonth: number;        // -1 = unlimited
@@ -74,6 +74,20 @@ export const PLAN_LIMITS_CONFIG: Record<PlanTier, PlanLimits> = {
         featuredInDirectory: true,
         proofExpiryDays: 365,
     },
+    enterprise: {
+        videosPerMonth: -1,
+        shopProducts: -1,
+        apiCallsPerMonth: -1,
+        challengeAccess: true,
+        customDomain: true,
+        whiteLabelBadge: true,
+        analyticsAccess: true,
+        customHandle: true,
+        customBackgrounds: true,
+        transparencyLogExport: true,
+        featuredInDirectory: true,
+        proofExpiryDays: 365,
+    },
 };
 
 /**
@@ -90,6 +104,7 @@ export const PLAN_LIMITS: Record<string, number> = {
     pro: 100,
     business: 500,
     elite: Infinity,
+    enterprise: Infinity,
 } as const;
 
 export const PRODUCT_LIMITS: Record<string, number> = {
@@ -97,6 +112,7 @@ export const PRODUCT_LIMITS: Record<string, number> = {
     pro: Infinity,
     business: Infinity,
     elite: Infinity,
+    enterprise: Infinity,
 } as const;
 
 export const PROOF_DEFAULT_EXPIRY_DAYS = 90;

@@ -262,7 +262,7 @@ export default function Pricing() {
                 { text: 'Unlimited verified videos', included: true },
                 { text: 'Unlimited API calls', included: true },
                 { text: 'White-label badge (hide AntiAI.me branding)', included: true },
-                { text: 'Transparency log export (PDF/CSV)', included: true },
+                { text: 'Transparency log export (CSV)', included: true },
                 { text: 'Featured in creator directory', included: true },
                 { text: 'Dedicated support', included: true },
             ],
