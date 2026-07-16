@@ -32,18 +32,6 @@ enum ProofStatus {
   superseded
 }
 
-enum ChallengeStatus {
-  active
-  paused
-  expired
-}
-
-enum ChallengeType {
-  object
-  phrase
-  object_phrase
-}
-
 enum ReportStatus {
   open
   reviewed
@@ -71,21 +59,21 @@ enum PlanTier {
 // ==================== USERS ====================
 
 model User {
-  id                String    @id @default(uuid()) @db.Uuid
-  email             String    @unique @db.Citext
-  passwordHash      String?   @map("password_hash")
-  role              UserRole  @default(creator)
-  isEmailVerified   Boolean   @default(false) @map("is_email_verified")
-  verificationReminderCount Int @default(0) @map("verification_reminder_count")
+  id                             String    @id @default(uuid()) @db.Uuid
+  email                          String    @unique @db.Citext
+  passwordHash                   String?   @map("password_hash")
+  role                           UserRole  @default(creator)
+  isEmailVerified                Boolean   @default(false) @map("is_email_verified")
+  verificationReminderCount      Int       @default(0) @map("verification_reminder_count")
   lastVerificationReminderSentAt DateTime? @map("last_verification_reminder_sent_at")
-  isSuspended       Boolean   @default(false) @map("is_suspended")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-  lastLoginAt       DateTime? @map("last_login_at")
-  otp               String?   @db.VarChar(8)
-  otpExpiresAt      DateTime? @map("otp_expires_at")
-  failedOtpAttempts Int       @default(0) @map("failed_otp_attempts")
-  otpLockedUntil    DateTime? @map("otp_locked_until")
+  isSuspended                    Boolean   @default(false) @map("is_suspended")
+  createdAt                      DateTime  @default(now()) @map("created_at")
+  updatedAt                      DateTime  @updatedAt @map("updated_at")
+  lastLoginAt                    DateTime? @map("last_login_at")
+  otp                            String?   @db.VarChar(8)
+  otpExpiresAt                   DateTime? @map("otp_expires_at")
+  failedOtpAttempts              Int       @default(0) @map("failed_otp_attempts")
+  otpLockedUntil                 DateTime? @map("otp_locked_until")
 
   // 2FA Fields
   twoFactorEnabled Boolean @default(false) @map("two_factor_enabled")
@@ -236,11 +224,10 @@ model Channel {
   updatedAt          DateTime           @updatedAt @map("updated_at")
 
   // Relations
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  videos     Video[]
-  proofs     Proof[]
-  challenges Challenge[]
-  reports    Report[]
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videos  Video[]
+  proofs  Proof[]
+  reports Report[]
 
   @@unique([userId, platform, platformId])
   // @@unique([platform, platformId])
@@ -266,7 +253,6 @@ model Video {
   // Relations
   channel    Channel          @relation(fields: [channelId], references: [id], onDelete: Cascade)
   proofs     Proof[]
-  challenges Challenge[]
   reports    Report[]
   featuredBy CreatorProfile[] // Profiles that feature this video
   flags      ContentFlag[]
@@ -332,70 +318,6 @@ model Proof {
   @@map("proofs")
 }
 
-// ==================== CHALLENGES (Optional Layer) ====================
-
-model Challenge {
-  id               String          @id // short id for URL
-  videoId          String          @map("video_id") @db.Uuid
-  channelId        String          @map("channel_id") @db.Uuid
-  type             ChallengeType   @default(object)
-  objectCode       String?         @map("object_code")
-  objectLabel      String?         @map("object_label")
-  phrase           String?
-  startsAt         DateTime        @default(now()) @map("starts_at")
-  expiresAt        DateTime        @map("expires_at")
-  status           ChallengeStatus @default(active)
-  decoyPoolVersion Int             @default(1) @map("decoy_pool_version")
-  createdAt        DateTime        @default(now()) @map("created_at")
-
-  // Relations
-  video    Video              @relation(fields: [videoId], references: [id], onDelete: Cascade)
-  channel  Channel            @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  options  ChallengeOption[]
-  attempts ChallengeAttempt[]
-  reports  Report[]
-
-  @@index([videoId])
-  @@index([channelId])
-  @@index([status, expiresAt])
-  @@map("challenges")
-}
-
-model ChallengeOption {
-  id          String  @id @default(uuid()) @db.Uuid
-  challengeId String  @map("challenge_id")
-  optionCode  String  @map("option_code")
-  optionLabel String  @map("option_label")
-  isCorrect   Boolean @default(false) @map("is_correct")
-  sortOrder   Int     @default(0) @map("sort_order")
-
-  // Relations
-  challenge Challenge          @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  attempts  ChallengeAttempt[]
-
-  @@index([challengeId])
-  @@map("challenge_options")
-}
-
-model ChallengeAttempt {
-  id                    String   @id @default(uuid()) @db.Uuid
-  challengeId           String   @map("challenge_id")
-  selectedOptionId      String?  @map("selected_option_id") @db.Uuid
-  isCorrect             Boolean  @map("is_correct")
-  ipHash                Bytes?   @map("ip_hash")
-  userAgentHash         Bytes?   @map("user_agent_hash")
-  deviceFingerprintHash Bytes?   @map("device_fingerprint_hash")
-  createdAt             DateTime @default(now()) @map("created_at")
-
-  // Relations
-  challenge      Challenge        @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  selectedOption ChallengeOption? @relation(fields: [selectedOptionId], references: [id], onDelete: SetNull)
-
-  @@index([challengeId, createdAt(sort: Desc)])
-  @@index([ipHash, createdAt(sort: Desc)])
-  @@map("challenge_attempts")
-}
-
 // ==================== BILLING ====================
 
 model Subscription {
@@ -410,9 +332,9 @@ model Subscription {
   cancelAtPeriodEnd    Boolean            @default(false) @map("cancel_at_period_end")
 
   // Usage tracking
-  videosThisMonth  Int      @default(0) @map("videos_this_month")
-  apiCallsThisMonth Int     @default(0) @map("api_calls_this_month")
-  usagePeriodStart DateTime @default(now()) @map("usage_period_start")
+  videosThisMonth   Int      @default(0) @map("videos_this_month")
+  apiCallsThisMonth Int      @default(0) @map("api_calls_this_month")
+  usagePeriodStart  DateTime @default(now()) @map("usage_period_start")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -427,13 +349,13 @@ model Subscription {
 // ==================== API KEYS ====================
 
 model ApiKey {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
   name      String
-  keyHash   String   @unique @map("key_hash")
+  keyHash   String    @unique @map("key_hash")
   lastUsed  DateTime? @map("last_used")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -463,11 +385,11 @@ model AuditLog {
 // ==================== REPORTS ====================
 
 model Report {
-  id             String       @id @default(uuid()) @db.Uuid
-  channelId      String?      @map("channel_id") @db.Uuid
-  videoId        String?      @map("video_id") @db.Uuid
-  proofId        String?      @map("proof_id") @db.Uuid
-  challengeId    String?      @map("challenge_id")
+  id        String  @id @default(uuid()) @db.Uuid
+  channelId String? @map("channel_id") @db.Uuid
+  videoId   String? @map("video_id") @db.Uuid
+  proofId   String? @map("proof_id") @db.Uuid
+
   reporterIpHash Bytes?       @map("reporter_ip_hash")
   reason         String
   details        String?
@@ -477,11 +399,11 @@ model Report {
   reviewedById   String?      @map("reviewed_by") @db.Uuid
 
   // Relations
-  channel    Channel?   @relation(fields: [channelId], references: [id], onDelete: SetNull)
-  video      Video?     @relation(fields: [videoId], references: [id], onDelete: SetNull)
-  proof      Proof?     @relation(fields: [proofId], references: [id], onDelete: SetNull)
-  challenge  Challenge? @relation(fields: [challengeId], references: [id], onDelete: SetNull)
-  reviewedBy User?      @relation("ReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  channel Channel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  video   Video?   @relation(fields: [videoId], references: [id], onDelete: SetNull)
+  proof   Proof?   @relation(fields: [proofId], references: [id], onDelete: SetNull)
+
+  reviewedBy User? @relation("ReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt(sort: Desc)])
   @@map("reports")
@@ -505,38 +427,38 @@ model TransparencyLog {
 // ==================== HTTP REQUEST LOGS ====================
 
 model HttpLog {
-  id                    String   @id @default(uuid()) @db.Uuid
-  timestamp             DateTime @default(now())
+  id        String   @id @default(uuid()) @db.Uuid
+  timestamp DateTime @default(now())
 
   // Request
-  method                String   @db.VarChar(10)
-  path                  String
-  routePattern          String?  @map("route_pattern")
-  queryString           String?  @map("query_string")
-  requestContentLength  Int?     @map("request_content_length")
+  method               String  @db.VarChar(10)
+  path                 String
+  routePattern         String? @map("route_pattern")
+  queryString          String? @map("query_string")
+  requestContentLength Int?    @map("request_content_length")
 
   // Response
-  statusCode            Int      @map("status_code")
-  responseContentLength Int?     @map("response_content_length")
-  durationMs            Int      @map("duration_ms")
-  errorMessage          String?  @map("error_message")
+  statusCode            Int     @map("status_code")
+  responseContentLength Int?    @map("response_content_length")
+  durationMs            Int     @map("duration_ms")
+  errorMessage          String? @map("error_message")
 
   // Client Identity
-  ipAddress             String?  @map("ip_address")
-  userAgent             String?  @map("user_agent")
-  origin                String?
-  referer               String?
+  ipAddress String? @map("ip_address")
+  userAgent String? @map("user_agent")
+  origin    String?
+  referer   String?
 
   // Authenticated User (nullable for public/unauthenticated routes)
-  userId                String?  @map("user_id") @db.Uuid
+  userId String? @map("user_id") @db.Uuid
 
   // Geo & Device (parsed server-side from IP + UA)
-  country               String?
-  city                  String?
-  device                String?
+  country String?
+  city    String?
+  device  String?
 
   // Tracing
-  correlationId         String?  @map("correlation_id") @db.Uuid
+  correlationId String? @map("correlation_id") @db.Uuid
 
   @@index([timestamp(sort: Desc)])
   @@index([statusCode, timestamp(sort: Desc)])
@@ -750,23 +672,23 @@ model EmailEvent {
 // ==================== LOG INTEGRATIONS ====================
 
 model LogSinkConfig {
-  id               String    @id @default(uuid()) @db.Uuid
-  name             String
-  type             String
-  enabled          Boolean   @default(false)
-  config           String
-  
-  filterMethods    String[]  @default([])
-  filterMinStatus  Int?
-  filterPaths      String[]  @default([])
-  
-  lastForwardedAt  DateTime? @map("last_forwarded_at")
-  lastForwardedId  String?   @map("last_forwarded_id")
-  lastError        String?   @map("last_error")
-  errorCount       Int       @default(0) @map("error_count")
-  
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
+  id      String  @id @default(uuid()) @db.Uuid
+  name    String
+  type    String
+  enabled Boolean @default(false)
+  config  String
+
+  filterMethods   String[] @default([])
+  filterMinStatus Int?
+  filterPaths     String[] @default([])
+
+  lastForwardedAt DateTime? @map("last_forwarded_at")
+  lastForwardedId String?   @map("last_forwarded_id")
+  lastError       String?   @map("last_error")
+  errorCount      Int       @default(0) @map("error_count")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("log_sink_configs")
 }

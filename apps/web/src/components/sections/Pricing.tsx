@@ -23,17 +23,6 @@ function TrustBar() {
     )
 }
 
-// ==================== LIVE PROOF CALLOUT ====================
-function LiveProofCallout() {
-    return (
-        <div className="rounded-lg bg-secondary/5 border border-secondary/20 p-3 my-3 text-xs text-text-secondary">
-            <strong className="text-secondary">Live Proof</strong> — Issue a real-time liveness challenge
-            that proves you're genuinely on camera. Viewers can verify it
-            instantly. No competitor offers this.
-        </div>
-    )
-}
-
 // ==================== FEATURE TABLE ====================
 function FeatureTable() {
     const [open, setOpen] = useState(false)
@@ -44,7 +33,6 @@ function FeatureTable() {
                 ['Cryptographic proof badge', '✓', '✓', '✓', '✓', '✓'],
                 ['Ed25519 digital signature', '✓', '✓', '✓', '✓', '✓'],
                 ['Public verification URL', '✓', '✓', '✓', '✓', '✓'],
-                ['Live Proof challenges', '–', '–', '✓', '✓', '✓'],
                 ['Proof expiry', '90 days', '1 yr', '1 yr', '1 yr', 'Custom'],
                 ['White-label badge', '–', '–', '–', '✓', '✓'],
                 ['Transparency log export', '–', '–', '–', '✓', '✓'],
@@ -140,10 +128,7 @@ function PricingFAQ() {
             q: 'How is this different from YouTube\'s AI disclosure labels?',
             a: 'YouTube\'s labels are self-reported. Our badges are cryptographically signed — mathematically impossible to fake without your private key. They prove the video was uploaded by you, from your verified channel, at a specific point in time.'
         },
-        {
-            q: 'What is "Live Proof" and why does it matter?',
-            a: 'Live Proof (Business+) lets you issue a real-time challenge during a livestream or video — a random object or phrase that proves you\'re genuinely on camera at that moment. No deepfake can respond to an unknown challenge.'
-        },
+
         {
             q: 'Is my content stored by AntiAI.me?',
             a: 'No. We never store your video files. We sign cryptographic metadata about your video (channel ID, video ID, timestamp) — not the content itself. Your videos stay entirely on YouTube or TikTok.'
@@ -221,7 +206,6 @@ export default function Pricing() {
                 { text: 'Custom backgrounds & effects', included: true },
                 { text: 'Change your @handle', included: true },
                 { text: 'Email support', included: true },
-                { text: 'Live Proof challenges (Business+)', included: false },
                 { text: 'Custom domain (Business+)', included: false },
             ],
             cta: 'Upgrade to Pro',
@@ -238,14 +222,12 @@ export default function Pricing() {
             features: [
                 { text: 'Everything in Pro', included: true },
                 { text: '500 verified videos per month', included: true },
-                { text: 'Live Proof challenges (liveness verification)', included: true, hero: true },
                 { text: 'Custom domain for your creator profile', included: true },
                 { text: 'API access (10,000 calls/month)', included: true },
                 { text: 'Priority email support', included: true },
                 { text: 'White-label badge (Elite only)', included: false },
                 { text: 'Unlimited API calls (Elite only)', included: false },
             ],
-            showLiveProofCallout: true,
             cta: 'Upgrade to Business',
             featured: false,
             badge: 'New',
@@ -368,9 +350,6 @@ export default function Pricing() {
                                         </li>
                                     ))}
                                 </ul>
-
-                                {/* Live Proof Callout (Business only) */}
-                                {'showLiveProofCallout' in plan && plan.showLiveProofCallout && <LiveProofCallout />}
 
                                 {/* Note (Free only) */}
                                 {plan.note && <p className="text-[10px] text-text-muted mt-3 text-center leading-relaxed">{plan.note}</p>}

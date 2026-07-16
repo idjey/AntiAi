@@ -186,6 +186,52 @@ export default function DocsPage() {
                         </div>
                     </section>
 
+                    {/* Section 3.1: Browser Extension */}
+                    <section id="extension" className="scroll-mt-24 pt-8 border-t border-white/5">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2.5 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                                <Globe className="w-6 h-6" />
+                            </div>
+                            <h2 className="text-3xl font-bold">Browser Extension</h2>
+                        </div>
+                        <p className="text-text-secondary leading-relaxed mb-4">
+                            The AntiAI Browser Extension acts as a decentralized, zero-trust verification client that runs directly in the user's browser. It is responsible for bridging the gap between social media platforms and our cryptographic ledger.
+                        </p>
+                        <div className="bg-surface p-6 rounded-2xl border border-white/5 mb-6">
+                            <h3 className="text-lg font-bold mb-3">Real-Time DOM Injection</h3>
+                            <p className="text-sm text-text-secondary mb-4">
+                                As users browse platforms like YouTube, the extension silently extracts the active video ID and queries the AntiAI Public API. If a valid, unrevoked Ed25519 signature is found for that specific video, the extension seamlessly injects an immutable <strong>Authenticated Badge</strong> directly into the webpage's DOM, right next to the creator's name.
+                            </p>
+                            <ul className="list-disc pl-5 space-y-2 text-sm text-text-secondary">
+                                <li><strong>Zero Friction:</strong> Users do not need to copy/paste URLs into a separate verification portal.</li>
+                                <li><strong>Tamper-Evident:</strong> The extension independently validates the cryptographic signature against the public key directory.</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    {/* Section 3.2: Creator Hub */}
+                    <section id="creator-hub" className="scroll-mt-24 pt-8 border-t border-white/5">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2.5 rounded-xl bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                                <Layout className="w-6 h-6" />
+                            </div>
+                            <h2 className="text-3xl font-bold">Verified Profiles</h2>
+                        </div>
+                        <p className="text-text-secondary leading-relaxed mb-4">
+                            The Creator Hub is the central command center where artists, journalists, and creators manage their decentralized cryptographic identity.
+                        </p>
+                        <div className="grid sm:grid-cols-2 gap-6 mb-8">
+                            <div className="bg-surface p-6 rounded-2xl border border-white/5">
+                                <div className="text-xl font-bold mb-2">OAuth Verification</div>
+                                <p className="text-sm text-text-secondary">Creators securely link their social accounts (e.g., YouTube) via OAuth. This ensures that only the true owner of a channel can issue cryptographic proofs for its content.</p>
+                            </div>
+                            <div className="bg-surface p-6 rounded-2xl border border-white/5">
+                                <div className="text-xl font-bold mb-2">Instant Revocation</div>
+                                <p className="text-sm text-text-secondary">If a creator's video is manipulated or maliciously edited after publication, they can instantly revoke the proof from the dashboard. The browser extension will immediately flag the content as unverified.</p>
+                            </div>
+                        </div>
+                    </section>
+
                     {/* Section 4 */}
                     <section id="api" className="scroll-mt-24 pt-8 border-t border-white/5">
                         <div className="flex items-center gap-3 mb-6">

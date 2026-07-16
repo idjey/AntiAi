@@ -6,7 +6,6 @@ export interface PlanLimits {
     videosPerMonth: number;        // -1 = unlimited
     shopProducts: number;          // -1 = unlimited
     apiCallsPerMonth: number;      // -1 = unlimited
-    challengeAccess: boolean;      // Liveness / Dynamic Proof feature
     customDomain: boolean;
     whiteLabelBadge: boolean;
     analyticsAccess: boolean;
@@ -22,7 +21,6 @@ export const PLAN_LIMITS_CONFIG: Record<PlanTier, PlanLimits> = {
         videosPerMonth: 5,
         shopProducts: 1,
         apiCallsPerMonth: 0,
-        challengeAccess: false,
         customDomain: false,
         whiteLabelBadge: false,
         analyticsAccess: false,
@@ -36,7 +34,6 @@ export const PLAN_LIMITS_CONFIG: Record<PlanTier, PlanLimits> = {
         videosPerMonth: 100,
         shopProducts: -1,
         apiCallsPerMonth: 0,
-        challengeAccess: false,
         customDomain: false,
         whiteLabelBadge: false,
         analyticsAccess: true,
@@ -50,7 +47,6 @@ export const PLAN_LIMITS_CONFIG: Record<PlanTier, PlanLimits> = {
         videosPerMonth: 500,
         shopProducts: -1,
         apiCallsPerMonth: 10_000,
-        challengeAccess: true,       // KEY differentiator vs Pro
         customDomain: true,
         whiteLabelBadge: false,
         analyticsAccess: true,

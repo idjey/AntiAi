@@ -19,7 +19,6 @@ import { AdminModule } from './modules/admin/admin.module';
 import { EmailModule } from './modules/email/email.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
-import { ChallengesModule } from './modules/challenges/challenges.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { HealthController } from './health.controller';
@@ -80,7 +79,6 @@ import { HealthController } from './health.controller';
         EmailModule,
         CouponsModule,
         ApiKeysModule,
-        ChallengesModule,
     ],
     providers: [
         {
