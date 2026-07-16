@@ -43,9 +43,6 @@ export class AdminReportsService {
                     },
                     proof: {
                         select: { id: true, status: true, kid: true }
-                    },
-                    challenge: {
-                        select: { id: true, type: true }
                     }
                 }
             }),
@@ -55,8 +52,8 @@ export class AdminReportsService {
         return {
             data: reports.map(r => ({
                 ...r,
-                entityType: r.videoId ? 'video' : r.channelId ? 'channel' : r.proofId ? 'proof' : r.challengeId ? 'challenge' : 'unknown',
-                entity: r.video || r.channel || r.proof || r.challenge
+                entityType: r.videoId ? 'video' : r.channelId ? 'channel' : r.proofId ? 'proof' : 'unknown',
+                entity: r.video || r.channel || r.proof
             })),
             meta: {
                 total,
@@ -75,7 +72,6 @@ export class AdminReportsService {
                 video: true,
                 channel: true,
                 proof: true,
-                challenge: true,
                 reviewedBy: {
                     select: { id: true, email: true }
                 }

@@ -77,8 +77,7 @@ export class AdminChannelsService {
                     select: {
                         videos: true,
                         proofs: true,
-                        reports: true,
-                        challenges: true
+                        reports: true
                     }
                 }
             }
