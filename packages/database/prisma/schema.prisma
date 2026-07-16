@@ -692,3 +692,324 @@ model LogSinkConfig {
 
   @@map("log_sink_configs")
 }
+
+// ─────────────────────────── ATTESTATION ENUMS ───────────────────────────
+
+enum IdentityClass {
+  PSEUDONYMOUS
+  VERIFIED_PERSON
+  ORGANIZATIONAL_ROLE
+}
+
+enum IdentityStatus {
+  PROBATION
+  ACTIVE
+  SUSPENDED
+  REVOKED
+}
+
+enum MediaType {
+  VIDEO
+  IMAGE
+  AUDIO
+  PDF
+  OTHER
+}
+
+enum ClaimType {
+  PROVENANCE_FOUND
+  ARTIFACT_FLAG
+  CONTEXT_NOTE
+  CORROBORATION
+  CUSTODY_RECEIVED
+  CUSTODY_TRANSFERRED
+  CUSTODY_SEALED
+  INTEGRITY_VERIFIED
+  REDACTION_APPLIED
+}
+
+enum AttestationDomain {
+  PUBLIC
+  CIRCLE
+}
+
+enum AttestationStatus {
+  PENDING
+  CORROBORATED
+  DISPUTED
+  SETTLED_CORRECT
+  SETTLED_INCORRECT
+  MACHINE_VERIFIED
+}
+
+enum ReputationEventType {
+  SETTLEMENT_CORRECT
+  SETTLEMENT_INCORRECT
+  CANARY_PASS
+  CANARY_FAIL
+  VOUCH_SLASH_PROPAGATION
+  CORROBORATION_REWARD
+  DECAY
+  MANUAL_ADJUSTMENT
+}
+
+enum CircleDeployment {
+  SAAS
+  ON_PREM
+}
+
+// ─────────────────────── IDENTITY (Phase 1) ───────────────────────
+
+model VerifierIdentity {
+  id             String         @id @default(uuid()) @db.Uuid
+  keyId          String         @unique
+  publicKey      String         @unique
+  identityClass  IdentityClass  @default(PSEUDONYMOUS)
+  status         IdentityStatus @default(PROBATION)
+  displayHandle  String?        @unique
+  platform       String
+  deviceAttested Boolean        @default(false)
+
+  // Reputation (Phase 2)
+  reputation        Float    @default(0.10)
+  accuracyScore     Float?
+  attestationCount  Int      @default(0)
+  settledCorrect    Int      @default(0)
+  settledIncorrect  Int      @default(0)
+  lastDecayAt       DateTime @default(now())
+
+  attestations      Attestation[]
+  reputationEvents  ReputationEvent[]
+  canaryResponses   CanaryResponse[]
+  vouchesGiven      Vouch[]            @relation("Voucher")
+  vouchReceived     Vouch?             @relation("Vouchee")
+  roleCertificates  RoleCertificate[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, reputation])
+  @@map("verifier_identities")
+}
+
+model Vouch {
+  id          String   @id @default(uuid()) @db.Uuid
+  voucherId   String   @db.Uuid
+  voucheeId   String   @unique @db.Uuid
+  voucher     VerifierIdentity @relation("Voucher", fields: [voucherId], references: [id])
+  vouchee     VerifierIdentity @relation("Vouchee", fields: [voucheeId], references: [id])
+  stakeAmount Float
+  signature   String
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([voucherId])
+  @@map("vouches")
+}
+
+// ─────────────────────── SUBJECTS & ATTESTATIONS (Phase 1) ───────────────────────
+
+model Subject {
+  id               String    @id @default(uuid()) @db.Uuid
+  hash             String    @unique
+  perceptualHash   String?
+  mediaType        MediaType
+  sizeBytes        BigInt?
+  firstSeenAt      DateTime  @default(now())
+
+  attestationCount Int       @default(0)
+  verdictSummary   Json?
+  checkCount       Int       @default(0)
+
+  attestations Attestation[]
+
+  @@index([perceptualHash])
+  @@index([checkCount, firstSeenAt])
+  @@map("subjects")
+}
+
+model Attestation {
+  id            String            @id @default(uuid()) @db.Uuid
+  payloadHash   String            @unique
+  version       String
+  subjectId     String            @db.Uuid
+  subject       Subject           @relation(fields: [subjectId], references: [id])
+  claimType     ClaimType
+  claimPayload  Json?
+  encryptedPayload Bytes?
+
+  attesterId    String            @db.Uuid
+  attester      VerifierIdentity  @relation(fields: [attesterId], references: [id])
+
+  domain        AttestationDomain @default(PUBLIC)
+  circleId      String?           @db.Uuid
+  circle        Circle?           @relation(fields: [circleId], references: [id])
+  roleCertId    String?           @db.Uuid
+  roleCert      RoleCertificate?  @relation(fields: [roleCertId], references: [id])
+
+  priorId       String?           @db.Uuid
+  prior         Attestation?      @relation("AttestationChain", fields: [priorId], references: [id])
+  successors    Attestation[]     @relation("AttestationChain")
+
+  clientTimestamp DateTime
+  receivedAt      DateTime         @default(now())
+  nonce           String
+  signature       String
+
+  status        AttestationStatus @default(PENDING)
+  settledAt     DateTime?
+  weightAtAggregation Float?
+
+  logEntry      TransparencyLogEntry?
+  reputationEvents ReputationEvent[]
+
+  @@unique([attesterId, subjectId, claimType, nonce])
+  @@index([subjectId, domain, status])
+  @@index([attesterId, receivedAt])
+  @@index([circleId, receivedAt])
+  @@map("attestations")
+}
+
+// ─────────────────────── REPUTATION ENGINE (Phase 2) ───────────────────────
+
+model ReputationEvent {
+  id            String              @id @default(uuid()) @db.Uuid
+  identityId    String              @db.Uuid
+  identity      VerifierIdentity    @relation(fields: [identityId], references: [id])
+  type          ReputationEventType
+  delta         Float
+  reputationAfter Float
+  attestationId String?             @db.Uuid
+  attestation   Attestation?        @relation(fields: [attestationId], references: [id])
+  metadata      Json?
+  createdAt     DateTime            @default(now())
+
+  @@index([identityId, createdAt])
+  @@map("reputation_events")
+}
+
+model CanaryTask {
+  id           String    @id @default(uuid()) @db.Uuid
+  subjectHash  String    @unique
+  mediaType    MediaType
+  groundTruth  Json
+  sourceConsent String
+  active       Boolean   @default(true)
+  servedCount  Int       @default(0)
+  responses    CanaryResponse[]
+  createdAt    DateTime  @default(now())
+
+  @@map("canary_tasks")
+}
+
+model CanaryResponse {
+  id         String           @id @default(uuid()) @db.Uuid
+  canaryId   String           @db.Uuid
+  canary     CanaryTask       @relation(fields: [canaryId], references: [id])
+  identityId String           @db.Uuid
+  identity   VerifierIdentity @relation(fields: [identityId], references: [id])
+  correct    Boolean
+  claimEcho  Json
+  createdAt  DateTime         @default(now())
+
+  @@unique([canaryId, identityId])
+  @@index([identityId, createdAt])
+  @@map("canary_responses")
+}
+
+model CorrelationCluster {
+  id          String   @id @default(uuid()) @db.Uuid
+  memberIds   String[]
+  signals     Json
+  discountFactor Float
+  computedAt  DateTime @default(now())
+  expiresAt   DateTime
+
+  @@index([expiresAt])
+  @@map("correlation_clusters")
+}
+
+// ─────────────────────── CIRCLES & PKI (Phase 3) ───────────────────────
+
+model Circle {
+  id             String           @id @default(uuid()) @db.Uuid
+  name           String
+  slug           String           @unique
+  rootPublicKey  String           @unique
+  deployment     CircleDeployment @default(SAAS)
+  publicIdentity Json?
+
+  roleCertificates RoleCertificate[]
+  attestations     Attestation[]
+  revocations      Revocation[]
+
+  createdAt DateTime @default(now())
+
+  @@map("circles")
+}
+
+model RoleCertificate {
+  id              String    @id @default(uuid()) @db.Uuid
+  serial          String    @unique
+  circleId        String    @db.Uuid
+  circle          Circle    @relation(fields: [circleId], references: [id])
+  identityId      String    @db.Uuid
+  identity        VerifierIdentity @relation(fields: [identityId], references: [id])
+  roleName        String
+  allowedClaims   ClaimType[]
+  validFrom       DateTime
+  validUntil      DateTime
+  certBody        Json
+  rootSignature   String
+
+  revokedAt       DateTime?
+  revocationId    String?   @db.Uuid
+  revocation      Revocation? @relation(fields: [revocationId], references: [id])
+
+  attestations    Attestation[]
+
+  @@index([circleId, identityId])
+  @@index([validFrom, validUntil])
+  @@map("role_certificates")
+}
+
+model Revocation {
+  id            String   @id @default(uuid()) @db.Uuid
+  circleId      String   @db.Uuid
+  circle        Circle   @relation(fields: [circleId], references: [id])
+  certSerials   String[]
+  reason        String?
+  effectiveAt   DateTime
+  rootSignature String
+  createdAt     DateTime @default(now())
+  certificates  RoleCertificate[]
+
+  @@map("revocations")
+}
+
+// ─────────────────────── TRANSPARENCY LOG (Phase 3) ───────────────────────
+
+model TransparencyLogEntry {
+  id            String   @id @default(uuid()) @db.Uuid
+  seqIndex      BigInt   @unique
+  leafHash      String   @unique
+  attestationId String?  @unique @db.Uuid
+  attestation   Attestation? @relation(fields: [attestationId], references: [id])
+  isOpaque      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@map("tlog_entries")
+}
+
+model MerkleCheckpoint {
+  id         String   @id @default(uuid()) @db.Uuid
+  treeSize   BigInt   @unique
+  rootHash   String
+  signature  String
+  rfc3161Token Bytes?
+  witnessCosigs Json?
+  createdAt  DateTime @default(now())
+
+  @@map("merkle_checkpoints")
+}
+

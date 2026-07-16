@@ -1,0 +1,27 @@
+{
+    "name": "@antiai/attestation-core",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Core protocol library for canonicalizing, signing, and verifying Ed25519 envelopes",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "clean": "rimraf dist",
+        "test": "jest",
+        "generate-golden": "ts-node scripts/generate-golden.ts"
+    },
+    "dependencies": {
+        "canonicalize": "^2.0.0",
+        "tweetnacl": "^1.0.3"
+    },
+    "devDependencies": {
+        "@types/jest": "^29.5.12",
+        "@types/node": "^20.11.0",
+        "jest": "^29.7.0",
+        "rimraf": "^5.0.5",
+        "ts-jest": "^29.1.2",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.3.3"
+    }
+}
