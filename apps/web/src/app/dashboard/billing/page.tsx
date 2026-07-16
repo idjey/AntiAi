@@ -52,7 +52,6 @@ const PLANS = {
         features: [
             'Everything in Pro',
             '500 verified videos per month',
-            'Live Proof challenges (liveness verification)',
             'Custom domain for your creator profile',
             'API access (10,000 calls/month)',
             'Priority email support'
