@@ -54,6 +54,7 @@ jobs:
           DATABASE_URL="postgresql://postgres:password@localhost:5432/antiai"
           EOF
           npx prisma migrate deploy
+          npx prisma generate
 
       - name: Verify Config
         run: |
