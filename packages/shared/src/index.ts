@@ -14,7 +14,6 @@ export interface PlanLimits {
     transparencyLogExport: boolean;
     featuredInDirectory: boolean;  // Added for Creator Directory feature
     proofExpiryDays: number;       // How long issued proofs remain active
-    challengeAccess: boolean;
 }
 
 export const PLAN_LIMITS_CONFIG: Record<PlanTier, PlanLimits> = {
@@ -30,7 +29,6 @@ export const PLAN_LIMITS_CONFIG: Record<PlanTier, PlanLimits> = {
         transparencyLogExport: false,
         featuredInDirectory: false,
         proofExpiryDays: 90,
-        challengeAccess: false,
     },
     pro: {
         videosPerMonth: 100,
@@ -44,7 +42,6 @@ export const PLAN_LIMITS_CONFIG: Record<PlanTier, PlanLimits> = {
         transparencyLogExport: false,
         featuredInDirectory: false,
         proofExpiryDays: 365,
-        challengeAccess: false,
     },
     business: {
         videosPerMonth: 500,
@@ -58,7 +55,6 @@ export const PLAN_LIMITS_CONFIG: Record<PlanTier, PlanLimits> = {
         transparencyLogExport: false,
         featuredInDirectory: false,
         proofExpiryDays: 365,
-        challengeAccess: false,
     },
     elite: {
         videosPerMonth: -1,
@@ -72,7 +68,6 @@ export const PLAN_LIMITS_CONFIG: Record<PlanTier, PlanLimits> = {
         transparencyLogExport: true,
         featuredInDirectory: true,
         proofExpiryDays: 365,
-        challengeAccess: true,
     },
     enterprise: {
         videosPerMonth: -1,
@@ -86,7 +81,6 @@ export const PLAN_LIMITS_CONFIG: Record<PlanTier, PlanLimits> = {
         transparencyLogExport: true,
         featuredInDirectory: true,
         proofExpiryDays: 365,
-        challengeAccess: true,
     },
 };
 
