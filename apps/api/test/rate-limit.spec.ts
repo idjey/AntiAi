@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { RateLimitService } from '../src/modules/attestations/services/rate-limit.service';
-import { RedisService } from '../src/modules/redis/redis.service';
+import { InjectRedis, REDIS_INJECTION_TOKEN } from '../src/modules/redis/redis.module';
 import { IdentityStatus } from '@prisma/client';
 
 describe('RateLimitService', () => {
@@ -18,10 +18,8 @@ describe('RateLimitService', () => {
       providers: [
         RateLimitService,
         {
-          provide: RedisService,
-          useValue: {
-            getClient: () => mockRedisClient
-          }
+          provide: REDIS_INJECTION_TOKEN,
+          useValue: mockRedisClient
         }
       ],
     }).compile();
@@ -42,13 +40,10 @@ describe('RateLimitService', () => {
     const ident = { id: 'test-user', status: IdentityStatus.ACTIVE } as any;
 
     for (let i = 0; i < 5; i++) {
-      const res = await rateLimitService.checkRateLimit(ident);
-      expect(res.allowed).toBe(true);
+      await expect(rateLimitService.consume(ident.id, ident.status)).resolves.toBeUndefined();
     }
 
-    const blocked = await rateLimitService.checkRateLimit(ident);
-    expect(blocked.allowed).toBe(false);
-    expect(blocked.retryAfterMs).toBeDefined();
+    await expect(rateLimitService.consume(ident.id, ident.status)).rejects.toThrow('RATE_LIMITED');
   });
 
   it('blocks 3rd request for PROBATION identity', async () => {
@@ -60,14 +55,9 @@ describe('RateLimitService', () => {
 
     const ident = { id: 'test-probation', status: IdentityStatus.PROBATION } as any;
 
-    const res1 = await rateLimitService.checkRateLimit(ident);
-    expect(res1.allowed).toBe(true);
-
-    const res2 = await rateLimitService.checkRateLimit(ident);
-    expect(res2.allowed).toBe(true);
-
-    const blocked = await rateLimitService.checkRateLimit(ident);
-    expect(blocked.allowed).toBe(false);
+    await expect(rateLimitService.consume(ident.id, ident.status)).resolves.toBeUndefined();
+    await expect(rateLimitService.consume(ident.id, ident.status)).resolves.toBeUndefined();
+    await expect(rateLimitService.consume(ident.id, ident.status)).rejects.toThrow('RATE_LIMITED');
   });
 
   it('handles 10 concurrent requests correctly', async () => {
@@ -79,13 +69,13 @@ describe('RateLimitService', () => {
     
     const promises = [];
     for (let i = 0; i < 10; i++) {
-      promises.push(rateLimitService.checkRateLimit(ident));
+      promises.push(rateLimitService.consume(ident.id, ident.status).then(() => true).catch(() => false));
     }
 
     const outcomes = await Promise.all(promises);
     
-    const allowed = outcomes.filter(o => o.allowed);
-    const blocked = outcomes.filter(o => !o.allowed);
+    const allowed = outcomes.filter(o => o === true);
+    const blocked = outcomes.filter(o => o === false);
 
     expect(allowed.length).toBe(5);
     expect(blocked.length).toBe(5);
