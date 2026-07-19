@@ -72,6 +72,7 @@ export const PLAN_LIMITS_CONFIG: Record<PlanTier, PlanLimits> = {
         transparencyLogExport: true,
         featuredInDirectory: true,
         proofExpiryDays: 365,
+        challengeAccess: true,
     },
     enterprise: {
         videosPerMonth: -1,
@@ -85,6 +86,7 @@ export const PLAN_LIMITS_CONFIG: Record<PlanTier, PlanLimits> = {
         transparencyLogExport: true,
         featuredInDirectory: true,
         proofExpiryDays: 365,
+        challengeAccess: true,
     },
 };
 
