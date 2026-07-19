@@ -19,6 +19,16 @@ import { AdminModule } from './modules/admin/admin.module';
 import { EmailModule } from './modules/email/email.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
+import { AggregationModule } from './modules/aggregation/aggregation.module';
+import { AttestationsModule } from './modules/attestations/attestations.module';
+import { RedisModule } from './modules/redis/redis.module';
+import { ReputationModule } from './modules/reputation/reputation.module';
+import { SettlementModule } from './modules/settlement/settlement.module';
+import { SubjectsModule } from './modules/subjects/subjects.module';
+import { TasksModule } from './modules/tasks/tasks.module';
+import { VouchesModule } from './modules/vouches/vouches.module';
+import { CanariesModule } from './modules/canaries/canaries.module';
+import { IdentityModule } from './modules/identity/identity.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { HealthController } from './health.controller';
@@ -79,6 +89,16 @@ import { HealthController } from './health.controller';
         EmailModule,
         CouponsModule,
         ApiKeysModule,
+        RedisModule,
+        AggregationModule,
+        AttestationsModule,
+        ReputationModule,
+        SettlementModule,
+        SubjectsModule,
+        TasksModule,
+        VouchesModule,
+        CanariesModule,
+        IdentityModule,
     ],
     providers: [
         {

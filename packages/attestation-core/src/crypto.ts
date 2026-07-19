@@ -23,6 +23,18 @@ export function sha256(bytes: Uint8Array): Uint8Array {
   return crypto.createHash('sha256').update(bytes).digest();
 }
 
+export function sha256Hex(bytes: Uint8Array): string {
+  return bytesToHex(sha256(bytes));
+}
+
+export function verifyDetached(bytes: Uint8Array, signatureB64: string, publicKeyHex: string): boolean {
+  try {
+    return nacl.sign.detached.verify(bytes, fromBase64(signatureB64), hexToBytes(publicKeyHex));
+  } catch {
+    return false;
+  }
+}
+
 export function signAttestation(payload: AttestationPayload, secretKey: Uint8Array): SignedAttestation {
   const bytes = canonicalBytes(payload);
   const signature = nacl.sign.detached(bytes, secretKey);
@@ -41,4 +53,9 @@ export function verifyAttestation(att: SignedAttestation, publicKey: Uint8Array)
   } catch (e) {
     return false;
   }
+}
+
+
+export function deriveKeyId(publicKeyBase64: string): string {
+  return Buffer.from(publicKeyBase64, 'base64').toString('hex').slice(0, 32);
 }

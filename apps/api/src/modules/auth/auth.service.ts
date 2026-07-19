@@ -456,8 +456,8 @@ export class AuthService implements OnModuleInit {
             select: { handle: true }
         });
 
-        const takenHandles = new Set(existingCandidates.map(c => c.handle));
-        const suggestions = candidates.filter(c => !takenHandles.has(c));
+        const takenHandles = new Set(existingCandidates.map((c: any) => c.handle));
+        const suggestions = candidates.filter((c: any) => !takenHandles.has(c));
 
         return { available: false, suggestions: suggestions.slice(0, 3) };
     }
