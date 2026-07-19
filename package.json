@@ -8,7 +8,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build:packages": "npm run build -w packages/shared -w packages/crypto -w packages/database",
+    "build:packages": "npm run build -w packages/shared -w packages/crypto -w packages/database -w packages/attestation-core",
     "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
     "dev:web": "cd apps/web && npm run dev",
     "dev:api": "cd apps/api && npm run dev",
