@@ -55,7 +55,8 @@ jobs:
           EOF
           npx prisma migrate deploy
           npx prisma generate
-          npm run build
+          cd ../..
+          npm run build:packages
 
       - name: Verify Config
         run: |

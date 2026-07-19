@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { RateLimitService } from '../src/modules/attestations/services/rate-limit.service';
-import { InjectRedis, REDIS_INJECTION_TOKEN } from '../src/modules/redis/redis.module';
+import { InjectRedis, REDIS_TOKEN } from '../src/modules/redis/redis.module';
 import { IdentityStatus } from '@prisma/client';
 
 describe('RateLimitService', () => {
@@ -18,7 +18,7 @@ describe('RateLimitService', () => {
       providers: [
         RateLimitService,
         {
-          provide: REDIS_INJECTION_TOKEN,
+          provide: REDIS_TOKEN,
           useValue: mockRedisClient
         }
       ],

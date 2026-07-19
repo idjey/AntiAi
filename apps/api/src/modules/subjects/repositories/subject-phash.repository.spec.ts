@@ -11,9 +11,13 @@ describe('SubjectPhashRepository (Integration)', () => {
   let repository: SubjectPhashRepository;
 
   beforeAll(async () => {
-    // Start Postgres testcontainer
-    container = await new PostgreSqlContainer('postgres:15-alpine').start();
-    const dbUrl = container.getConnectionUri();
+    let dbUrl = process.env.DATABASE_URL;
+
+    // Start Postgres testcontainer only if no external DB is provided
+    if (!dbUrl) {
+      container = await new PostgreSqlContainer('postgres:15-alpine').start();
+      dbUrl = container.getConnectionUri();
+    }
 
     // Create a throwaway Prisma client and run migrations
     const tempPrisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
@@ -49,7 +53,9 @@ describe('SubjectPhashRepository (Integration)', () => {
 
   afterAll(async () => {
     await prisma.$disconnect();
-    await container.stop();
+    if (container) {
+      await container.stop();
+    }
   });
 
   beforeEach(async () => {

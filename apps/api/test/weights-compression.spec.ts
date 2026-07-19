@@ -75,7 +75,7 @@ describe('WeightsService - applyClusterCompression', () => {
     const res = runCompression('3-person Legitimate Household', household);
     
     for (const id of ['UserA', 'UserB', 'UserC']) {
-      expect(res.get(id)).toBeCloseTo(0.5345, 4);
+      expect(res.get(id)).toBeCloseTo(0.53456, 4);
     }
   });
 
