@@ -1,6 +1,3 @@
-// This is your Prisma schema file for AntiAI.me
-// Based on the specification: Ed25519-only proofs, versioned, immutable, one ACTIVE per video
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
@@ -12,7 +9,783 @@ datasource db {
   extensions = [citext]
 }
 
-// ==================== ENUMS ====================
+model User {
+  id                             String            @id @default(uuid()) @db.Uuid
+  email                          String            @unique @db.Citext
+  passwordHash                   String?           @map("password_hash")
+  role                           UserRole          @default(creator)
+  isEmailVerified                Boolean           @default(false) @map("is_email_verified")
+  verificationReminderCount      Int               @default(0) @map("verification_reminder_count")
+  lastVerificationReminderSentAt DateTime?         @map("last_verification_reminder_sent_at")
+  isSuspended                    Boolean           @default(false) @map("is_suspended")
+  createdAt                      DateTime          @default(now()) @map("created_at")
+  updatedAt                      DateTime          @updatedAt @map("updated_at")
+  lastLoginAt                    DateTime?         @map("last_login_at")
+  otp                            String?           @db.VarChar(8)
+  otpExpiresAt                   DateTime?         @map("otp_expires_at")
+  failedOtpAttempts              Int               @default(0) @map("failed_otp_attempts")
+  otpLockedUntil                 DateTime?         @map("otp_locked_until")
+  twoFactorEnabled               Boolean           @default(false) @map("two_factor_enabled")
+  twoFactorSecret                String?           @map("two_factor_secret")
+  apiKeys                        ApiKey[]
+  auditLogs                      AuditLog[]
+  authActivityLogs               AuthActivityLog[]
+  channels                       Channel[]
+  links                          CreatorLink[]
+  profile                        CreatorProfile?
+  emailEvents                    EmailEvent[]
+  moderationReviews              ModerationQueue[] @relation("ModerationReviewedBy")
+  oauthAccounts                  OAuthAccount[]
+  reviewedReports                Report[]          @relation("ReviewedBy")
+  subscription                   Subscription?
+
+  @@map("users")
+}
+
+model AuthActivityLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String?  @map("user_id") @db.Uuid
+  email         String
+  status        String
+  failureReason String?  @map("failure_reason")
+  ipAddress     String   @map("ip_address")
+  userAgent     String?  @map("user_agent")
+  country       String?
+  city          String?
+  device        String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  user          User?    @relation(fields: [userId], references: [id])
+
+  @@index([email])
+  @@index([ipAddress])
+  @@index([createdAt])
+  @@map("auth_activity_logs")
+}
+
+model CreatorProfile {
+  id               String           @id @default(uuid()) @db.Uuid
+  userId           String           @unique @map("user_id") @db.Uuid
+  handle           String           @unique @db.Citext
+  categories       String[]         @default([])
+  displayName      String?          @map("display_name")
+  bio              String?
+  avatarUrl        String?          @map("avatar_url")
+  bannerUrl        String?          @map("banner_url")
+  featuredVideoId  String?          @map("featured_video_id") @db.Uuid
+  isPublic         Boolean          @default(true) @map("is_public")
+  isFeatured       Boolean          @default(false) @map("is_featured")
+  appearance       Json?            @default("{}")
+  lastHandleChange DateTime?        @map("last_handle_change")
+  customDomain     String?          @unique @map("custom_domain")
+  lastDomainChange DateTime?        @map("last_domain_change")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  analyticsEvents  AnalyticsEvent[]
+  featuredVideo    Video?           @relation(fields: [featuredVideoId], references: [id])
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([handle])
+  @@map("creator_profiles")
+}
+
+model CreatorLink {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  label          String
+  url            String
+  icon           String?
+  customImageUrl String?  @map("custom_image_url")
+  sortOrder      Int      @default(0) @map("sort_order")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, sortOrder])
+  @@map("creator_links")
+}
+
+model OAuthAccount {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  provider        String
+  providerUserId  String    @map("provider_user_id")
+  accessTokenEnc  Bytes?    @map("access_token_enc")
+  refreshTokenEnc Bytes?    @map("refresh_token_enc")
+  tokenExpiry     DateTime? @map("token_expiry")
+  scope           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@unique([userId, provider])
+  @@map("oauth_accounts")
+}
+
+model SigningKey {
+  id           String    @id
+  alg          String    @default("Ed25519")
+  publicKeyB64 String    @map("public_key_b64")
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  retiredAt    DateTime? @map("retired_at")
+  proofs       Proof[]
+
+  @@index([isActive])
+  @@map("signing_keys")
+}
+
+model Channel {
+  id                 String             @id @default(uuid()) @db.Uuid
+  userId             String             @map("user_id") @db.Uuid
+  platform           String             @default("youtube")
+  platformId         String             @default("") @map("platform_id")
+  channelHandle      String?            @map("channel_handle")
+  channelName        String             @map("channel_name")
+  channelUrl         String?            @map("channel_url")
+  avatarUrl          String?            @map("avatar_url")
+  verificationStatus VerificationStatus @default(pending) @map("verification_status")
+  verificationMethod String?            @map("verification_method")
+  verificationToken  String?            @map("verification_token")
+  tokenExpiresAt     DateTime?          @map("token_expires_at")
+  verifiedAt         DateTime?          @map("verified_at")
+  revokedAt          DateTime?          @map("revoked_at")
+  revokeReason       String?            @map("revoke_reason")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  proofs             Proof[]
+  reports            Report[]
+  videos             Video[]
+
+  @@unique([userId, platform, platformId])
+  @@index([userId])
+  @@index([verificationStatus])
+  @@map("channels")
+}
+
+model Video {
+  id           String           @id @default(uuid()) @db.Uuid
+  channelId    String           @map("channel_id") @db.Uuid
+  platform     String           @default("youtube")
+  platformId   String           @default("") @map("platform_id")
+  title        String?
+  videoUrl     String?          @map("video_url")
+  thumbnailUrl String?          @map("thumbnail_url")
+  publishedAt  DateTime?        @map("published_at")
+  registeredAt DateTime         @default(now()) @map("registered_at")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  flags        ContentFlag[]
+  featuredBy   CreatorProfile[]
+  proofs       Proof[]
+  reports      Report[]
+  context      VideoContext?
+  channel      Channel          @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([channelId])
+  @@index([publishedAt])
+  @@map("videos")
+}
+
+model Proof {
+  id                String      @id @default(uuid()) @db.Uuid
+  videoId           String      @map("video_id") @db.Uuid
+  channelId         String      @map("channel_id") @db.Uuid
+  alg               String      @default("Ed25519")
+  kid               String
+  payloadJson       Json        @map("payload_json")
+  payloadB64        String      @map("payload_b64")
+  signatureB64      String      @map("signature_b64")
+  issuedAt          DateTime    @default(now()) @map("issued_at")
+  expiresAt         DateTime    @map("expires_at")
+  status            ProofStatus @default(active)
+  schemaVersion     Int         @default(1) @map("schema_version")
+  contentHash       String?     @map("content_hash")
+  supersedesProofId String?     @unique @map("supersedes_proof_id") @db.Uuid
+  supersededAt      DateTime?   @map("superseded_at")
+  revokedAt         DateTime?   @map("revoked_at")
+  revokeReason      String?     @map("revoke_reason")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  channel           Channel     @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  signingKey        SigningKey  @relation(fields: [kid], references: [id])
+  supersedesProof   Proof?      @relation("ProofSupersedes", fields: [supersedesProofId], references: [id])
+  supersededBy      Proof?      @relation("ProofSupersedes")
+  video             Video       @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  reports           Report[]
+
+  @@index([videoId])
+  @@index([channelId])
+  @@index([status, expiresAt])
+  @@map("proofs")
+}
+
+model Subscription {
+  id                   String             @id @default(uuid()) @db.Uuid
+  userId               String             @unique @map("user_id") @db.Uuid
+  plan                 PlanTier           @default(free)
+  interval             String             @default("month")
+  status               SubscriptionStatus @default(active)
+  stripeCustomerId     String?            @map("stripe_customer_id")
+  stripeSubscriptionId String?            @map("stripe_subscription_id")
+  currentPeriodEnd     DateTime?          @map("current_period_end")
+  cancelAtPeriodEnd    Boolean            @default(false) @map("cancel_at_period_end")
+  videosThisMonth      Int                @default(0) @map("videos_this_month")
+  apiCallsThisMonth    Int                @default(0) @map("api_calls_this_month")
+  usagePeriodStart     DateTime           @default(now()) @map("usage_period_start")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("subscriptions")
+}
+
+model ApiKey {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  name      String
+  keyHash   String    @unique @map("key_hash")
+  lastUsed  DateTime? @map("last_used")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("api_keys")
+}
+
+model AuditLog {
+  id         BigInt   @id @default(autoincrement())
+  userId     String?  @map("user_id") @db.Uuid
+  action     String
+  entityType String?  @map("entity_type")
+  entityId   String?  @map("entity_id")
+  metadata   Json     @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at")
+  user       User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+model Report {
+  id             String       @id @default(uuid()) @db.Uuid
+  channelId      String?      @map("channel_id") @db.Uuid
+  videoId        String?      @map("video_id") @db.Uuid
+  proofId        String?      @map("proof_id") @db.Uuid
+  reporterIpHash Bytes?       @map("reporter_ip_hash")
+  reason         String
+  details        String?
+  status         ReportStatus @default(open)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  reviewedAt     DateTime?    @map("reviewed_at")
+  reviewedById   String?      @map("reviewed_by") @db.Uuid
+  channel        Channel?     @relation(fields: [channelId], references: [id])
+  proof          Proof?       @relation(fields: [proofId], references: [id])
+  reviewedBy     User?        @relation("ReviewedBy", fields: [reviewedById], references: [id])
+  video          Video?       @relation(fields: [videoId], references: [id])
+
+  @@index([status, createdAt(sort: Desc)])
+  @@map("reports")
+}
+
+model TransparencyLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  eventType  String   @map("event_type")
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  data       Json
+  eventTime  DateTime @default(now()) @map("event_time")
+
+  @@index([entityType, entityId])
+  @@index([eventTime(sort: Desc)])
+  @@map("transparency_log")
+}
+
+model HttpLog {
+  id                    String   @id @default(uuid()) @db.Uuid
+  timestamp             DateTime @default(now())
+  method                String   @db.VarChar(10)
+  path                  String
+  routePattern          String?  @map("route_pattern")
+  queryString           String?  @map("query_string")
+  requestContentLength  Int?     @map("request_content_length")
+  statusCode            Int      @map("status_code")
+  responseContentLength Int?     @map("response_content_length")
+  durationMs            Int      @map("duration_ms")
+  errorMessage          String?  @map("error_message")
+  ipAddress             String?  @map("ip_address")
+  userAgent             String?  @map("user_agent")
+  origin                String?
+  referer               String?
+  userId                String?  @map("user_id") @db.Uuid
+  country               String?
+  city                  String?
+  device                String?
+  correlationId         String?  @map("correlation_id") @db.Uuid
+
+  @@index([timestamp(sort: Desc)])
+  @@index([statusCode, timestamp(sort: Desc)])
+  @@index([method, timestamp(sort: Desc)])
+  @@index([userId, timestamp(sort: Desc)])
+  @@index([ipAddress, timestamp(sort: Desc)])
+  @@index([path, timestamp(sort: Desc)])
+  @@map("http_logs")
+}
+
+model AnalyticsEvent {
+  id              String         @id @default(uuid()) @db.Uuid
+  creatorId       String         @map("creator_id") @db.Uuid
+  type            String
+  entityId        String?        @map("entity_id")
+  ipHash          String?        @map("ip_hash")
+  country         String?
+  region          String?
+  city            String?
+  device          String?
+  os              String?
+  browser         String?
+  referer         String?
+  scrollDepth     Int?           @map("scroll_depth")
+  sessionDuration Int?           @map("session_duration")
+  utmSource       String?        @map("utm_source")
+  utmMedium       String?        @map("utm_medium")
+  utmCampaign     String?        @map("utm_campaign")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  creator         CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId, createdAt])
+  @@index([type, createdAt])
+  @@map("analytics_events")
+}
+
+model ModerationQueue {
+  id           String    @id @default(uuid()) @db.Uuid
+  targetType   String    @map("target_type")
+  targetId     String    @map("target_id") @db.Uuid
+  payload      Json
+  status       String    @default("PENDING")
+  reason       String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  reviewedAt   DateTime? @map("reviewed_at")
+  reviewedById String?   @map("reviewed_by") @db.Uuid
+  reviewedBy   User?     @relation("ModerationReviewedBy", fields: [reviewedById], references: [id])
+
+  @@index([status, createdAt(sort: Desc)])
+  @@map("moderation_queue")
+}
+
+model SystemSetting {
+  key         String   @id
+  value       String?
+  description String?
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}
+
+model SystemAlert {
+  id        String    @id @default(uuid()) @db.Uuid
+  type      String
+  severity  String
+  message   String
+  data      Json?
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([type, createdAt(sort: Desc)])
+  @@index([readAt])
+  @@map("system_alerts")
+}
+
+model Coupon {
+  id             String             @id @default(uuid()) @db.Uuid
+  code           String             @unique
+  description    String?
+  discountType   String             @map("discount_type")
+  discountValue  Float              @map("discount_value")
+  maxRedemptions Int?               @map("max_redemptions")
+  currentUses    Int                @default(0) @map("current_uses")
+  isActive       Boolean            @default(true) @map("is_active")
+  expiresAt      DateTime?          @map("expires_at")
+  stripeCouponId String?            @map("stripe_coupon_id")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+  redemptions    CouponRedemption[]
+
+  @@index([code])
+  @@index([isActive, expiresAt])
+  @@map("coupons")
+}
+
+model CouponRedemption {
+  id          String    @id @default(uuid()) @db.Uuid
+  couponId    String    @map("coupon_id") @db.Uuid
+  userId      String?   @map("user_id") @db.Uuid
+  email       String?
+  source      String    @default("manual")
+  emailSentAt DateTime? @map("email_sent_at")
+  usedAt      DateTime  @default(now()) @map("used_at")
+  coupon      Coupon    @relation(fields: [couponId], references: [id], onDelete: Cascade)
+
+  @@index([couponId])
+  @@index([userId])
+  @@index([source])
+  @@map("coupon_redemptions")
+}
+
+model ContentFlag {
+  id        String   @id @default(uuid()) @db.Uuid
+  videoId   String   @map("video_id") @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  ipHash    Bytes?   @map("ip_hash")
+  reason    String
+  status    String   @default("pending")
+  createdAt DateTime @default(now()) @map("created_at")
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+  @@map("content_flags")
+}
+
+model VideoContext {
+  id         String   @id @default(uuid()) @db.Uuid
+  videoId    String   @unique @map("video_id") @db.Uuid
+  note       String
+  approvedBy String   @map("approved_by") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
+  video      Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@map("video_contexts")
+}
+
+model EmailCampaign {
+  id              String       @id @default(uuid()) @db.Uuid
+  name            String
+  subject         String
+  htmlContent     String       @map("html_content")
+  status          String       @default("draft")
+  audienceSegment String       @map("audience_segment")
+  customEmails    String?      @map("custom_emails")
+  scheduledAt     DateTime?    @map("scheduled_at")
+  sentAt          DateTime?    @map("sent_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  events          EmailEvent[]
+
+  @@index([status])
+  @@index([scheduledAt])
+  @@map("email_campaigns")
+}
+
+model EmailTemplate {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  htmlContent String   @map("html_content")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("email_templates")
+}
+
+model EmailEvent {
+  id         String        @id @default(uuid()) @db.Uuid
+  campaignId String        @map("campaign_id") @db.Uuid
+  userId     String?       @map("user_id") @db.Uuid
+  email      String
+  eventType  String        @map("event_type")
+  createdAt  DateTime      @default(now()) @map("created_at")
+  campaign   EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user       User?         @relation(fields: [userId], references: [id])
+
+  @@index([campaignId])
+  @@index([userId])
+  @@index([email])
+  @@map("email_events")
+}
+
+model LogSinkConfig {
+  id              String    @id @default(uuid()) @db.Uuid
+  name            String
+  type            String
+  enabled         Boolean   @default(false)
+  config          String
+  filterMethods   String[]  @default([])
+  filterMinStatus Int?
+  filterPaths     String[]  @default([])
+  lastForwardedAt DateTime? @map("last_forwarded_at")
+  lastForwardedId String?   @map("last_forwarded_id")
+  lastError       String?   @map("last_error")
+  errorCount      Int       @default(0) @map("error_count")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("log_sink_configs")
+}
+
+model VerifierIdentity {
+  id                 String            @id @default(uuid()) @db.Uuid
+  keyId              String            @unique
+  publicKey          String            @unique
+  identityClass      IdentityClass     @default(PSEUDONYMOUS)
+  status             IdentityStatus    @default(PROBATION)
+  displayHandle      String?           @unique
+  platform           String
+  deviceAttested     Boolean           @default(false)
+  canaryDownweighted Boolean           @default(false)
+  reputation         Float             @default(0.10)
+  accuracyScore      Float?
+  attestationCount   Int               @default(0)
+  settledCorrect     Int               @default(0)
+  settledIncorrect   Int               @default(0)
+  lastDecayAt        DateTime          @default(now())
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  attestations       Attestation[]
+  canaryResponses    CanaryResponse[]
+  reputationEvents   ReputationEvent[]
+  roleCertificates   RoleCertificate[]
+  vouchReceived      Vouch?            @relation("Vouchee")
+  vouchesGiven       Vouch[]           @relation("Voucher")
+
+  @@index([status, reputation])
+  @@map("verifier_identities")
+}
+
+model Vouch {
+  id          String           @id @default(uuid()) @db.Uuid
+  voucherId   String           @db.Uuid
+  voucheeId   String           @unique @db.Uuid
+  stakeAmount Float
+  signature   String
+  active      Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  vouchee     VerifierIdentity @relation("Vouchee", fields: [voucheeId], references: [id])
+  voucher     VerifierIdentity @relation("Voucher", fields: [voucherId], references: [id])
+
+  @@index([voucherId])
+  @@map("vouches")
+}
+
+model Subject {
+  id               String        @id @default(uuid()) @db.Uuid
+  hash             String        @unique
+  perceptualHash   String?
+  mediaType        MediaType
+  sizeBytes        BigInt?
+  firstSeenAt      DateTime      @default(now())
+  attestationCount Int           @default(0)
+  verdictSummary   Json?
+  checkCount       Int           @default(0)
+  attestations     Attestation[]
+
+  @@index([perceptualHash])
+  @@index([checkCount, firstSeenAt])
+  @@map("subjects")
+}
+
+model Attestation {
+  id                  String                @id @default(uuid()) @db.Uuid
+  payloadHash         String                @unique
+  version             String
+  subjectId           String                @db.Uuid
+  claimType           ClaimType
+  claimPayload        Json?
+  encryptedPayload    Bytes?
+  attesterId          String                @db.Uuid
+  domain              AttestationDomain     @default(PUBLIC)
+  circleId            String?               @db.Uuid
+  roleCertId          String?               @db.Uuid
+  priorId             String?               @db.Uuid
+  clientTimestamp     DateTime
+  receivedAt          DateTime              @default(now())
+  nonce               String
+  signature           String
+  status              AttestationStatus     @default(PENDING)
+  settledAt           DateTime?
+  weightAtAggregation Float?
+  attester            VerifierIdentity      @relation(fields: [attesterId], references: [id])
+  circle              Circle?               @relation(fields: [circleId], references: [id])
+  prior               Attestation?          @relation("AttestationChain", fields: [priorId], references: [id])
+  successors          Attestation[]         @relation("AttestationChain")
+  roleCert            RoleCertificate?      @relation(fields: [roleCertId], references: [id])
+  subject             Subject               @relation(fields: [subjectId], references: [id])
+  reputationEvents    ReputationEvent[]
+  logEntry            TransparencyLogEntry?
+
+  @@unique([attesterId, subjectId, claimType, nonce])
+  @@index([subjectId, domain, status])
+  @@index([attesterId, receivedAt])
+  @@index([circleId, receivedAt])
+  @@map("attestations")
+}
+
+model ReputationConfig {
+  id                    Int       @id @default(autoincrement())
+  params                Json
+  comment               String
+  activationRequestedBy String
+  activationRequestedAt DateTime  @default(now())
+  approvedBy            String?
+  approvedAt            DateTime?
+  active                Boolean   @default(false)
+  createdAt             DateTime  @default(now())
+
+  @@map("reputation_configs")
+}
+
+model ShadowVerdictDiff {
+  id            String   @id @default(cuid())
+  subjectId     String   @db.Uuid
+  configVersion Int
+  baseline      Json
+  weighted      Json
+  divergence    Json
+  flipped       Boolean
+  computedAt    DateTime @default(now())
+
+  @@index([flipped, computedAt])
+  @@index([subjectId, computedAt])
+  @@map("shadow_verdict_diffs")
+}
+
+model ReputationEvent {
+  id              String              @id @default(uuid()) @db.Uuid
+  identityId      String              @db.Uuid
+  type            ReputationEventType
+  delta           Float
+  reputationAfter Float
+  attestationId   String?             @db.Uuid
+  metadata        Json?
+  createdAt       DateTime            @default(now())
+  attestation     Attestation?        @relation(fields: [attestationId], references: [id])
+  identity        VerifierIdentity    @relation(fields: [identityId], references: [id])
+
+  @@index([identityId, createdAt])
+  @@map("reputation_events")
+}
+
+model CanaryTask {
+  id                  String           @id @default(uuid()) @db.Uuid
+  subjectHash         String           @unique
+  mediaType           MediaType
+  groundTruth         Json
+  sourceConsent       String
+  storageUri          String?
+  licenseRef          String?
+  distributionChannel String?
+  active              Boolean          @default(true)
+  servedCount         Int              @default(0)
+  createdAt           DateTime         @default(now())
+  responses           CanaryResponse[]
+
+  @@map("canary_tasks")
+}
+
+model CanaryResponse {
+  id         String           @id @default(uuid()) @db.Uuid
+  canaryId   String           @db.Uuid
+  identityId String           @db.Uuid
+  correct    Boolean
+  claimEcho  Json
+  createdAt  DateTime         @default(now())
+  canary     CanaryTask       @relation(fields: [canaryId], references: [id])
+  identity   VerifierIdentity @relation(fields: [identityId], references: [id])
+
+  @@unique([canaryId, identityId])
+  @@index([identityId, createdAt])
+  @@map("canary_responses")
+}
+
+model CorrelationCluster {
+  id             String   @id @default(uuid()) @db.Uuid
+  memberIds      String[]
+  signals        Json
+  discountFactor Float
+  computedAt     DateTime @default(now())
+  expiresAt      DateTime
+
+  @@index([expiresAt])
+  @@map("correlation_clusters")
+}
+
+model Circle {
+  id               String            @id @default(uuid()) @db.Uuid
+  name             String
+  slug             String            @unique
+  rootPublicKey    String            @unique
+  deployment       CircleDeployment  @default(SAAS)
+  publicIdentity   Json?
+  createdAt        DateTime          @default(now())
+  attestations     Attestation[]
+  revocations      Revocation[]
+  roleCertificates RoleCertificate[]
+
+  @@map("circles")
+}
+
+model RoleCertificate {
+  id            String           @id @default(uuid()) @db.Uuid
+  serial        String           @unique
+  circleId      String           @db.Uuid
+  identityId    String           @db.Uuid
+  roleName      String
+  allowedClaims ClaimType[]
+  validFrom     DateTime
+  validUntil    DateTime
+  certBody      Json
+  rootSignature String
+  revokedAt     DateTime?
+  revocationId  String?          @db.Uuid
+  attestations  Attestation[]
+  circle        Circle           @relation(fields: [circleId], references: [id])
+  identity      VerifierIdentity @relation(fields: [identityId], references: [id])
+  revocation    Revocation?      @relation(fields: [revocationId], references: [id])
+
+  @@index([circleId, identityId])
+  @@index([validFrom, validUntil])
+  @@map("role_certificates")
+}
+
+model Revocation {
+  id            String            @id @default(uuid()) @db.Uuid
+  circleId      String            @db.Uuid
+  certSerials   String[]
+  reason        String?
+  effectiveAt   DateTime
+  rootSignature String
+  createdAt     DateTime          @default(now())
+  circle        Circle            @relation(fields: [circleId], references: [id])
+  certificates  RoleCertificate[]
+
+  @@map("revocations")
+}
+
+model TransparencyLogEntry {
+  id            String       @id @default(uuid()) @db.Uuid
+  seqIndex      BigInt       @unique
+  leafHash      String       @unique
+  attestationId String?      @unique @db.Uuid
+  isOpaque      Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  attestation   Attestation? @relation(fields: [attestationId], references: [id])
+
+  @@map("tlog_entries")
+}
+
+model MerkleCheckpoint {
+  id            String   @id @default(uuid()) @db.Uuid
+  treeSize      BigInt   @unique
+  rootHash      String
+  signature     String
+  rfc3161Token  Bytes?
+  witnessCosigs Json?
+  createdAt     DateTime @default(now())
+
+  @@map("merkle_checkpoints")
+}
 
 enum UserRole {
   creator
@@ -55,645 +828,6 @@ enum PlanTier {
   elite
   enterprise
 }
-
-// ==================== USERS ====================
-
-model User {
-  id                             String    @id @default(uuid()) @db.Uuid
-  email                          String    @unique @db.Citext
-  passwordHash                   String?   @map("password_hash")
-  role                           UserRole  @default(creator)
-  isEmailVerified                Boolean   @default(false) @map("is_email_verified")
-  verificationReminderCount      Int       @default(0) @map("verification_reminder_count")
-  lastVerificationReminderSentAt DateTime? @map("last_verification_reminder_sent_at")
-  isSuspended                    Boolean   @default(false) @map("is_suspended")
-  createdAt                      DateTime  @default(now()) @map("created_at")
-  updatedAt                      DateTime  @updatedAt @map("updated_at")
-  lastLoginAt                    DateTime? @map("last_login_at")
-  otp                            String?   @db.VarChar(8)
-  otpExpiresAt                   DateTime? @map("otp_expires_at")
-  failedOtpAttempts              Int       @default(0) @map("failed_otp_attempts")
-  otpLockedUntil                 DateTime? @map("otp_locked_until")
-
-  // 2FA Fields
-  twoFactorEnabled Boolean @default(false) @map("two_factor_enabled")
-  twoFactorSecret  String? @map("two_factor_secret")
-
-  // Relations
-  oauthAccounts     OAuthAccount[]
-  channels          Channel[]
-  subscription      Subscription?
-  auditLogs         AuditLog[]
-  reviewedReports   Report[]          @relation("ReviewedBy")
-  moderationReviews ModerationQueue[] @relation("ModerationReviewedBy")
-  profile           CreatorProfile?
-  links             CreatorLink[]
-  emailEvents       EmailEvent[]
-  authActivityLogs  AuthActivityLog[]
-  apiKeys           ApiKey[]
-
-  @@map("users")
-}
-
-model AuthActivityLog {
-  id            String   @id @default(uuid()) @db.Uuid
-  userId        String?  @map("user_id") @db.Uuid
-  email         String
-  status        String // 'SUCCESS', 'FAILED', 'BLOCKED'
-  failureReason String?  @map("failure_reason")
-  ipAddress     String   @map("ip_address")
-  userAgent     String?  @map("user_agent")
-  country       String?
-  city          String?
-  device        String?
-  createdAt     DateTime @default(now()) @map("created_at")
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([email])
-  @@index([ipAddress])
-  @@index([createdAt])
-  @@map("auth_activity_logs")
-}
-
-// ==================== CREATOR PROFILES (Linktree-style) ====================
-
-model CreatorProfile {
-  id               String    @id @default(uuid()) @db.Uuid
-  userId           String    @unique @map("user_id") @db.Uuid
-  handle           String    @unique @db.Citext // Custom vanity URL: antiai.me/creators/{handle}
-  categories       String[]  @default([]) // Selected categories for directory filtering
-  displayName      String?   @map("display_name")
-  bio              String?   @db.Text
-  avatarUrl        String?   @map("avatar_url")
-  bannerUrl        String?   @map("banner_url")
-  featuredVideoId  String?   @map("featured_video_id") @db.Uuid
-  isPublic         Boolean   @default(true) @map("is_public")
-  isFeatured       Boolean   @default(false) @map("is_featured") // Admin override for "Trending Authentic Profiles"
-  appearance       Json?     @default("{}") // { theme, primaryColor, backgroundColor, backgroundImageUrl, ... }
-  lastHandleChange DateTime? @map("last_handle_change")
-  customDomain     String?   @unique @map("custom_domain")
-  lastDomainChange DateTime? @map("last_domain_change")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
-
-  // Relations
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  featuredVideo   Video?           @relation(fields: [featuredVideoId], references: [id], onDelete: SetNull)
-  analyticsEvents AnalyticsEvent[]
-
-  @@index([handle])
-  @@map("creator_profiles")
-}
-
-model CreatorLink {
-  id             String   @id @default(uuid()) @db.Uuid
-  userId         String   @map("user_id") @db.Uuid
-  label          String // "Website", "Twitter", "Instagram", etc.
-  url            String
-  icon           String? // Optional icon identifier: "website", "twitter", "instagram", etc.
-  customImageUrl String?  @map("custom_image_url")
-  sortOrder      Int      @default(0) @map("sort_order")
-  isActive       Boolean  @default(true) @map("is_active")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, sortOrder])
-  @@map("creator_links")
-}
-
-model OAuthAccount {
-  id              String    @id @default(uuid()) @db.Uuid
-  userId          String    @map("user_id") @db.Uuid
-  provider        String // 'google'
-  providerUserId  String    @map("provider_user_id")
-  accessTokenEnc  Bytes?    @map("access_token_enc")
-  refreshTokenEnc Bytes?    @map("refresh_token_enc")
-  tokenExpiry     DateTime? @map("token_expiry")
-  scope           String?
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerUserId])
-  @@unique([userId, provider])
-  @@map("oauth_accounts")
-}
-
-// ==================== SIGNING KEYS ====================
-
-model SigningKey {
-  id           String    @id // kid, e.g. "k_2026_01"
-  alg          String    @default("Ed25519")
-  publicKeyB64 String    @map("public_key_b64") // base64 of raw 32-byte Ed25519 public key
-  isActive     Boolean   @default(true) @map("is_active")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  retiredAt    DateTime? @map("retired_at")
-
-  // Relations
-  proofs Proof[]
-
-  @@index([isActive])
-  @@map("signing_keys")
-}
-
-// ==================== CHANNELS ====================
-
-model Channel {
-  id                 String             @id @default(uuid()) @db.Uuid
-  userId             String             @map("user_id") @db.Uuid
-  platform           String             @default("youtube") // 'youtube', 'tiktok', 'instagram', 'facebook'
-  platformId         String             @default("") @map("platform_id")
-  channelHandle      String?            @map("channel_handle")
-  channelName        String             @map("channel_name")
-  channelUrl         String?            @map("channel_url")
-  avatarUrl          String?            @map("avatar_url")
-  verificationStatus VerificationStatus @default(pending) @map("verification_status")
-  verificationMethod String?            @map("verification_method") // 'oauth' | 'about_token' | 'video_token' | 'pinned_comment'
-  verificationToken  String?            @map("verification_token") // Token for non-OAuth verification
-  tokenExpiresAt     DateTime?          @map("token_expires_at")
-  verifiedAt         DateTime?          @map("verified_at")
-  revokedAt          DateTime?          @map("revoked_at")
-  revokeReason       String?            @map("revoke_reason")
-  createdAt          DateTime           @default(now()) @map("created_at")
-  updatedAt          DateTime           @updatedAt @map("updated_at")
-
-  // Relations
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  videos  Video[]
-  proofs  Proof[]
-  reports Report[]
-
-  @@unique([userId, platform, platformId])
-  // @@unique([platform, platformId])
-  @@index([userId])
-  @@index([verificationStatus])
-  @@map("channels")
-}
-
-// ==================== VIDEOS ====================
-
-model Video {
-  id           String    @id @default(uuid()) @db.Uuid
-  channelId    String    @map("channel_id") @db.Uuid
-  platform     String    @default("youtube") // 'youtube', 'tiktok', 'instagram', 'facebook'
-  platformId   String    @default("") @map("platform_id")
-  title        String?
-  videoUrl     String?   @map("video_url")
-  thumbnailUrl String?   @map("thumbnail_url")
-  publishedAt  DateTime? @map("published_at")
-  registeredAt DateTime  @default(now()) @map("registered_at")
-  createdAt    DateTime  @default(now()) @map("created_at")
-
-  // Relations
-  channel    Channel          @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  proofs     Proof[]
-  reports    Report[]
-  featuredBy CreatorProfile[] // Profiles that feature this video
-  flags      ContentFlag[]
-  context    VideoContext?
-
-  // @@unique([platform, platformId])
-  @@index([channelId])
-  @@index([publishedAt])
-  @@map("videos")
-}
-
-// ==================== PROOFS ====================
-
-// STRICT RULES:
-// - alg must be Ed25519
-// - payload_b64 + signature_b64 are immutable for a given row
-// - multiple proofs per video allowed
-// - only ONE active proof per video enforced via application logic
-// - reissue uses supersedesProofId + supersededAt and sets old to 'superseded'
-
-model Proof {
-  id        String @id @default(uuid()) @db.Uuid
-  videoId   String @map("video_id") @db.Uuid
-  channelId String @map("channel_id") @db.Uuid
-
-  // Signing material
-  alg String @default("Ed25519")
-  kid String // References SigningKey.id
-
-  // Canonical payload & signature (IMMUTABLE after creation)
-  payloadJson  Json   @map("payload_json") // stored for debugging/inspection
-  payloadB64   String @map("payload_b64") // base64url(canonical JSON bytes)
-  signatureB64 String @map("signature_b64") // base64url(Ed25519 signature 64 bytes)
-
-  issuedAt  DateTime    @default(now()) @map("issued_at")
-  expiresAt DateTime    @map("expires_at")
-  status    ProofStatus @default(active)
-
-  schemaVersion Int     @default(1) @map("schema_version")
-  contentHash   String? @map("content_hash")
-
-  // Version lineage for re-issue
-  supersedesProofId String?   @unique @map("supersedes_proof_id") @db.Uuid
-  supersededAt      DateTime? @map("superseded_at")
-
-  // Revocation (only for security/abuse)
-  revokedAt    DateTime? @map("revoked_at")
-  revokeReason String?   @map("revoke_reason")
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  // Relations
-  video           Video      @relation(fields: [videoId], references: [id], onDelete: Cascade)
-  channel         Channel    @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  signingKey      SigningKey @relation(fields: [kid], references: [id], onDelete: Restrict)
-  supersedesProof Proof?     @relation("ProofSupersedes", fields: [supersedesProofId], references: [id], onDelete: SetNull)
-  supersededBy    Proof?     @relation("ProofSupersedes")
-  reports         Report[]
-
-  @@index([videoId])
-  @@index([channelId])
-  @@index([status, expiresAt])
-  @@map("proofs")
-}
-
-// ==================== BILLING ====================
-
-model Subscription {
-  id                   String             @id @default(uuid()) @db.Uuid
-  userId               String             @unique @map("user_id") @db.Uuid
-  plan                 PlanTier           @default(free)
-  interval             String             @default("month") // 'month' or 'year'
-  status               SubscriptionStatus @default(active)
-  stripeCustomerId     String?            @map("stripe_customer_id")
-  stripeSubscriptionId String?            @map("stripe_subscription_id")
-  currentPeriodEnd     DateTime?          @map("current_period_end")
-  cancelAtPeriodEnd    Boolean            @default(false) @map("cancel_at_period_end")
-
-  // Usage tracking
-  videosThisMonth   Int      @default(0) @map("videos_this_month")
-  apiCallsThisMonth Int      @default(0) @map("api_calls_this_month")
-  usagePeriodStart  DateTime @default(now()) @map("usage_period_start")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([status])
-  @@map("subscriptions")
-}
-
-// ==================== API KEYS ====================
-
-model ApiKey {
-  id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @map("user_id") @db.Uuid
-  name      String
-  keyHash   String    @unique @map("key_hash")
-  lastUsed  DateTime? @map("last_used")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("api_keys")
-}
-
-// ==================== AUDIT LOGS ====================
-
-model AuditLog {
-  id         BigInt   @id @default(autoincrement())
-  userId     String?  @map("user_id") @db.Uuid
-  action     String
-  entityType String?  @map("entity_type")
-  entityId   String?  @map("entity_id")
-  metadata   Json     @default("{}")
-  createdAt  DateTime @default(now()) @map("created_at")
-
-  // Relations
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([action, createdAt(sort: Desc)])
-  @@map("audit_logs")
-}
-
-// ==================== REPORTS ====================
-
-model Report {
-  id        String  @id @default(uuid()) @db.Uuid
-  channelId String? @map("channel_id") @db.Uuid
-  videoId   String? @map("video_id") @db.Uuid
-  proofId   String? @map("proof_id") @db.Uuid
-
-  reporterIpHash Bytes?       @map("reporter_ip_hash")
-  reason         String
-  details        String?
-  status         ReportStatus @default(open)
-  createdAt      DateTime     @default(now()) @map("created_at")
-  reviewedAt     DateTime?    @map("reviewed_at")
-  reviewedById   String?      @map("reviewed_by") @db.Uuid
-
-  // Relations
-  channel Channel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
-  video   Video?   @relation(fields: [videoId], references: [id], onDelete: SetNull)
-  proof   Proof?   @relation(fields: [proofId], references: [id], onDelete: SetNull)
-
-  reviewedBy User? @relation("ReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
-
-  @@index([status, createdAt(sort: Desc)])
-  @@map("reports")
-}
-
-// ==================== TRANSPARENCY LOG ====================
-
-model TransparencyLog {
-  id         String   @id @default(uuid()) @db.Uuid
-  eventType  String   @map("event_type")
-  entityType String   @map("entity_type")
-  entityId   String   @map("entity_id")
-  data       Json
-  eventTime  DateTime @default(now()) @map("event_time")
-
-  @@index([entityType, entityId])
-  @@index([eventTime(sort: Desc)])
-  @@map("transparency_log")
-}
-
-// ==================== HTTP REQUEST LOGS ====================
-
-model HttpLog {
-  id        String   @id @default(uuid()) @db.Uuid
-  timestamp DateTime @default(now())
-
-  // Request
-  method               String  @db.VarChar(10)
-  path                 String
-  routePattern         String? @map("route_pattern")
-  queryString          String? @map("query_string")
-  requestContentLength Int?    @map("request_content_length")
-
-  // Response
-  statusCode            Int     @map("status_code")
-  responseContentLength Int?    @map("response_content_length")
-  durationMs            Int     @map("duration_ms")
-  errorMessage          String? @map("error_message")
-
-  // Client Identity
-  ipAddress String? @map("ip_address")
-  userAgent String? @map("user_agent")
-  origin    String?
-  referer   String?
-
-  // Authenticated User (nullable for public/unauthenticated routes)
-  userId String? @map("user_id") @db.Uuid
-
-  // Geo & Device (parsed server-side from IP + UA)
-  country String?
-  city    String?
-  device  String?
-
-  // Tracing
-  correlationId String? @map("correlation_id") @db.Uuid
-
-  @@index([timestamp(sort: Desc)])
-  @@index([statusCode, timestamp(sort: Desc)])
-  @@index([method, timestamp(sort: Desc)])
-  @@index([userId, timestamp(sort: Desc)])
-  @@index([ipAddress, timestamp(sort: Desc)])
-  @@index([path, timestamp(sort: Desc)])
-  @@map("http_logs")
-}
-
-// ==================== ANALYTICS ====================
-
-model AnalyticsEvent {
-  id        String  @id @default(uuid()) @db.Uuid
-  creatorId String  @map("creator_id") @db.Uuid // Owner of the profile/link
-  type      String // 'view' | 'click'
-  entityId  String? @map("entity_id") // Link ID (for clicks) or Profile ID (for views)
-  // Visitor Info
-  ipHash    String? @map("ip_hash") // Anonymized
-  country   String?
-  region    String? // State/Province
-  city      String?
-  device    String? // 'mobile', 'desktop', 'tablet'
-  os        String?
-  browser   String?
-  referer   String?
-
-  // Engagement Info
-  scrollDepth     Int? @map("scroll_depth") // 0-100 percentage
-  sessionDuration Int? @map("session_duration") // seconds
-
-  // Marketing UTMs
-  utmSource   String? @map("utm_source")
-  utmMedium   String? @map("utm_medium")
-  utmCampaign String? @map("utm_campaign")
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  // Relations
-  creator CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-
-  @@index([creatorId, createdAt])
-  @@index([type, createdAt])
-  @@map("analytics_events")
-}
-
-// ==================== MODERATION ====================
-
-model ModerationQueue {
-  id           String    @id @default(uuid()) @db.Uuid
-  targetType   String    @map("target_type") // 'profile', 'channel', 'video'
-  targetId     String    @map("target_id") @db.Uuid
-  payload      Json // { old: {}, new: {} }
-  status       String    @default("PENDING") // PENDING, APPROVED, REJECTED
-  reason       String?
-  createdAt    DateTime  @default(now()) @map("created_at")
-  reviewedAt   DateTime? @map("reviewed_at")
-  reviewedById String?   @map("reviewed_by") @db.Uuid
-
-  // Relations
-  reviewedBy User? @relation("ModerationReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
-
-  @@index([status, createdAt(sort: Desc)])
-  @@map("moderation_queue")
-}
-
-model SystemSetting {
-  key         String   @id
-  value       String?
-  description String?
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  @@map("system_settings")
-}
-
-// ==================== SYSTEM OBSERVABILITY ====================
-
-model SystemAlert {
-  id       String @id @default(uuid()) @db.Uuid
-  type     String // e.g. 'VIRAL_VELOCITY'
-  severity String // 'info', 'warning', 'critical'
-  message  String
-  data     Json? // { creatorId: "...", baseline: 5, current: 80 }
-
-  readAt    DateTime? @map("read_at")
-  createdAt DateTime  @default(now()) @map("created_at")
-
-  @@index([type, createdAt(sort: Desc)])
-  @@index([readAt])
-  @@map("system_alerts")
-}
-
-// ==================== COUPONS ====================
-
-model Coupon {
-  id             String    @id @default(uuid()) @db.Uuid
-  code           String    @unique // e.g. "WELCOME25", "SPRING2026"
-  description    String?
-  discountType   String    @map("discount_type") // 'percentage' | 'fixed'
-  discountValue  Float     @map("discount_value") // 25 = 25% or 5.00 = $5
-  maxRedemptions Int?      @map("max_redemptions") // null = unlimited
-  currentUses    Int       @default(0) @map("current_uses")
-  isActive       Boolean   @default(true) @map("is_active")
-  expiresAt      DateTime? @map("expires_at")
-  stripeCouponId String?   @map("stripe_coupon_id")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
-
-  redemptions CouponRedemption[]
-
-  @@index([code])
-  @@index([isActive, expiresAt])
-  @@map("coupons")
-}
-
-model CouponRedemption {
-  id          String    @id @default(uuid()) @db.Uuid
-  couponId    String    @map("coupon_id") @db.Uuid
-  userId      String?   @map("user_id") @db.Uuid
-  email       String? // For visitor leads (pre-signup)
-  source      String    @default("manual") // 'signup' | 'lead' | 'admin_send' | 'manual' | 'checkout'
-  emailSentAt DateTime? @map("email_sent_at") // When the coupon email was sent
-  usedAt      DateTime  @default(now()) @map("used_at")
-
-  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
-
-  @@index([couponId])
-  @@index([userId])
-  @@index([source])
-  @@map("coupon_redemptions")
-}
-
-// ==================== CROWDSOURCED INTELLIGENCE ====================
-
-model ContentFlag {
-  id        String   @id @default(uuid()) @db.Uuid
-  videoId   String   @map("video_id") @db.Uuid // Foreign key to Video.id
-  userId    String?  @map("user_id") @db.Uuid // Optional: ID of the user flagging it
-  ipHash    Bytes?   @map("ip_hash")
-  reason    String // E.g., "Deepfake", "Voice Clone"
-  status    String   @default("pending") // pending, approved, rejected
-  createdAt DateTime @default(now()) @map("created_at")
-
-  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
-
-  @@index([videoId])
-  @@map("content_flags")
-}
-
-model VideoContext {
-  id         String   @id @default(uuid()) @db.Uuid
-  videoId    String   @unique @map("video_id") @db.Uuid // Foreign key to Video.id
-  note       String // The public "Community Note"
-  approvedBy String   @map("approved_by") @db.Uuid // Admin ID who approved it
-  createdAt  DateTime @default(now()) @map("created_at")
-
-  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
-
-  @@map("video_contexts")
-}
-
-// ==================== EMAIL MARKETING ====================
-
-model EmailCampaign {
-  id              String    @id @default(uuid()) @db.Uuid
-  name            String
-  subject         String
-  htmlContent     String    @map("html_content") @db.Text
-  status          String    @default("draft") // 'draft', 'scheduled', 'sending', 'sent', 'failed'
-  audienceSegment String    @map("audience_segment") // e.g. 'all', 'elite_only', 'free_only', 'custom'
-  customEmails    String?   @map("custom_emails") @db.Text // Comma-separated emails for 'custom' segment
-  scheduledAt     DateTime? @map("scheduled_at")
-  sentAt          DateTime? @map("sent_at")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-
-  events EmailEvent[]
-
-  @@index([status])
-  @@index([scheduledAt])
-  @@map("email_campaigns")
-}
-
-model EmailTemplate {
-  id          String   @id @default(uuid()) @db.Uuid
-  name        String   @unique
-  htmlContent String   @map("html_content") @db.Text
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  @@map("email_templates")
-}
-
-model EmailEvent {
-  id         String   @id @default(uuid()) @db.Uuid
-  campaignId String   @map("campaign_id") @db.Uuid
-  userId     String?  @map("user_id") @db.Uuid
-  email      String
-  eventType  String   @map("event_type") // 'sent', 'delivered', 'open', 'click', 'bounce', 'spamreport'
-  createdAt  DateTime @default(now()) @map("created_at")
-
-  campaign EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  user     User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([campaignId])
-  @@index([userId])
-  @@index([email])
-  @@map("email_events")
-}
-
-// ==================== LOG INTEGRATIONS ====================
-
-model LogSinkConfig {
-  id      String  @id @default(uuid()) @db.Uuid
-  name    String
-  type    String
-  enabled Boolean @default(false)
-  config  String
-
-  filterMethods   String[] @default([])
-  filterMinStatus Int?
-  filterPaths     String[] @default([])
-
-  lastForwardedAt DateTime? @map("last_forwarded_at")
-  lastForwardedId String?   @map("last_forwarded_id")
-  lastError       String?   @map("last_error")
-  errorCount      Int       @default(0) @map("error_count")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("log_sink_configs")
-}
-
-// ─────────────────────────── ATTESTATION ENUMS ───────────────────────────
 
 enum IdentityClass {
   PSEUDONYMOUS
@@ -757,259 +891,3 @@ enum CircleDeployment {
   SAAS
   ON_PREM
 }
-
-// ─────────────────────── IDENTITY (Phase 1) ───────────────────────
-
-model VerifierIdentity {
-  id             String         @id @default(uuid()) @db.Uuid
-  keyId          String         @unique
-  publicKey      String         @unique
-  identityClass  IdentityClass  @default(PSEUDONYMOUS)
-  status         IdentityStatus @default(PROBATION)
-  displayHandle  String?        @unique
-  platform       String
-  deviceAttested Boolean        @default(false)
-
-  // Reputation (Phase 2)
-  reputation        Float    @default(0.10)
-  accuracyScore     Float?
-  attestationCount  Int      @default(0)
-  settledCorrect    Int      @default(0)
-  settledIncorrect  Int      @default(0)
-  lastDecayAt       DateTime @default(now())
-
-  attestations      Attestation[]
-  reputationEvents  ReputationEvent[]
-  canaryResponses   CanaryResponse[]
-  vouchesGiven      Vouch[]            @relation("Voucher")
-  vouchReceived     Vouch?             @relation("Vouchee")
-  roleCertificates  RoleCertificate[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([status, reputation])
-  @@map("verifier_identities")
-}
-
-model Vouch {
-  id          String   @id @default(uuid()) @db.Uuid
-  voucherId   String   @db.Uuid
-  voucheeId   String   @unique @db.Uuid
-  voucher     VerifierIdentity @relation("Voucher", fields: [voucherId], references: [id])
-  vouchee     VerifierIdentity @relation("Vouchee", fields: [voucheeId], references: [id])
-  stakeAmount Float
-  signature   String
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-
-  @@index([voucherId])
-  @@map("vouches")
-}
-
-// ─────────────────────── SUBJECTS & ATTESTATIONS (Phase 1) ───────────────────────
-
-model Subject {
-  id               String    @id @default(uuid()) @db.Uuid
-  hash             String    @unique
-  perceptualHash   String?
-  mediaType        MediaType
-  sizeBytes        BigInt?
-  firstSeenAt      DateTime  @default(now())
-
-  attestationCount Int       @default(0)
-  verdictSummary   Json?
-  checkCount       Int       @default(0)
-
-  attestations Attestation[]
-
-  @@index([perceptualHash])
-  @@index([checkCount, firstSeenAt])
-  @@map("subjects")
-}
-
-model Attestation {
-  id            String            @id @default(uuid()) @db.Uuid
-  payloadHash   String            @unique
-  version       String
-  subjectId     String            @db.Uuid
-  subject       Subject           @relation(fields: [subjectId], references: [id])
-  claimType     ClaimType
-  claimPayload  Json?
-  encryptedPayload Bytes?
-
-  attesterId    String            @db.Uuid
-  attester      VerifierIdentity  @relation(fields: [attesterId], references: [id])
-
-  domain        AttestationDomain @default(PUBLIC)
-  circleId      String?           @db.Uuid
-  circle        Circle?           @relation(fields: [circleId], references: [id])
-  roleCertId    String?           @db.Uuid
-  roleCert      RoleCertificate?  @relation(fields: [roleCertId], references: [id])
-
-  priorId       String?           @db.Uuid
-  prior         Attestation?      @relation("AttestationChain", fields: [priorId], references: [id])
-  successors    Attestation[]     @relation("AttestationChain")
-
-  clientTimestamp DateTime
-  receivedAt      DateTime         @default(now())
-  nonce           String
-  signature       String
-
-  status        AttestationStatus @default(PENDING)
-  settledAt     DateTime?
-  weightAtAggregation Float?
-
-  logEntry      TransparencyLogEntry?
-  reputationEvents ReputationEvent[]
-
-  @@unique([attesterId, subjectId, claimType, nonce])
-  @@index([subjectId, domain, status])
-  @@index([attesterId, receivedAt])
-  @@index([circleId, receivedAt])
-  @@map("attestations")
-}
-
-// ─────────────────────── REPUTATION ENGINE (Phase 2) ───────────────────────
-
-model ReputationEvent {
-  id            String              @id @default(uuid()) @db.Uuid
-  identityId    String              @db.Uuid
-  identity      VerifierIdentity    @relation(fields: [identityId], references: [id])
-  type          ReputationEventType
-  delta         Float
-  reputationAfter Float
-  attestationId String?             @db.Uuid
-  attestation   Attestation?        @relation(fields: [attestationId], references: [id])
-  metadata      Json?
-  createdAt     DateTime            @default(now())
-
-  @@index([identityId, createdAt])
-  @@map("reputation_events")
-}
-
-model CanaryTask {
-  id           String    @id @default(uuid()) @db.Uuid
-  subjectHash  String    @unique
-  mediaType    MediaType
-  groundTruth  Json
-  sourceConsent String
-  active       Boolean   @default(true)
-  servedCount  Int       @default(0)
-  responses    CanaryResponse[]
-  createdAt    DateTime  @default(now())
-
-  @@map("canary_tasks")
-}
-
-model CanaryResponse {
-  id         String           @id @default(uuid()) @db.Uuid
-  canaryId   String           @db.Uuid
-  canary     CanaryTask       @relation(fields: [canaryId], references: [id])
-  identityId String           @db.Uuid
-  identity   VerifierIdentity @relation(fields: [identityId], references: [id])
-  correct    Boolean
-  claimEcho  Json
-  createdAt  DateTime         @default(now())
-
-  @@unique([canaryId, identityId])
-  @@index([identityId, createdAt])
-  @@map("canary_responses")
-}
-
-model CorrelationCluster {
-  id          String   @id @default(uuid()) @db.Uuid
-  memberIds   String[]
-  signals     Json
-  discountFactor Float
-  computedAt  DateTime @default(now())
-  expiresAt   DateTime
-
-  @@index([expiresAt])
-  @@map("correlation_clusters")
-}
-
-// ─────────────────────── CIRCLES & PKI (Phase 3) ───────────────────────
-
-model Circle {
-  id             String           @id @default(uuid()) @db.Uuid
-  name           String
-  slug           String           @unique
-  rootPublicKey  String           @unique
-  deployment     CircleDeployment @default(SAAS)
-  publicIdentity Json?
-
-  roleCertificates RoleCertificate[]
-  attestations     Attestation[]
-  revocations      Revocation[]
-
-  createdAt DateTime @default(now())
-
-  @@map("circles")
-}
-
-model RoleCertificate {
-  id              String    @id @default(uuid()) @db.Uuid
-  serial          String    @unique
-  circleId        String    @db.Uuid
-  circle          Circle    @relation(fields: [circleId], references: [id])
-  identityId      String    @db.Uuid
-  identity        VerifierIdentity @relation(fields: [identityId], references: [id])
-  roleName        String
-  allowedClaims   ClaimType[]
-  validFrom       DateTime
-  validUntil      DateTime
-  certBody        Json
-  rootSignature   String
-
-  revokedAt       DateTime?
-  revocationId    String?   @db.Uuid
-  revocation      Revocation? @relation(fields: [revocationId], references: [id])
-
-  attestations    Attestation[]
-
-  @@index([circleId, identityId])
-  @@index([validFrom, validUntil])
-  @@map("role_certificates")
-}
-
-model Revocation {
-  id            String   @id @default(uuid()) @db.Uuid
-  circleId      String   @db.Uuid
-  circle        Circle   @relation(fields: [circleId], references: [id])
-  certSerials   String[]
-  reason        String?
-  effectiveAt   DateTime
-  rootSignature String
-  createdAt     DateTime @default(now())
-  certificates  RoleCertificate[]
-
-  @@map("revocations")
-}
-
-// ─────────────────────── TRANSPARENCY LOG (Phase 3) ───────────────────────
-
-model TransparencyLogEntry {
-  id            String   @id @default(uuid()) @db.Uuid
-  seqIndex      BigInt   @unique
-  leafHash      String   @unique
-  attestationId String?  @unique @db.Uuid
-  attestation   Attestation? @relation(fields: [attestationId], references: [id])
-  isOpaque      Boolean  @default(false)
-  createdAt     DateTime @default(now())
-
-  @@map("tlog_entries")
-}
-
-model MerkleCheckpoint {
-  id         String   @id @default(uuid()) @db.Uuid
-  treeSize   BigInt   @unique
-  rootHash   String
-  signature  String
-  rfc3161Token Bytes?
-  witnessCosigs Json?
-  createdAt  DateTime @default(now())
-
-  @@map("merkle_checkpoints")
-}
-

@@ -1,20 +1,12 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+
 async function main() {
-  const user = await prisma.user.findUnique({ where: { email: 'djkanjaria@gmail.com' } });
-  console.log(user);
-  
-  if (user && user.role !== 'admin') {
-      console.log('Updating user to admin and unsuspending...');
-      await prisma.user.update({
-          where: { id: user.id },
-          data: {
-              role: 'admin',
-              isSuspended: false,
-              isEmailVerified: true
-          }
-      });
-      console.log('User updated successfully.');
-  }
+  const config = await prisma.reputationConfig.findFirst({
+    where: { active: true },
+    orderBy: { id: 'desc' }
+  });
+  console.log(JSON.stringify(config, null, 2));
 }
-main().catch(console.error).finally(() => prisma.$disconnect());
+
+main().finally(() => prisma.$disconnect());
