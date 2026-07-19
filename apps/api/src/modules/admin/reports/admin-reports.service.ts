@@ -53,7 +53,7 @@ export class AdminReportsService {
             data: reports.map(r => ({
                 ...r,
                 entityType: r.videoId ? 'video' : r.channelId ? 'channel' : r.proofId ? 'proof' : 'unknown',
-                entity: (r as any).video || (r as any).channel || (r as any).proof
+                entity: r.video || r.channel || r.proof
             })),
             meta: {
                 total,
@@ -72,7 +72,6 @@ export class AdminReportsService {
                 video: true,
                 channel: true,
                 proof: true,
-                
                 reviewedBy: {
                     select: { id: true, email: true }
                 }
