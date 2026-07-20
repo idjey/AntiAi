@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const prisma = new PrismaClient({
     datasources: {
         db: {
-            url: "***REMOVED***"
+            url: process.env.DATABASE_URL
         }
     }
 });
