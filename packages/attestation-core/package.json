@@ -5,6 +5,16 @@
     "description": "Core protocol library for canonicalizing, signing, and verifying Ed25519 envelopes",
     "main": "./dist/src/index.js",
     "types": "./dist/src/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/src/index.d.ts",
+            "default": "./dist/src/index.js"
+        },
+        "./client": {
+            "types": "./dist/src/client-identity.d.ts",
+            "default": "./dist/src/client-identity.js"
+        }
+    },
     "scripts": {
         "build": "tsc",
         "clean": "rimraf dist",

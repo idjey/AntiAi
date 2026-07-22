@@ -130,3 +130,10 @@ export async function clearIdentity(): Promise<void> {
     await db.delete('identities', 'primary');
   }
 }
+
+export async function onboardIdentity(apiUrl: string, platform: 'WEB' | 'EXTENSION' | 'MOBILE' = 'WEB') {
+  const { keyPair, mnemonic } = generateIdentity();
+  await registerIdentity(apiUrl, keyPair, platform);
+  await storeIdentity(keyPair, mnemonic);
+  return await loadIdentity();
+}

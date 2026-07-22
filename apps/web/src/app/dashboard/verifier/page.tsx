@@ -10,7 +10,7 @@ import {
   registerIdentity,
   storeIdentity,
   loadIdentity,
-} from '@antiai/attestation-core';
+} from '@antiai/attestation-core/client';
 
 export default function VerifierPage() {
   const [status, setStatus] = useState<'loading' | 'idle' | 'generating' | 'registered' | 'error'>('loading');

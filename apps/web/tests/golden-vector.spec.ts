@@ -29,4 +29,31 @@ test.describe('Browser Cryptography Integrity', () => {
     expect(signed.payloadHash).toBe(fixture.expected.payloadHash);
     expect(signed.signature).toBe(fixture.expected.signatureBase64);
   });
+
+  test('hashFile should compute identical SHA-256 for a 50MB file', async ({ page }) => {
+    const crypto = await import('crypto');
+    await page.goto('/test/golden-vector');
+
+    // Create a 50MB buffer in Node
+    const size = 50 * 1024 * 1024;
+    const buffer = Buffer.alloc(size);
+    for (let i = 0; i < size; i++) {
+      buffer[i] = i % 256;
+    }
+    
+    const expectedHash = crypto.createHash('sha256').update(buffer).digest('hex');
+
+    // Execute hashFile in the browser
+    // We pass the raw array across the Playwright bridge and construct the Blob there
+    const result = await page.evaluate(async (size) => {
+      const arr = new Uint8Array(size);
+      for(let i=0; i<size; i++) arr[i] = i % 256;
+      const blob = new Blob([arr]);
+      // @ts-ignore
+      return await window.runHashFileTest(blob);
+    }, size);
+
+    expect(result.success).toBe(true);
+    expect(result.hash).toBe(expectedHash);
+  });
 });
