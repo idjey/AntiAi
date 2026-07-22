@@ -92,7 +92,7 @@ jobs:
         run: |
           # Start the backend API in the background
           cd apps/api
-          npm run start:dev &
+          npm run dev &
           
           # Wait for API to be ready (ping /health)
           echo "Waiting for API to start..."
