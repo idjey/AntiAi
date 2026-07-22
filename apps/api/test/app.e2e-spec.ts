@@ -15,6 +15,9 @@ describe('AppController (e2e)', () => {
       .overrideProvider(PrismaService)
       .useValue({
         // Mock prisma methods we need
+        user: {
+          updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+        },
         signingKey: {
           findMany: jest.fn().mockResolvedValue([
             {
