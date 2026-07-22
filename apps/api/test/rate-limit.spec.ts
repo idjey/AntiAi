@@ -28,14 +28,10 @@ describe('RateLimitService', () => {
   });
 
   it('allows 5 sequential requests, blocks 6th (ACTIVE)', async () => {
-    // 5 passes
-    mockRedisClient.eval.mockResolvedValueOnce(1);
-    mockRedisClient.eval.mockResolvedValueOnce(2);
-    mockRedisClient.eval.mockResolvedValueOnce(3);
-    mockRedisClient.eval.mockResolvedValueOnce(4);
-    mockRedisClient.eval.mockResolvedValueOnce(5);
-    // 6th fails (returns 6, > limit 5)
-    mockRedisClient.eval.mockResolvedValueOnce(6);
+    // 5 passes (10 evals)
+    for (let i = 0; i < 10; i++) mockRedisClient.eval.mockResolvedValueOnce([0, 0]);
+    // 6th fails (returns limited=1 on the first eval)
+    mockRedisClient.eval.mockResolvedValueOnce([1, 1000]);
 
     const ident = { id: 'test-user', status: IdentityStatus.ACTIVE } as any;
 
@@ -47,11 +43,10 @@ describe('RateLimitService', () => {
   });
 
   it('blocks 3rd request for PROBATION identity', async () => {
-    // 2 passes
-    mockRedisClient.eval.mockResolvedValueOnce(1);
-    mockRedisClient.eval.mockResolvedValueOnce(2);
+    // 2 passes (4 evals)
+    for (let i = 0; i < 4; i++) mockRedisClient.eval.mockResolvedValueOnce([0, 0]);
     // 3rd fails
-    mockRedisClient.eval.mockResolvedValueOnce(3);
+    mockRedisClient.eval.mockResolvedValueOnce([1, 1000]);
 
     const ident = { id: 'test-probation', status: IdentityStatus.PROBATION } as any;
 
@@ -61,9 +56,10 @@ describe('RateLimitService', () => {
   });
 
   it('handles 10 concurrent requests correctly', async () => {
-    // Simulate Lua script atomic increment returns 1..10
-    const results = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-    results.forEach(val => mockRedisClient.eval.mockResolvedValueOnce(val));
+    // 10 concurrent requests = 20 evals. 
+    // Let's say first 5 succeed (10 evals of [0, 0]), next 5 fail (5 evals of [1, 1000]).
+    for (let i = 0; i < 10; i++) mockRedisClient.eval.mockResolvedValueOnce([0, 0]);
+    for (let i = 0; i < 5; i++) mockRedisClient.eval.mockResolvedValueOnce([1, 1000]);
 
     const ident = { id: 'test-concurrent', status: IdentityStatus.ACTIVE } as any;
     
