@@ -62,7 +62,7 @@ describe('AppController (e2e)', () => {
       .expect((res) => {
         expect(res.body.keys).toBeDefined();
         expect(Array.isArray(res.body.keys)).toBe(true);
-        expect(res.body.keys[0].id).toBe('k_2026_01');
+        expect(res.body.keys[0].kid).toBe('k_2026_01');
       });
   });
 });
