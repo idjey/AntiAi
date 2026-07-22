@@ -10,6 +10,16 @@ test.describe('Provenance Hunt Quest (e2e)', () => {
     await page.goto('/v');
 
     // Mock the backend API responses since the backend doesn't run during this UI E2E test
+    await page.route('**/v1/subjects/*', route => {
+      // Don't intercept the phash and resolve POST endpoints with this GET wildcard
+      if (route.request().method() !== 'GET') return route.fallback();
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ hash: 'dummy-hash', mediaType: 'IMAGE', status: 'PENDING' })
+      });
+    });
+
     await page.route('**/v1/subjects/phash', route => route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -21,16 +31,6 @@ test.describe('Provenance Hunt Quest (e2e)', () => {
       contentType: 'application/json',
       body: JSON.stringify({ hash: 'mock-hash-123' })
     }));
-
-    await page.route('**/v1/subjects/*', route => {
-      // Don't intercept the phash and resolve POST endpoints with this GET wildcard
-      if (route.request().method() !== 'GET') return route.continue();
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ hash: 'dummy-hash', mediaType: 'IMAGE', status: 'PENDING' })
-      });
-    });
 
     await page.route('**/v1/subjects/*/attestations', route => route.fulfill({
       status: 200,
