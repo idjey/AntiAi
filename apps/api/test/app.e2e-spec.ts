@@ -45,9 +45,10 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer())
       .get('/health')
       .expect(200)
-      .expect({
-        status: 'ok',
-        version: '0.1.0',
+      .expect((res) => {
+        expect(res.body.status).toBe('ok');
+        expect(res.body.service).toBe('antiai-api');
+        expect(typeof res.body.timestamp).toBe('string');
       });
   });
 
