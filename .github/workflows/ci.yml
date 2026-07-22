@@ -72,3 +72,15 @@ jobs:
           REDIS_URL: "redis://localhost:6379"
           JWT_SECRET: "ci-test-secret"
         run: npm run test
+
+      - name: Install Playwright Browsers
+        run: |
+          cd apps/web
+          npx playwright install --with-deps chromium
+
+      - name: Run Playwright E2E Tests
+        env:
+          DATABASE_URL: "postgresql://postgres:password@localhost:5432/antiai"
+        run: |
+          cd apps/web
+          npx playwright test
