@@ -53,7 +53,7 @@ export function ProvenanceHuntForm({ subjectHash, onSuccess }: ProvenanceHuntFor
 
       const payload = {
         version: '1.0',
-        subject: { hash: subjectHash }, // In full impl, this would have perceptualHash and mediaType too
+        subject: { hash: subjectHash, mediaType: 'image' }, // In full impl, this would have perceptualHash and mediaType too
         claim: { 
           type: 'provenance_found', 
           payload: { sourceUrl: sourceUrl || undefined } 
