@@ -19,7 +19,7 @@ test.describe('Provenance Hunt Quest (e2e)', () => {
     expect(resolveRes.ok()).toBeTruthy();
 
     const resolveData = await resolveRes.json();
-    expect(resolveData.hash).toBeDefined();
+    expect(resolveData.subject?.hash).toBeDefined();
 
     // The page should redirect to /v/[hash]
     await page.waitForURL(`**/v/*`);
