@@ -9,8 +9,37 @@ test.describe('Provenance Hunt Quest (e2e)', () => {
     // Navigate to the drop zone
     await page.goto('/v');
 
-    // Setup network interception to monitor API calls if needed, 
-    // or just rely on the UI and DB assertions
+    // Mock the backend API responses since the backend doesn't run during this UI E2E test
+    await page.route('**/v1/subjects/phash', route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ perceptualHash: '0000000000000000' })
+    }));
+
+    await page.route('**/v1/subjects/resolve', route => route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({ hash: 'mock-hash-123' })
+    }));
+
+    await page.route('**/v1/subjects/mock-hash-123**', route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ hash: 'mock-hash-123', mediaType: 'IMAGE', status: 'PENDING' })
+    }));
+
+    await page.route('**/v1/subjects/mock-hash-123/attestations**', route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: [] })
+    }));
+
+    await page.route('**/v1/attestations', route => route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({ success: true })
+    }));
+
     const resolvePromise = page.waitForResponse((res) => res.url().includes('/v1/subjects/resolve') && res.status() === 201);
 
     // 1. Upload File
