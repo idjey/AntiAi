@@ -9,53 +9,6 @@ test.describe('Provenance Hunt Quest (e2e)', () => {
     // Navigate to the drop zone
     await page.goto('/v');
 
-    // Mock the backend API responses since the backend doesn't run during this UI E2E test
-    await page.route('**/v1/subjects/*', route => {
-      // Don't intercept the phash and resolve POST endpoints with this GET wildcard
-      if (route.request().method() !== 'GET') return route.fallback();
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ hash: 'dummy-hash', mediaType: 'IMAGE', status: 'PENDING' })
-      });
-    });
-
-    await page.route('**/v1/subjects/phash', route => route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ perceptualHash: '0000000000000000' })
-    }));
-
-    await page.route('**/v1/subjects/resolve', route => route.fulfill({
-      status: 201,
-      contentType: 'application/json',
-      body: JSON.stringify({ hash: 'mock-hash-123' })
-    }));
-
-    await page.route('**/v1/subjects/*/attestations', route => route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ items: [] })
-    }));
-
-    await page.route('**/v1/identities/challenge', route => route.fulfill({
-      status: 201,
-      contentType: 'application/json',
-      body: JSON.stringify({ nonce: 'mock-nonce-12345' })
-    }));
-
-    await page.route('**/v1/identities/register', route => route.fulfill({
-      status: 201,
-      contentType: 'application/json',
-      body: JSON.stringify({ keyId: 'mock-key-id-123' })
-    }));
-
-    await page.route('**/v1/attestations', route => route.fulfill({
-      status: 201,
-      contentType: 'application/json',
-      body: JSON.stringify({ success: true })
-    }));
-
     const resolvePromise = page.waitForResponse((res) => res.url().includes('/v1/subjects/resolve') && res.status() === 201);
 
     // 1. Upload File

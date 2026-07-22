@@ -71,7 +71,7 @@ jobs:
           DATABASE_URL: "postgresql://postgres:password@localhost:5432/antiai"
           REDIS_URL: "redis://localhost:6379"
           JWT_SECRET: "ci-test-secret"
-        run: npm run test
+        run: npm run test && npm run test:e2e -w apps/api
 
       - name: Install Playwright Browsers
         run: |
@@ -81,6 +81,17 @@ jobs:
       - name: Run Playwright E2E Tests
         env:
           DATABASE_URL: "postgresql://postgres:password@localhost:5432/antiai"
+          REDIS_URL: "redis://localhost:6379"
+          JWT_SECRET: "ci-test-secret"
         run: |
-          cd apps/web
+          # Start the backend API in the background
+          cd apps/api
+          npm run start:dev &
+          
+          # Wait for API to be ready (ping /health)
+          echo "Waiting for API to start..."
+          timeout 60 bash -c 'until curl -s http://localhost:4000/health | grep -q "ok"; do sleep 1; done'
+          echo "API is ready"
+          
+          cd ../web
           npx playwright test
