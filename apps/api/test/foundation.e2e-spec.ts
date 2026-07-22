@@ -220,6 +220,13 @@ describe('Foundation (e2e)', () => {
           signature: signed.signature
         })
         .expect(201);
+
+      // Verify it was persisted in the real database
+      const dbRow = await prisma.attestation.findUnique({
+        where: { payloadHash: signed.payloadHash }
+      });
+      expect(dbRow).toBeDefined();
+      expect(dbRow?.signature).toBe(signed.signature);
     });
 
     it('POST /v1/attestations - unregistered keyid returns 403', async () => {

@@ -11,33 +11,24 @@ describe('AppController (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    })
-      .overrideProvider(PrismaService)
-      .useValue({
-        // Mock prisma methods we need
-        user: {
-          updateMany: jest.fn().mockResolvedValue({ count: 0 }),
-        },
-        httpLog: {
-          create: jest.fn().mockResolvedValue({}),
-        },
-        signingKey: {
-          findMany: jest.fn().mockResolvedValue([
-            {
-              id: 'k_2026_01',
-              alg: 'Ed25519',
-              publicKeyB64: 'mock_public_key_b64',
-              isActive: true,
-              createdAt: new Date(),
-            },
-          ]),
-        },
-      })
-      .compile();
+    }).compile();
 
     app = moduleFixture.createNestApplication();
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
     await app.init();
+    
+    // Seed key for real database testing
+    await prismaService.signingKey.upsert({
+      where: { id: 'k_2026_01' },
+      update: {},
+      create: {
+        id: 'k_2026_01',
+        alg: 'Ed25519',
+        publicKeyB64: 'mock_public_key_b64',
+        privateKeyB64: 'mock_private_key_b64',
+        isActive: true,
+      }
+    });
   });
 
   afterAll(async () => {
