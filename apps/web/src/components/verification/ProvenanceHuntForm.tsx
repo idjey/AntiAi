@@ -33,7 +33,7 @@ export function ProvenanceHuntForm({ subjectHash, onSuccess }: ProvenanceHuntFor
       
       // 1. Lazy Onboarding
       if (!currentIdentity) {
-        const { onboardIdentity, loadIdentity } = await import('@antiai/attestation-core/dist/client-identity');
+        const { onboardIdentity, loadIdentity } = await import('@antiai/attestation-core/client');
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
         try {
           await onboardIdentity(apiUrl, 'WEB');

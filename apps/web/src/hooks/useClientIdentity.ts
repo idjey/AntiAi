@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { loadIdentity } from '@antiai/attestation-core/dist/client-identity';
+import { loadIdentity } from '@antiai/attestation-core/client';
 import type { SignKeyPair } from 'tweetnacl';
 
 export function useClientIdentity() {
