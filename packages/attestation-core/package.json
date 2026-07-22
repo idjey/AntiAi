@@ -12,7 +12,11 @@
         "generate-golden": "ts-node scripts/generate-golden.ts"
     },
     "dependencies": {
+        "@scure/bip39": "^2.2.0",
+        "base64-js": "^1.5.1",
         "canonicalize": "^2.0.0",
+        "fast-sha256": "^1.3.0",
+        "idb": "^8.0.3",
         "tweetnacl": "^1.0.3",
         "zod": "^4.4.3"
     },

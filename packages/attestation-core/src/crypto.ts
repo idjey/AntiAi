@@ -1,26 +1,31 @@
 import nacl from 'tweetnacl';
-import crypto from 'crypto';
+import { hash } from 'fast-sha256';
+import * as base64js from 'base64-js';
 import { canonicalBytes } from './canonicalize';
 import { AttestationPayload, SignedAttestation } from './types';
 
 export function bytesToHex(bytes: Uint8Array): string {
-  return Buffer.from(bytes).toString('hex');
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 export function hexToBytes(hex: string): Uint8Array {
-  return new Uint8Array(Buffer.from(hex, 'hex'));
+  const match = hex.match(/.{1,2}/g);
+  if (!match) return new Uint8Array(0);
+  return new Uint8Array(match.map((byte) => parseInt(byte, 16)));
 }
 
 export function toBase64(bytes: Uint8Array): string {
-  return Buffer.from(bytes).toString('base64');
+  return base64js.fromByteArray(bytes);
 }
 
 export function fromBase64(b64: string): Uint8Array {
-  return new Uint8Array(Buffer.from(b64, 'base64'));
+  return base64js.toByteArray(b64);
 }
 
 export function sha256(bytes: Uint8Array): Uint8Array {
-  return crypto.createHash('sha256').update(bytes).digest();
+  return hash(bytes);
 }
 
 export function sha256Hex(bytes: Uint8Array): string {
@@ -55,7 +60,8 @@ export function verifyAttestation(att: SignedAttestation, publicKey: Uint8Array)
   }
 }
 
-
 export function deriveKeyId(publicKeyBase64: string): string {
-  return Buffer.from(publicKeyBase64, 'base64').toString('hex').slice(0, 32);
+  const pkBytes = fromBase64(publicKeyBase64);
+  const h = sha256(pkBytes);
+  return bytesToHex(h).slice(0, 32);
 }

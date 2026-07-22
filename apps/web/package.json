@@ -10,6 +10,7 @@
         "lint": "next lint"
     },
     "dependencies": {
+        "@antiai/attestation-core": "^0.1.0",
         "@antiai/shared": "*",
         "@radix-ui/react-accordion": "^1.2.12",
         "@radix-ui/react-avatar": "^1.1.11",
@@ -41,6 +42,7 @@
         "tailwind-merge": "^3.4.1"
     },
     "devDependencies": {
+        "@playwright/test": "^1.61.1",
         "@types/d3-geo": "^3.1.0",
         "@types/d3-scale": "^4.0.9",
         "@types/node": "^20.11.0",
