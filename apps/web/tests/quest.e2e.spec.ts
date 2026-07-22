@@ -38,6 +38,18 @@ test.describe('Provenance Hunt Quest (e2e)', () => {
       body: JSON.stringify({ items: [] })
     }));
 
+    await page.route('**/v1/identities/challenge', route => route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({ nonce: 'mock-nonce-12345' })
+    }));
+
+    await page.route('**/v1/identities/register', route => route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({ keyId: 'mock-key-id-123' })
+    }));
+
     await page.route('**/v1/attestations', route => route.fulfill({
       status: 201,
       contentType: 'application/json',
