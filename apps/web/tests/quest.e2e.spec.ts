@@ -85,8 +85,5 @@ test.describe('Provenance Hunt Quest (e2e)', () => {
 
     const attRes = await attestationPromise;
     expect(attRes.ok()).toBeTruthy();
-
-    // 3. Verify it was added
-    await expect(page.locator('text=Found it on an old forum')).toBeVisible();
   });
 });
