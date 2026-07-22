@@ -71,6 +71,9 @@ jobs:
           DATABASE_URL: "postgresql://postgres:password@localhost:5432/antiai"
           REDIS_URL: "redis://localhost:6379"
           JWT_SECRET: "ci-test-secret"
+          GOOGLE_CLIENT_ID: "mock-google-client-id"
+          GOOGLE_CLIENT_SECRET: "mock-google-client-secret"
+          GOOGLE_CALLBACK_URL: "http://localhost:4000/v1/auth/google/callback"
         run: npm run test && npm run test:e2e -w apps/api
 
       - name: Install Playwright Browsers
@@ -83,6 +86,9 @@ jobs:
           DATABASE_URL: "postgresql://postgres:password@localhost:5432/antiai"
           REDIS_URL: "redis://localhost:6379"
           JWT_SECRET: "ci-test-secret"
+          GOOGLE_CLIENT_ID: "mock-google-client-id"
+          GOOGLE_CLIENT_SECRET: "mock-google-client-secret"
+          GOOGLE_CALLBACK_URL: "http://localhost:4000/v1/auth/google/callback"
         run: |
           # Start the backend API in the background
           cd apps/api
