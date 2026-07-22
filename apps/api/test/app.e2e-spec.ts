@@ -18,6 +18,9 @@ describe('AppController (e2e)', () => {
         user: {
           updateMany: jest.fn().mockResolvedValue({ count: 0 }),
         },
+        httpLog: {
+          create: jest.fn().mockResolvedValue({}),
+        },
         signingKey: {
           findMany: jest.fn().mockResolvedValue([
             {
