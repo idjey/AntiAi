@@ -25,7 +25,6 @@ describe('AppController (e2e)', () => {
         id: 'k_2026_01',
         alg: 'Ed25519',
         publicKeyB64: 'mock_public_key_b64',
-        privateKeyB64: 'mock_private_key_b64',
         isActive: true,
       }
     });
