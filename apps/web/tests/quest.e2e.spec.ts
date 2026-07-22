@@ -14,11 +14,7 @@ test.describe('Provenance Hunt Quest (e2e)', () => {
     const resolvePromise = page.waitForResponse((res) => res.url().includes('/v1/subjects/resolve') && res.status() === 201);
 
     // 1. Upload File
-    // We can simulate dropping a file into the dropzone
-    const fileChooserPromise = page.waitForEvent('filechooser');
-    await page.click('text="Drop a file here to hunt for its source"');
-    const fileChooser = await fileChooserPromise;
-    await fileChooser.setFiles(fixturePath);
+    await page.locator('input[type="file"]').setInputFiles(fixturePath);
 
     // Wait for the resolve step to finish and redirect
     const resolveRes = await resolvePromise;
