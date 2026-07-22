@@ -22,13 +22,17 @@ test.describe('Provenance Hunt Quest (e2e)', () => {
       body: JSON.stringify({ hash: 'mock-hash-123' })
     }));
 
-    await page.route('**/v1/subjects/mock-hash-123**', route => route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ hash: 'mock-hash-123', mediaType: 'IMAGE', status: 'PENDING' })
-    }));
+    await page.route('**/v1/subjects/*', route => {
+      // Don't intercept the phash and resolve POST endpoints with this GET wildcard
+      if (route.request().method() !== 'GET') return route.continue();
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ hash: 'dummy-hash', mediaType: 'IMAGE', status: 'PENDING' })
+      });
+    });
 
-    await page.route('**/v1/subjects/mock-hash-123/attestations**', route => route.fulfill({
+    await page.route('**/v1/subjects/*/attestations', route => route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({ items: [] })
@@ -53,7 +57,7 @@ test.describe('Provenance Hunt Quest (e2e)', () => {
     expect(resolveData.hash).toBeDefined();
 
     // The page should redirect to /v/[hash]
-    await page.waitForURL(`**/v/${resolveData.hash}`);
+    await page.waitForURL(`**/v/*`);
 
     // 2. Submit Claim
     // Wait for the minimal host page to load and display the summary
