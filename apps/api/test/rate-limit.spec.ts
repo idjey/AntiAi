@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RateLimitService } from '../src/modules/attestations/services/rate-limit.service';
 import { InjectRedis, REDIS_TOKEN } from '../src/modules/redis/redis.module';
 import { IdentityStatus } from '@prisma/client';
+import { AttestationError } from '../src/modules/attestations/errors/attestation-errors';
 
 describe('RateLimitService', () => {
   let rateLimitService: RateLimitService;
@@ -39,7 +40,7 @@ describe('RateLimitService', () => {
       await expect(rateLimitService.consume(ident.id, ident.status)).resolves.toBeUndefined();
     }
 
-    await expect(rateLimitService.consume(ident.id, ident.status)).rejects.toThrow('RATE_LIMITED');
+    await expect(rateLimitService.consume(ident.id, ident.status)).rejects.toThrow(AttestationError);
   });
 
   it('blocks 3rd request for PROBATION identity', async () => {
@@ -52,7 +53,7 @@ describe('RateLimitService', () => {
 
     await expect(rateLimitService.consume(ident.id, ident.status)).resolves.toBeUndefined();
     await expect(rateLimitService.consume(ident.id, ident.status)).resolves.toBeUndefined();
-    await expect(rateLimitService.consume(ident.id, ident.status)).rejects.toThrow('RATE_LIMITED');
+    await expect(rateLimitService.consume(ident.id, ident.status)).rejects.toThrow(AttestationError);
   });
 
   it('handles 10 concurrent requests correctly', async () => {

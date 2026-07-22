@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { PrismaClient } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { SubjectPhashRepository } from './subject-phash.repository';
 import { execSync } from 'child_process';
 
 describe('SubjectPhashRepository (Integration)', () => {
-  let container: StartedPostgreSqlContainer;
+  let container: StartedPostgreSqlContainer | null = null;
   let prisma: PrismaService;
   let repository: SubjectPhashRepository;
 
@@ -15,6 +15,7 @@ describe('SubjectPhashRepository (Integration)', () => {
 
     // Start Postgres testcontainer only if no external DB is provided
     if (!dbUrl) {
+      const { PostgreSqlContainer } = await import('@testcontainers/postgresql');
       container = await new PostgreSqlContainer('postgres:15-alpine').start();
       dbUrl = container.getConnectionUri();
     }
