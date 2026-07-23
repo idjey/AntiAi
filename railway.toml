@@ -5,4 +5,4 @@ buildCommand = "npm install --include=dev && npm run build:packages && npm run b
 [deploy]
 # This command runs after the build is complete but before the new deployment starts taking traffic.
 # The UI timeline refers to this as "Post-deploy", but the settings panel calls it "Pre-deploy".
-preDeployCommand = "npm run db:push"
+preDeployCommand = "npm run db:push -- --accept-data-loss"
