@@ -74,7 +74,7 @@ jobs:
           GOOGLE_CLIENT_ID: "mock-google-client-id"
           GOOGLE_CLIENT_SECRET: "mock-google-client-secret"
           GOOGLE_CALLBACK_URL: "http://localhost:4000/v1/auth/google/callback"
-        run: npm run test && npm run test:e2e -w apps/api
+        run: npm run test && npm run test:e2e -w apps/api && npm run test:e2e -w apps/provenance-worker
 
       - name: Install Playwright Browsers
         run: |
