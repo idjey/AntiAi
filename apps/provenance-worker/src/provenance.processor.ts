@@ -1,10 +1,13 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
-import { PrismaService } from '@antiai/database';
+import { PrismaService } from './prisma.service';
 import { fetchPinned } from './media-fetcher';
-import { SsrfViolation } from './ssrf-guard';
+import { SsrfViolation, DnsLookup } from './ssrf-guard';
 import { PhashService, hammingDistance, MACHINE_VERIFIABLE } from './phash.service';
+import { Inject, Optional } from '@nestjs/common';
+
+export const DNS_LOOKUP = 'DNS_LOOKUP';
 
 const PHASH_MATCH_THRESHOLD = 8;   // Hamming distance; tune with real re-upload corpus
 
@@ -14,6 +17,7 @@ export class ProvenanceProcessor extends WorkerHost {
     private prisma: PrismaService,
     private phash: PhashService,
     @InjectQueue('aggregation') private aggregationQ: Queue,
+    @Optional() @Inject(DNS_LOOKUP) private lookupFn?: DnsLookup,
   ) {
     super();
   }
@@ -39,7 +43,7 @@ export class ProvenanceProcessor extends WorkerHost {
     let matchScore: number | null = null;
 
     try {
-      const media = await fetchPinned(claim.sourceUrl);
+      const media = await fetchPinned(claim.sourceUrl, this.lookupFn);
       const candidateHash = await this.phash.compute(media, attestation.subject.mediaType);
       const distance = hammingDistance(candidateHash, attestation.subject.perceptualHash!);
       matchScore = 1 - distance / candidateHash.length / 4; // normalized, hex-nibble based
