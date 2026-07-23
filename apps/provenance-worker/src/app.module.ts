@@ -15,7 +15,7 @@ import { lookup } from 'node:dns/promises';
     PrismaService, 
     PhashService, 
     ProvenanceProcessor,
-    { provide: getQueueToken('aggregation'), useValue: { add: jest.fn() } },
+    { provide: getQueueToken('aggregation'), useValue: { add: async () => {} } },
     { provide: DNS_LOOKUP, useValue: lookup }
   ],
 })
