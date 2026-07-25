@@ -164,4 +164,35 @@ export class SubjectsService {
 
     return { items, nextCursor };
   }
+
+  async getCryptoProof(hash: string) {
+    const proof = await this.prisma.proof.findFirst({
+      where: { contentHash: hash },
+      orderBy: { issuedAt: 'desc' },
+      include: {
+        signingKey: {
+          select: { publicKeyB64: true }
+        }
+      }
+    });
+
+    if (!proof) {
+      return null;
+    }
+
+    return {
+      payloadB64: proof.payloadB64,
+      signatureB64: proof.signatureB64,
+      contentHash: proof.contentHash,
+      kid: proof.kid,
+      publicKeyB64: proof.signingKey.publicKeyB64,
+      lifecycle: {
+        status: proof.status,
+        issuedAt: proof.issuedAt,
+        expiresAt: proof.expiresAt,
+        revokedAt: proof.revokedAt,
+        supersededAt: proof.supersededAt,
+      }
+    };
+  }
 }

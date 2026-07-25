@@ -25,6 +25,7 @@ export class LedgerService {
    * Uses an advisory lock to serialize concurrent settlements for the same identity.
    */
   async apply(event: NewReputationEvent): Promise<void> {
+    let propagationTask: NewReputationEvent | null = null;
     await this.prisma.$transaction(async (tx) => {
       // Serialize per identity — concurrent settlements on one verifier must not race.
       // Postgres advisory lock keyed on identity id (hashed to bigint):
@@ -61,7 +62,35 @@ export class LedgerService {
       if (status !== identity.status) {
         await this.identityCache.bust(identity.keyId); // Phase 1 cache invalidation hook
       }
+
+      // Check for vouch propagation
+      if (event.delta < 0 && event.type !== 'VOUCH_SLASH_PROPAGATION') {
+        const vouch = await tx.vouch.findUnique({
+          where: { voucheeId: event.identityId },
+        });
+
+        if (vouch && vouch.active) {
+          const windowDays = cfg.params.slash.vouchPropagationWindowDays;
+          const cutoff = new Date();
+          cutoff.setDate(cutoff.getDate() - windowDays);
+
+          if (vouch.createdAt >= cutoff) {
+            const beta = cfg.params.slash.vouchPropagationBeta;
+            propagationTask = {
+              identityId: vouch.voucherId,
+              type: 'VOUCH_SLASH_PROPAGATION',
+              delta: event.delta * beta,
+              attestationId: event.attestationId,
+              metadata: { ...event.metadata, sourceVoucheeId: event.identityId },
+            };
+          }
+        }
+      }
     });
+
+    if (propagationTask) {
+      await this.apply(propagationTask);
+    }
   }
 
   /**

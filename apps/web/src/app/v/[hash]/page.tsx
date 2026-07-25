@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { SubjectSummary } from '@/components/verification/SubjectSummary';
 import { ProvenanceHuntForm } from '@/components/verification/ProvenanceHuntForm';
+import { VerdictDisplay } from '@/components/verification/VerdictDisplay';
 
 export default function MinimalHostPage() {
   const params = useParams();
@@ -11,6 +12,7 @@ export default function MinimalHostPage() {
 
   const [subject, setSubject] = useState<any>(null);
   const [attestations, setAttestations] = useState<any[]>([]);
+  const [cryptoProof, setCryptoProof] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,18 +21,21 @@ export default function MinimalHostPage() {
       if (!isPolling) setLoading(true);
       setError(null);
       
-      const [subRes, attRes] = await Promise.all([
+      const [subRes, attRes, proofRes] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/subjects/${hash}`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/subjects/${hash}/attestations`)
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/subjects/${hash}/attestations`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/subjects/${hash}/crypto-proof`)
       ]);
 
       if (!subRes.ok) throw new Error('Subject not found');
       
       const subData = await subRes.json();
       const attData = attRes.ok ? await attRes.json() : { items: [] };
+      const proofData = proofRes.ok ? await proofRes.json() : null;
 
       setSubject(subData);
       setAttestations(attData.items || []);
+      setCryptoProof(proofData);
     } catch (err: any) {
       setError(err.message || 'Failed to load subject data');
     } finally {
@@ -83,12 +88,15 @@ export default function MinimalHostPage() {
 
   return (
     <div className="min-h-screen bg-background py-12 px-4">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div>
-          <SubjectSummary subject={subject} attestations={attestations} />
-        </div>
-        <div>
-          <ProvenanceHuntForm subjectHash={hash} onSuccess={fetchSubjectData} />
+      <div className="max-w-6xl mx-auto">
+        <VerdictDisplay cryptoProof={cryptoProof} actualContentHash={hash} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
+            <SubjectSummary subject={subject} attestations={attestations} />
+          </div>
+          <div>
+            <ProvenanceHuntForm subjectHash={hash} onSuccess={fetchSubjectData} />
+          </div>
         </div>
       </div>
     </div>

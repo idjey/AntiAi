@@ -56,4 +56,9 @@ export class SubjectsController {
     const limit = limitStr ? parseInt(limitStr, 10) : 25;
     return this.service.getTimeline(hash, cursor, Math.min(limit, 100));
   }
+
+  @Get(':hash/crypto-proof')
+  async getCryptoProof(@Param('hash') hash: string) {
+    return this.service.getCryptoProof(hash);
+  }
 }

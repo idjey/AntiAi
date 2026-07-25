@@ -24,6 +24,7 @@ export interface ProofPayload {
     youtube_video_id: string;
     youtube_channel_id: string;
     content_hash?: string;
+    perceptual_hash?: string;
 }
 
 export interface SignedProof {
@@ -99,6 +100,7 @@ export interface BuildPayloadOptions {
     youtubeChannelId: string;
     expiresAtUnix: number;
     contentHash?: string;
+    perceptualHash?: string;
 }
 
 /**
@@ -109,7 +111,7 @@ export function buildCanonicalPayload(options: BuildPayloadOptions): {
     canonicalJson: string;
     payloadBytes: Uint8Array;
 } {
-    const { kid, youtubeVideoId, youtubeChannelId, expiresAtUnix, contentHash } = options;
+    const { kid, youtubeVideoId, youtubeChannelId, expiresAtUnix, contentHash, perceptualHash } = options;
 
     if (!kid) throw new Error('kid is required');
     if (!youtubeVideoId) throw new Error('youtubeVideoId is required');
@@ -135,6 +137,9 @@ export function buildCanonicalPayload(options: BuildPayloadOptions): {
     if (contentHash) {
         payload.content_hash = contentHash;
     }
+    if (perceptualHash) {
+        payload.perceptual_hash = perceptualHash;
+    }
 
     // Canonical JSON string per JCS (stable key ordering, minimal formatting)
     const canonicalJson = canonicalize(payload);
@@ -152,13 +157,14 @@ export interface SignProofOptions {
     expiresAt: Date | number;
     privateKeyB64: string;
     contentHash?: string;
+    perceptualHash?: string;
 }
 
 /**
  * Sign a proof for a video using Ed25519
  */
 export async function signProof(options: SignProofOptions): Promise<SignedProof> {
-    const { kid, youtubeVideoId, youtubeChannelId, expiresAt, privateKeyB64, contentHash } = options;
+    const { kid, youtubeVideoId, youtubeChannelId, expiresAt, privateKeyB64, contentHash, perceptualHash } = options;
 
     if (!privateKeyB64) {
         throw new Error('privateKeyB64 must be provided');
@@ -179,6 +185,7 @@ export async function signProof(options: SignProofOptions): Promise<SignedProof>
         youtubeChannelId,
         expiresAtUnix,
         contentHash,
+        perceptualHash,
     });
 
     const privBytes = fromBase64(privateKeyB64);

@@ -3,6 +3,14 @@ import { IsString, IsUUID, IsEnum, IsOptional } from 'class-validator';
 export class IssueProofDto {
     @IsUUID()
     video_id: string;
+
+    @IsOptional()
+    @IsString()
+    content_hash?: string;
+
+    @IsOptional()
+    @IsString()
+    perceptual_hash?: string;
 }
 
 export class ReissueProofDto {

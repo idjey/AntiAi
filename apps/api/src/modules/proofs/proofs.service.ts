@@ -122,6 +122,8 @@ export class ProofsService {
                 youtubeChannelId: video.channel.platformId,
                 expiresAt,
                 privateKeyB64,
+                contentHash: dto.content_hash,
+                perceptualHash: dto.perceptual_hash,
             });
         } catch (error) {
             console.error('Crypto Signing Error:', error);
@@ -138,6 +140,8 @@ export class ProofsService {
                 payloadJson: signedProof.payload_json as any,
                 payloadB64: signedProof.payload_b64,
                 signatureB64: signedProof.signature_b64,
+                contentHash: dto.content_hash,
+                perceptualHash: dto.perceptual_hash,
                 expiresAt,
                 status: 'active',
             },

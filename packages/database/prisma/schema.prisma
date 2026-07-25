@@ -202,6 +202,7 @@ model Proof {
   status            ProofStatus @default(active)
   schemaVersion     Int         @default(1) @map("schema_version")
   contentHash       String?     @map("content_hash")
+  perceptualHash    String?     @map("perceptual_hash")
   supersedesProofId String?     @unique @map("supersedes_proof_id") @db.Uuid
   supersededAt      DateTime?   @map("superseded_at")
   revokedAt         DateTime?   @map("revoked_at")
@@ -216,6 +217,7 @@ model Proof {
 
   @@index([videoId])
   @@index([channelId])
+  @@index([contentHash])
   @@index([status, expiresAt])
   @@map("proofs")
 }
