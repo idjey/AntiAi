@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { SubjectSummary } from '@/components/verification/SubjectSummary';
 import { ProvenanceHuntForm } from '@/components/verification/ProvenanceHuntForm';
 import { VerdictDisplay } from '@/components/verification/VerdictDisplay';
+import { AttestationTimeline } from '@/components/verification/AttestationTimeline';
 
 export default function MinimalHostPage() {
   const params = useParams();
@@ -98,6 +99,7 @@ export default function MinimalHostPage() {
             <ProvenanceHuntForm subjectHash={hash} onSuccess={fetchSubjectData} />
           </div>
         </div>
+        <AttestationTimeline attestations={attestations} />
       </div>
     </div>
   );

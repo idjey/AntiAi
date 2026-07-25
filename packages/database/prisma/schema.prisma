@@ -596,6 +596,7 @@ model Attestation {
   claimType           ClaimType
   claimPayload        Json?
   encryptedPayload    Bytes?
+  payloadB64          String?               @map("payload_b64")
   attesterId          String                @db.Uuid
   domain              AttestationDomain     @default(PUBLIC)
   circleId            String?               @db.Uuid

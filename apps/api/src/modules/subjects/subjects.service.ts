@@ -146,6 +146,7 @@ export class SubjectsService {
         receivedAt: true,
         signature: true,
         nonce: true,
+        payloadB64: true,
         attester: {
           select: {
             keyId: true,

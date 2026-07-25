@@ -112,6 +112,7 @@ export class AttestationsService {
             subjectId: subject.id,
             claimType: toClaimTypeEnum(dto.payload.claim.type),
             claimPayload: (dto.payload.claim.payload || {}) as any,
+            payloadB64: Buffer.from(bytes).toString('base64'),
             attesterId: identity.id,
             domain: 'PUBLIC',
             clientTimestamp: new Date(dto.payload.context.timestamp),
