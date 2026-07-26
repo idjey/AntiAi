@@ -1,6 +1,6 @@
 import type { PlasmoCSConfig } from "plasmo"
 import "./content.css"
-import { computePhashFromVideo } from "./utils/phash"
+import { extractFractionalSequence } from "./utils/phash"
 
 export const config: PlasmoCSConfig = {
     matches: [
@@ -161,34 +161,16 @@ const adapters: PlatformAdapter[] = [
 
                             scanBtn.textContent = 'Scanning...';
                             scanBtn.disabled = true;
-                            
+                                                            
                             try {
-                                const originalTime = video.currentTime;
-                                // Frame selection convention: t=1.0s or midpoint if too short
-                                const targetTime = video.duration < 1.0 ? video.duration / 2 : 1.0;
-                                
-                                const seekPromise = new Promise((resolve) => {
-                                    const onSeeked = () => {
-                                        video.removeEventListener('seeked', onSeeked);
-                                        resolve(null);
-                                    };
-                                    video.addEventListener('seeked', onSeeked);
-                                });
-                                
-                                video.currentTime = targetTime;
-                                await seekPromise;
-                                
-                                const phash = await computePhashFromVideo(video);
-                                
-                                // Restore playback
-                                video.currentTime = originalTime;
+                                const fractionalHashes = await extractFractionalSequence(video);
 
-                                // Send phash to background for resolution
+                                // Send hashes to background for resolution
                                 chrome.runtime.sendMessage({
                                     action: "checkUrl",
                                     videoId: data?.platform_id || currentVideoId,
                                     platform: currentPlatform,
-                                    perceptualHash: phash
+                                    perceptualHashes: fractionalHashes
                                 }, (response) => {
                                     if (!chrome.runtime.lastError && response?.status === 'verified') {
                                         // Update UI to verified

@@ -71,28 +71,63 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             return true;
         }
 
-        fetch(`https://api.antiai.me/public/verify?youtube_video_id=${videoId}&platform=${platform}`)
+        if (message.perceptualHashes) {
+            // New pHash resolution path
+            fetch(`http://localhost:4000/v1/subjects/resolve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    perceptualHashes: message.perceptualHashes,
+                    mediaType: 'VIDEO'
+                })
+            })
             .then(res => res.json())
             .then(data => {
-                const isVerified = data && data.status === 'verified'
-                console.log(`[Background] Verified: ${isVerified}`, data)
+                const isVerified = data && !!data.id;
+                console.log(`[Background] pHash Verified: ${isVerified}`, data);
 
-                const iconPath = isVerified ? iconGreen : iconRed
-                
-                // Fire the eye-catching pulse/blink effect
+                const iconPath = isVerified ? iconGreen : iconRed;
                 if (sender.tab?.id) {
-                    blinkIcon(sender.tab.id, iconPath, 3, 150) // Faster, 3-pulse gimmick
+                    blinkIcon(sender.tab.id, iconPath, 3, 150);
                 }
-
-                sendResponse(data)
+                
+                // Translate new API format to old extension format for content script compatibility
+                if (isVerified) {
+                    sendResponse({ status: 'verified', proof: data.id });
+                } else {
+                    sendResponse({ status: 'unverified' });
+                }
             })
             .catch(err => {
-                console.error(`[Background] Verification failed`, err)
+                console.error(`[Background] pHash Verification failed`, err);
                 if (sender.tab?.id) {
-                    blinkIcon(sender.tab.id, iconRed, 3, 150)
+                    blinkIcon(sender.tab.id, iconRed, 3, 150);
                 }
-                sendResponse({ status: 'error', error: err.toString() })
-            })
+                sendResponse({ status: 'error', error: err.toString() });
+            });
+        } else {
+            // Old explicit URL resolution path
+            fetch(`https://api.antiai.me/public/verify?youtube_video_id=${videoId}&platform=${platform}`)
+                .then(res => res.json())
+                .then(data => {
+                    const isVerified = data && data.status === 'verified';
+                    console.log(`[Background] URL Verified: ${isVerified}`, data);
+
+                    const iconPath = isVerified ? iconGreen : iconRed;
+                    if (sender.tab?.id) {
+                        blinkIcon(sender.tab.id, iconPath, 3, 150);
+                    }
+
+                    sendResponse(data);
+                })
+                .catch(err => {
+                    console.error(`[Background] URL Verification failed`, err);
+                    if (sender.tab?.id) {
+                        blinkIcon(sender.tab.id, iconRed, 3, 150);
+                    }
+                    sendResponse({ status: 'error', error: err.toString() });
+                });
+        }
 
         return true // Keep channel open for async response
     }

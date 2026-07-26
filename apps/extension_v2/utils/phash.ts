@@ -1,23 +1,83 @@
 import blockhash from 'blockhash-core';
 import { downscaleBoxFilter } from '../../../packages/phash/src/resize';
+import { PHASH_CONSTANTS } from '../../../packages/phash/src/constants';
 
-export async function computePhashFromVideo(video: HTMLVideoElement): Promise<string> {
-  const canvas = document.createElement('canvas');
-  const width = video.videoWidth;
-  const height = video.videoHeight;
-  
-  canvas.width = width;
-  canvas.height = height;
-  
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  if (!ctx) throw new Error("Could not get 2D context");
-  
-  ctx.drawImage(video, 0, 0, width, height);
-  const imgData = ctx.getImageData(0, 0, width, height);
-  
-  // Downscale to 32x32 using the shared Box Filter for parity with server
-  const downscaled = downscaleBoxFilter(imgData.data, width, height, 32, 32);
-  
-  // 32x32 area with 8-bit block size yields an 8x8 block output = 64 bits
-  return blockhash.bmvbhash({ width: 32, height: 32, data: downscaled as unknown as number[] }, 8);
+export interface FractionalHash {
+    fraction: number;
+    hash: string;
+    version: number;
+}
+
+function seekVideo(video: HTMLVideoElement, time: number): Promise<void> {
+    return new Promise((resolve) => {
+        const onSeeked = () => {
+            video.removeEventListener('seeked', onSeeked);
+            let resolved = false;
+            
+            if ('requestVideoFrameCallback' in video) {
+                (video as any).requestVideoFrameCallback(() => {
+                    if (!resolved) {
+                        resolved = true;
+                        resolve();
+                    }
+                });
+            }
+            
+            setTimeout(() => {
+                if (!resolved) {
+                    resolved = true;
+                    resolve();
+                }
+            }, 150);
+        };
+        video.addEventListener('seeked', onSeeked);
+        video.currentTime = time;
+    });
+}
+
+export async function extractFractionalSequence(video: HTMLVideoElement): Promise<FractionalHash[]> {
+    if (!video.duration || !isFinite(video.duration)) {
+        throw new Error("Invalid video duration");
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) throw new Error("Could not get 2D context");
+
+    const results: FractionalHash[] = [];
+
+    const originalTime = video.currentTime;
+
+    try {
+        for (const fraction of PHASH_CONSTANTS.ANCHOR_FRACTIONS) {
+            const targetTime = video.duration * fraction;
+            await seekVideo(video, targetTime);
+            
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            const downscaled = downscaleBoxFilter(
+                imageData.data as unknown as Uint8Array,
+                canvas.width,
+                canvas.height,
+                32,
+                32
+            );
+            
+            const hash = blockhash.bmvbhash({ width: 32, height: 32, data: downscaled as unknown as number[] }, 8);
+            
+            results.push({
+                fraction,
+                hash,
+                version: PHASH_CONSTANTS.VERSION
+            });
+        }
+    } finally {
+        // Restore playback
+        video.currentTime = originalTime;
+    }
+    
+    return results;
 }
