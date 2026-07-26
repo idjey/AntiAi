@@ -9,8 +9,7 @@ export class IssueProofDto {
     content_hash?: string;
 
     @IsOptional()
-    @IsString()
-    perceptual_hash?: string;
+    perceptual_hashes?: { fraction: number; hash: string; version: number }[];
 }
 
 export class ReissueProofDto {

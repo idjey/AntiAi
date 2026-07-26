@@ -1,17 +1,27 @@
 import sharp from 'sharp';
 import blockhash from 'blockhash-core';
+import { downscaleBoxFilter } from './resize';
 
 export async function computePhash(buffer: Buffer): Promise<string> {
-  // Decode, resize, and convert to raw pixels
+  // Decode and convert to raw pixels (full resolution)
   const { data, info } = await sharp(buffer)
-    .resize(16, 16, { fit: 'fill' }) // blockhash-core expects square for best results
     .raw()
     .ensureAlpha()
     .toBuffer({ resolveWithObject: true });
 
-  // blockhash expects rgba data and image width/height
+  // Use the shared resampler to resize to 32x32 for parity with client canvas
+  const downscaled = downscaleBoxFilter(
+    data as unknown as Uint8Array, 
+    info.width, 
+    info.height, 
+    32, 
+    32
+  );
+
+  // blockhash expects rgba data and image width/height.
+  // Using 8 bits on a 32x32 image yields an 8x8 block output = 64-bit hash.
   const hash = blockhash.bmvbhash(
-    { width: info.width, height: info.height, data },
+    { width: 32, height: 32, data: downscaled as unknown as number[] },
     8
   );
   return hash;
@@ -31,3 +41,6 @@ export function hammingDistance(hash1: string, hash2: string): number {
   }
   return distance;
 }
+
+export * from './resize';
+export * from './constants';

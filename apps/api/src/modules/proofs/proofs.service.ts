@@ -141,7 +141,6 @@ export class ProofsService {
                 payloadB64: signedProof.payload_b64,
                 signatureB64: signedProof.signature_b64,
                 contentHash: dto.content_hash,
-                perceptualHash: dto.perceptual_hash,
                 expiresAt,
                 status: 'active',
             },
@@ -149,6 +148,16 @@ export class ProofsService {
                 video: { select: { platformId: true, title: true } },
             },
         });
+
+        // Insert perceptual hashes using raw SQL due to Unsupported("bit(64)") column
+        if (dto.perceptual_hashes && dto.perceptual_hashes.length > 0) {
+            for (const phash of dto.perceptual_hashes) {
+                await this.prisma.$executeRaw`
+                    INSERT INTO proof_perceptual_hashes (id, proof_id, anchor_fraction, phash_bits, version)
+                    VALUES (gen_random_uuid(), ${proof.id}::uuid, ${phash.fraction}, ${phash.hash}::bit(64), ${phash.version})
+                `;
+            }
+        }
 
         // Log to transparency log
         await this.prisma.transparencyLog.create({

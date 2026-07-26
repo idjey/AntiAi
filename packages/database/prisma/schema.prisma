@@ -189,30 +189,30 @@ model Video {
 }
 
 model Proof {
-  id                String      @id @default(uuid()) @db.Uuid
-  videoId           String      @map("video_id") @db.Uuid
-  channelId         String      @map("channel_id") @db.Uuid
-  alg               String      @default("Ed25519")
+  id                String                @id @default(uuid()) @db.Uuid
+  videoId           String                @map("video_id") @db.Uuid
+  channelId         String                @map("channel_id") @db.Uuid
+  alg               String                @default("Ed25519")
   kid               String
-  payloadJson       Json        @map("payload_json")
-  payloadB64        String      @map("payload_b64")
-  signatureB64      String      @map("signature_b64")
-  issuedAt          DateTime    @default(now()) @map("issued_at")
-  expiresAt         DateTime    @map("expires_at")
-  status            ProofStatus @default(active)
-  schemaVersion     Int         @default(1) @map("schema_version")
-  contentHash       String?     @map("content_hash")
-  perceptualHash    String?     @map("perceptual_hash")
-  supersedesProofId String?     @unique @map("supersedes_proof_id") @db.Uuid
-  supersededAt      DateTime?   @map("superseded_at")
-  revokedAt         DateTime?   @map("revoked_at")
-  revokeReason      String?     @map("revoke_reason")
-  createdAt         DateTime    @default(now()) @map("created_at")
-  channel           Channel     @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  signingKey        SigningKey  @relation(fields: [kid], references: [id])
-  supersedesProof   Proof?      @relation("ProofSupersedes", fields: [supersedesProofId], references: [id])
-  supersededBy      Proof?      @relation("ProofSupersedes")
-  video             Video       @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  payloadJson       Json                  @map("payload_json")
+  payloadB64        String                @map("payload_b64")
+  signatureB64      String                @map("signature_b64")
+  issuedAt          DateTime              @default(now()) @map("issued_at")
+  expiresAt         DateTime              @map("expires_at")
+  status            ProofStatus           @default(active)
+  schemaVersion     Int                   @default(1) @map("schema_version")
+  contentHash       String?               @map("content_hash")
+  supersedesProofId String?               @unique @map("supersedes_proof_id") @db.Uuid
+  perceptualHashes  ProofPerceptualHash[]
+  supersededAt      DateTime?             @map("superseded_at")
+  revokedAt         DateTime?             @map("revoked_at")
+  revokeReason      String?               @map("revoke_reason")
+  createdAt         DateTime              @default(now()) @map("created_at")
+  channel           Channel               @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  signingKey        SigningKey            @relation(fields: [kid], references: [id])
+  supersedesProof   Proof?                @relation("ProofSupersedes", fields: [supersedesProofId], references: [id])
+  supersededBy      Proof?                @relation("ProofSupersedes")
+  video             Video                 @relation(fields: [videoId], references: [id], onDelete: Cascade)
   reports           Report[]
 
   @@index([videoId])
@@ -220,6 +220,18 @@ model Proof {
   @@index([contentHash])
   @@index([status, expiresAt])
   @@map("proofs")
+}
+
+model ProofPerceptualHash {
+  id             String                 @id @default(uuid()) @db.Uuid
+  proofId        String                 @map("proof_id") @db.Uuid
+  anchorFraction Float                  @map("anchor_fraction")
+  phashBits      Unsupported("bit(64)") @map("phash_bits")
+  version        Int                    @default(1)
+  proof          Proof                  @relation(fields: [proofId], references: [id], onDelete: Cascade)
+
+  @@unique([proofId, anchorFraction])
+  @@map("proof_perceptual_hashes")
 }
 
 model Subscription {

@@ -1,5 +1,6 @@
 import type { PlasmoCSConfig } from "plasmo"
 import "./content.css"
+import { computePhashFromVideo } from "./utils/phash"
 
 export const config: PlasmoCSConfig = {
     matches: [
@@ -143,6 +144,82 @@ const adapters: PlatformAdapter[] = [
                     tooltip.appendChild(strong)
                     tooltip.appendChild(document.createElement('br'))
                     tooltip.appendChild(textNode)
+
+                    if (!isVerified) {
+                        const scanBtn = document.createElement('button')
+                        scanBtn.className = 'antiai-scan-btn'
+                        scanBtn.textContent = 'Scan Video Content'
+                        scanBtn.onclick = async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            const video = document.querySelector('video');
+                            if (!video) {
+                                scanBtn.textContent = 'Video not found';
+                                return;
+                            }
+
+                            scanBtn.textContent = 'Scanning...';
+                            scanBtn.disabled = true;
+                            
+                            try {
+                                const originalTime = video.currentTime;
+                                // Frame selection convention: t=1.0s or midpoint if too short
+                                const targetTime = video.duration < 1.0 ? video.duration / 2 : 1.0;
+                                
+                                const seekPromise = new Promise((resolve) => {
+                                    const onSeeked = () => {
+                                        video.removeEventListener('seeked', onSeeked);
+                                        resolve(null);
+                                    };
+                                    video.addEventListener('seeked', onSeeked);
+                                });
+                                
+                                video.currentTime = targetTime;
+                                await seekPromise;
+                                
+                                const phash = await computePhashFromVideo(video);
+                                
+                                // Restore playback
+                                video.currentTime = originalTime;
+
+                                // Send phash to background for resolution
+                                chrome.runtime.sendMessage({
+                                    action: "checkUrl",
+                                    videoId: data?.platform_id || currentVideoId,
+                                    platform: currentPlatform,
+                                    perceptualHash: phash
+                                }, (response) => {
+                                    if (!chrome.runtime.lastError && response?.status === 'verified') {
+                                        // Update UI to verified
+                                        scanBtn.textContent = 'Verified Authentic âœ…';
+                                        scanBtn.style.backgroundColor = '#10B981';
+                                        setTimeout(() => {
+                                            const activeAdapter = adapters.find(a => a.id === currentPlatform);
+                                            if (activeAdapter) activeAdapter.injectBadge(true, response);
+                                        }, 1000);
+                                    } else {
+                                        scanBtn.textContent = 'Still Unverified';
+                                        setTimeout(() => {
+                                            scanBtn.textContent = 'Scan Video Content';
+                                            scanBtn.disabled = false;
+                                        }, 2000);
+                                    }
+                                });
+                            } catch (err) {
+                                console.error('[AntiAI] Scan failed:', err);
+                                scanBtn.textContent = 'Scan Failed';
+                                setTimeout(() => {
+                                    scanBtn.textContent = 'Scan Video Content';
+                                    scanBtn.disabled = false;
+                                }, 2000);
+                            }
+                        };
+                        
+                        tooltip.appendChild(document.createElement('br'))
+                        tooltip.appendChild(document.createElement('br'))
+                        tooltip.appendChild(scanBtn)
+                    }
 
                     badge.appendChild(tooltip)
                     targetEl.appendChild(badge)

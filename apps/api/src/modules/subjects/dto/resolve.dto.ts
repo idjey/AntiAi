@@ -3,9 +3,12 @@ import { PipeTransform, ArgumentMetadata, BadRequestException } from '@nestjs/co
 
 export const resolveSchema = z.object({
   hash: z.string().regex(/^[0-9a-f]{64}$/).optional(),
-  perceptualHash: z.string().regex(/^[0-9a-f]{16}$/).optional(),
+  perceptualHashes: z.array(z.object({
+    fraction: z.number(),
+    hash: z.string().regex(/^[0-9a-f]{16}$/)
+  })).optional(),
   mediaType: z.enum(['VIDEO', 'IMAGE', 'AUDIO', 'PDF', 'OTHER']),
-}).refine(d => d.hash || d.perceptualHash, { message: 'hash or perceptualHash required' });
+}).refine(d => d.hash || (d.perceptualHashes && d.perceptualHashes.length > 0), { message: 'hash or perceptualHashes required' });
 
 export type ResolveDto = z.infer<typeof resolveSchema>;
 

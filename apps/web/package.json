@@ -11,6 +11,7 @@
     },
     "dependencies": {
         "@antiai/attestation-core": "^0.1.0",
+        "@antiai/phash": "*",
         "@antiai/shared": "*",
         "@radix-ui/react-accordion": "^1.2.12",
         "@radix-ui/react-avatar": "^1.1.11",
@@ -23,6 +24,7 @@
         "@radix-ui/react-tabs": "^1.1.13",
         "@supabase/supabase-js": "^2.103.3",
         "base64-js": "^1.5.1",
+        "blockhash-core": "^0.1.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "d3-geo": "^3.1.1",

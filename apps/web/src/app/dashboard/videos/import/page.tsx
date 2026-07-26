@@ -17,8 +17,9 @@ export default function ImportVideoPage() {
     const [isLoading, setIsLoading] = useState(false)
     const [fetchingChannels, setFetchingChannels] = useState(true)
     const [error, setError] = useState('')
-    const [status, setStatus] = useState<'idle' | 'importing' | 'protecting' | 'success'>('idle')
+    const [status, setStatus] = useState<'idle' | 'importing' | 'hashing' | 'protecting' | 'success'>('idle')
     const [videoPreview, setVideoPreview] = useState<{ title: string, thumbnail_url: string, channel_title: string } | null>(null)
+    const [file, setFile] = useState<File | null>(null)
 
     useEffect(() => {
         const fetchMetadata = async () => {
@@ -113,7 +114,16 @@ export default function ImportVideoPage() {
 
             const video = await importRes.json()
 
-            // 2. Generate Proof
+            // 2. Hash Local File if provided
+            let perceptual_hashes = undefined;
+            if (file) {
+                setStatus('hashing')
+                // Dynamically import to avoid SSR issues with canvas/video
+                const { extractFractionalSequence } = await import('@/lib/phash')
+                perceptual_hashes = await extractFractionalSequence(file, [0.2, 0.5, 0.8])
+            }
+
+            // 3. Generate Proof
             setStatus('protecting')
 
             // Calculate expiry (e.g., 1 year from now)
@@ -128,7 +138,8 @@ export default function ImportVideoPage() {
                 },
                 body: JSON.stringify({
                     video_id: video.id,
-                    expires_at: expiresAt.toISOString()
+                    expires_at: expiresAt.toISOString(),
+                    perceptual_hashes
                 }),
             })
 
@@ -231,6 +242,22 @@ export default function ImportVideoPage() {
                         />
                     </div>
 
+                    <div>
+                        <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                            Original Video File (Required for Deepfake Protection)
+                        </label>
+                        <input
+                            type="file"
+                            accept="video/*"
+                            required
+                            onChange={(e) => setFile(e.target.files?.[0] || null)}
+                            className="w-full px-4 py-2.5 bg-surface-light border border-white/5 rounded-lg text-text-primary focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                        />
+                        <p className="mt-2 text-xs text-text-muted">
+                            Your video file never leaves your browser. It is used locally to compute cryptographic perceptual hashes that enable end-to-end tampering verification.
+                        </p>
+                    </div>
+
                     {/* Video Preview */}
                     {videoPreview && (
                         <div className="bg-surface-light/50 border border-white/5 rounded-xl overflow-hidden animate-in fade-in slide-in-from-top-2">
@@ -259,8 +286,16 @@ export default function ImportVideoPage() {
                             </span>
                         </div>
                         <div className="flex items-start gap-2">
-                            <div className={`mt-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${status === 'protecting' || status === 'success' ? 'bg-green-500 text-white' : 'bg-white/10 text-white/50'}`}>
+                            <div className={`mt-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${status === 'hashing' || status === 'protecting' || status === 'success' ? 'bg-green-500 text-white' : 'bg-white/10 text-white/50'}`}>
                                 2
+                            </div>
+                            <span className={status === 'hashing' ? 'text-primary font-medium' : ''}>
+                                Computing perceptual hashes locally...
+                            </span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                            <div className={`mt-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${status === 'protecting' || status === 'success' ? 'bg-green-500 text-white' : 'bg-white/10 text-white/50'}`}>
+                                3
                             </div>
                             <span className={status === 'protecting' ? 'text-primary font-medium' : ''}>
                                 Generating Ed25519 cryptographic proof...
@@ -268,7 +303,7 @@ export default function ImportVideoPage() {
                         </div>
                         <div className="flex items-start gap-2">
                             <div className={`mt-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${status === 'success' ? 'bg-green-500 text-white' : 'bg-white/10 text-white/50'}`}>
-                                3
+                                4
                             </div>
                             <span className={status === 'success' ? 'text-primary font-medium' : ''}>
                                 Saving to transparency log...

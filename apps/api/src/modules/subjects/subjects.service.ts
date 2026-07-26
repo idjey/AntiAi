@@ -18,7 +18,13 @@ export class SubjectsService {
   ) {}
 
   async resolve(dto: ResolveDto) {
-    const cacheKey = `resolve:${dto.hash ?? 'p:' + dto.perceptualHash}:${dto.mediaType.toLowerCase()}`;
+    // Generate a stable cache key
+    let cacheKey = `resolve:${dto.hash ?? 'p:none'}:${dto.mediaType.toLowerCase()}`;
+    if (dto.perceptualHashes && dto.perceptualHashes.length > 0) {
+      const pKey = dto.perceptualHashes.map(h => `${h.fraction}:${h.hash}`).join(',');
+      cacheKey = `resolve:${dto.hash ?? 'p:' + pKey}:${dto.mediaType.toLowerCase()}`;
+    }
+
     const cached = await this.redis.get(cacheKey);
     
     if (cached) {
@@ -27,9 +33,15 @@ export class SubjectsService {
       return parsed;
     }
 
-    const cryptoVerdict = dto.hash ? await this.crypto.lookupByHash(dto.hash) : null;
+    let cryptoVerdict = null;
+    if (dto.hash) {
+      cryptoVerdict = await this.crypto.lookupByHash(dto.hash);
+    }
+    if (!cryptoVerdict && dto.perceptualHashes && dto.perceptualHashes.length > 0) {
+      cryptoVerdict = await this.crypto.lookupByPerceptualHash(dto.perceptualHashes);
+    }
 
-    // 2. Exact byte-hash lookup (unique index â€” sub-ms)
+    // 2. Exact byte-hash lookup (unique index — sub-ms)
     if (dto.hash) {
       const subject = await this.prisma.subject.findUnique({
         where: { hash: dto.hash },
@@ -38,8 +50,11 @@ export class SubjectsService {
     }
 
     // 3. Perceptual nearest-neighbor (Option B scan)
-    if (dto.perceptualHash) {
-      const candidates = await this.phashRepo.nearest(dto.perceptualHash, dto.mediaType, 8);
+    // For Option B, we just take the first perceptual hash for the legacy subjects table nearest-neighbor if needed.
+    // The subject table hasn't been migrated to fractional matching yet, so we use the first hash.
+    if (dto.perceptualHashes && dto.perceptualHashes.length > 0) {
+      const firstHash = dto.perceptualHashes[0].hash;
+      const candidates = await this.phashRepo.nearest(firstHash, dto.mediaType, 8);
       if (candidates.length > 0) {
         return this.respond(candidates[0], 'perceptual', cacheKey, cryptoVerdict, {
           distance: candidates[0].distance,
@@ -48,13 +63,13 @@ export class SubjectsService {
       }
     }
 
-    // 4. Miss â€” create subject ONLY when we have the exact hash
+    // 4. Miss — create subject ONLY when we have the exact hash
     if (dto.hash) {
       try {
         const subject = await this.prisma.subject.create({
           data: {
             hash: dto.hash,
-            perceptualHash: dto.perceptualHash,
+            perceptualHash: dto.perceptualHashes ? dto.perceptualHashes[0].hash : null,
             mediaType: dto.mediaType,
           },
         });
