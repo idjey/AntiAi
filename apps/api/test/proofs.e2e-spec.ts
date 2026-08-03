@@ -122,7 +122,7 @@ describe('ProofsController (e2e)', () => {
       await prismaService.video.deleteMany({ where: { id: videoId } });
       await prismaService.channel.deleteMany({ where: { id: channelId } });
       await prismaService.subscription.deleteMany({ where: { userId } });
-      await prismaService.user.delete({ where: { id: userId } });
+      await prismaService.user.deleteMany({ where: { id: userId } });
     }
     await app.close();
   });

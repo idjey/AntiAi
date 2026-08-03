@@ -41,7 +41,7 @@ describe('Public Directory Featuring Logic (e2e)', () => {
     prisma = new PrismaClient();
     
     await prisma.user.deleteMany({
-      where: { email: { contains: '@example.com' } }
+      where: { email: { in: ['elite-dir-test@example.com', 'enterprise-dir@example.com', 'trending-dir@example.com'] } }
     });
   });
 
