@@ -45,19 +45,35 @@ describe('SSRF Guard', () => {
   });
 });
 
-import * as undici from 'undici';
+import * as https from 'https';
+import { EventEmitter } from 'events';
 
 describe('Media Fetcher SSRF and Redirects', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
+  function mockHttpsRequest(statusCode: number, headers: any) {
+    return jest.spyOn(https, 'request').mockImplementation((url, options) => {
+      const req = new EventEmitter() as any;
+      req.end = jest.fn();
+      req.destroy = jest.fn();
+      
+      setTimeout(() => {
+        const res = new EventEmitter() as any;
+        res.statusCode = statusCode;
+        res.headers = headers;
+        res.resume = jest.fn();
+        req.emit('response', res);
+      }, 0);
+      
+      return req;
+    });
+  }
+
   it('blocks redirect to internal IP (redirect laundering)', async () => {
-    jest.spyOn(undici, 'request').mockResolvedValueOnce({
-      statusCode: 302,
-      headers: { location: 'https://10.0.0.5/admin' },
-      body: { dump: jest.fn() }
-    } as any);
+    mockHttpsRequest(302, { location: 'https://10.0.0.5/admin' });
 
     const mockDnsLookup = async () => [{ address: '8.8.8.8', family: 4 }];
     
@@ -66,11 +82,7 @@ describe('Media Fetcher SSRF and Redirects', () => {
   });
 
   it('blocks redirect to metadata IP', async () => {
-    jest.spyOn(undici, 'request').mockResolvedValueOnce({
-      statusCode: 301,
-      headers: { location: 'http://169.254.169.254/latest/meta-data' },
-      body: { dump: jest.fn() }
-    } as any);
+    mockHttpsRequest(301, { location: 'http://169.254.169.254/latest/meta-data' });
 
     const mockDnsLookup = async () => [{ address: '8.8.8.8', family: 4 }];
     
@@ -79,11 +91,7 @@ describe('Media Fetcher SSRF and Redirects', () => {
   });
 
   it('blocks redirect laundering through DNS rebinding (localhost)', async () => {
-    jest.spyOn(undici, 'request').mockResolvedValueOnce({
-      statusCode: 307,
-      headers: { location: 'https://evil-redirect.com' },
-      body: { dump: jest.fn() }
-    } as any);
+    mockHttpsRequest(307, { location: 'https://evil-redirect.com' });
 
     const mockDnsLookup = async (host: string) => {
       if (host === 'youtube.com') return [{ address: '8.8.8.8', family: 4 }];
