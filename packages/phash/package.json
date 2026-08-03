@@ -10,7 +10,7 @@
         "./browser": "./dist/browser.js"
     },
     "scripts": {
-        "build": "tsc",
+        "build": "tsc && esbuild src/browser.ts --bundle --outfile=dist/extract.bundle.js --global-name=PhashExtract --format=iife",
         "clean": "rimraf dist"
     },
     "dependencies": {
@@ -21,6 +21,7 @@
     "devDependencies": {
         "@playwright/test": "^1.62.0",
         "@types/node": "^20.11.0",
+        "esbuild": "^0.18.20",
         "playwright": "^1.62.0",
         "rimraf": "^5.0.5",
         "typescript": "^5.3.3"
