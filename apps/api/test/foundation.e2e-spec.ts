@@ -6,6 +6,30 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import nacl from 'tweetnacl';
 import { signAttestation, deriveKeyId } from '@antiai/attestation-core';
 
+// Mock ioredis, bullmq, bull to avoid connection errors during e2e tests
+jest.mock('ioredis', () => {
+  const RedisMock = require('ioredis-mock');
+  RedisMock.Redis = RedisMock;
+  RedisMock.default = RedisMock;
+  return RedisMock;
+});
+
+jest.mock('bullmq', () => ({
+  Queue: class { add = jest.fn(); on = jest.fn(); close = jest.fn(); },
+  Worker: class { on = jest.fn(); close = jest.fn(); },
+  QueueEvents: class { on = jest.fn(); close = jest.fn(); },
+}));
+
+jest.mock('bull', () => {
+  return class {
+    constructor() {}
+    add = jest.fn();
+    on = jest.fn();
+    process = jest.fn();
+    close = jest.fn();
+  };
+});
+
 describe('Foundation (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
