@@ -45,67 +45,52 @@ describe('SSRF Guard', () => {
   });
 });
 
+import * as undici from 'undici';
+
 describe('Media Fetcher SSRF and Redirects', () => {
-  let server: Server;
-  let serverUrl: string;
-  let requests: { url: string }[] = [];
-
-  beforeAll((done) => {
-    server = createServer((req, res) => {
-      requests.push({ url: req.url || '' });
-      if (req.url === '/redirect-internal') {
-        res.writeHead(302, { location: 'https://10.0.0.5/admin' });
-        res.end();
-      } else if (req.url === '/redirect-metadata') {
-        res.writeHead(301, { location: 'http://169.254.169.254/latest/meta-data' });
-        res.end();
-      } else if (req.url === '/redirect-evil') {
-        res.writeHead(307, { location: 'https://evil-redirect.com' });
-        res.end();
-      } else {
-        res.writeHead(404);
-        res.end();
-      }
-    });
-    server.listen(0, '127.0.0.1', () => {
-      const port = (server.address() as AddressInfo).port;
-      serverUrl = `http://127.0.0.1:${port}`;
-      done();
-    });
-  });
-
-  afterAll((done) => {
-    server.close(done);
-  });
-
   beforeEach(() => {
-    requests = [];
+    jest.clearAllMocks();
   });
 
   it('blocks redirect to internal IP (redirect laundering)', async () => {
-    // The initial DNS lookup for the first URL resolves to the local server
-    const mockDnsLookup = async () => [{ address: '127.0.0.1', family: 4 as const }];
+    jest.spyOn(undici, 'request').mockResolvedValueOnce({
+      statusCode: 302,
+      headers: { location: 'https://10.0.0.5/admin' },
+      body: { dump: jest.fn() }
+    } as any);
+
+    const mockDnsLookup = async () => [{ address: '8.8.8.8', family: 4 }];
     
-    await expect(fetchPinned(`${serverUrl}/redirect-internal`, mockDnsLookup as any))
+    await expect(fetchPinned('https://youtube.com/redirect-internal', mockDnsLookup as any))
       .rejects.toThrow(new SsrfViolation('HOST_NOT_ALLOWLISTED', { host: '10.0.0.5' }));
   });
 
   it('blocks redirect to metadata IP', async () => {
-    const mockDnsLookup = async () => [{ address: '127.0.0.1', family: 4 as const }];
+    jest.spyOn(undici, 'request').mockResolvedValueOnce({
+      statusCode: 301,
+      headers: { location: 'http://169.254.169.254/latest/meta-data' },
+      body: { dump: jest.fn() }
+    } as any);
+
+    const mockDnsLookup = async () => [{ address: '8.8.8.8', family: 4 }];
     
-    await expect(fetchPinned(`${serverUrl}/redirect-metadata`, mockDnsLookup as any))
+    await expect(fetchPinned('https://youtube.com/redirect-metadata', mockDnsLookup as any))
       .rejects.toThrow(new SsrfViolation('PROTOCOL', { protocol: 'http:' }));
   });
 
   it('blocks redirect laundering through DNS rebinding (localhost)', async () => {
-    // Initial request resolves to 127.0.0.1 (our test server)
-    // The redirect goes to evil-redirect.com, which we simulate resolving to localhost
+    jest.spyOn(undici, 'request').mockResolvedValueOnce({
+      statusCode: 307,
+      headers: { location: 'https://evil-redirect.com' },
+      body: { dump: jest.fn() }
+    } as any);
+
     const mockDnsLookup = async (host: string) => {
-      if (host === 'evil-redirect.com') return [{ address: '127.0.0.1', family: 4 as const }];
-      return [{ address: '127.0.0.1', family: 4 as const }];
+      if (host === 'youtube.com') return [{ address: '8.8.8.8', family: 4 }];
+      return [{ address: '127.0.0.1', family: 4 }];
     };
     
-    await expect(fetchPinned(`${serverUrl}/redirect-evil`, mockDnsLookup as any))
+    await expect(fetchPinned('https://youtube.com/redirect-evil', mockDnsLookup as any))
       .rejects.toThrow(new SsrfViolation('HOST_NOT_ALLOWLISTED', { host: 'evil-redirect.com' }));
   });
 });
