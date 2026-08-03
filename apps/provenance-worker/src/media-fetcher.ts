@@ -22,8 +22,13 @@ export async function fetchPinned(rawUrl: string, lookupFn?: DnsLookup): Promise
     
     // Connect to the pinned IP; present the original hostname for TLS SNI + Host header.
     const agentOptions = {
-      lookup: (_hostname: string, _options: any, cb: (err: NodeJS.ErrnoException | null, address: string, family: number) => void) => {
-        cb(null, pinnedIp, pinnedIp.includes(':') ? 6 : 4);
+      lookup: (_hostname: string, options: any, cb: any) => {
+        const family = pinnedIp.includes(':') ? 6 : 4;
+        if (options && options.all) {
+          cb(null, [{ address: pinnedIp, family }]);
+        } else {
+          cb(null, pinnedIp, family);
+        }
       },
       ...(isHttps && process.env.NODE_ENV === 'test' && (global as any).TEST_CA_CERT ? { ca: (global as any).TEST_CA_CERT } : {})
     };

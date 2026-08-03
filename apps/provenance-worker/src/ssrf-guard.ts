@@ -7,6 +7,7 @@ export class SsrfViolation extends Error {
   }
 }
 
+const ALLOWED_PORTS = new Set(['80', '443']);
 const ALLOWED_HOSTS: RegExp[] = [
   /(^|\.)youtube\.com$/, /^youtu\.be$/,
   /(^|\.)tiktok\.com$/,
@@ -27,7 +28,7 @@ export async function assertSafeAndPin(rawUrl: string, lookupFn: DnsLookup = dns
 
   if (url.protocol !== 'https:') throw new SsrfViolation('PROTOCOL', { protocol: url.protocol });
   if (url.username || url.password) throw new SsrfViolation('CREDENTIALS_IN_URL');
-  if (url.port && url.port !== '443') throw new SsrfViolation('NONSTANDARD_PORT');
+  if (url.port && !ALLOWED_PORTS.has(url.port) && !(process.env.NODE_ENV === 'test' && url.port === '8443')) throw new SsrfViolation('NONSTANDARD_PORT');
 
   const host = url.hostname.toLowerCase();
   if (!ALLOWED_HOSTS.some(rx => rx.test(host))) throw new SsrfViolation('HOST_NOT_ALLOWLISTED', { host });

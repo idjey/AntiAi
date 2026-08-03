@@ -29,6 +29,7 @@ import { TasksModule } from './modules/tasks/tasks.module';
 import { VouchesModule } from './modules/vouches/vouches.module';
 import { CanariesModule } from './modules/canaries/canaries.module';
 import { IdentityModule } from './modules/identity/identity.module';
+import { OrganizationsModule } from './modules/organizations/organizations.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { HealthController } from './health.controller';
@@ -99,6 +100,7 @@ import { HealthController } from './health.controller';
         VouchesModule,
         CanariesModule,
         IdentityModule,
+        OrganizationsModule,
     ],
     providers: [
         {
