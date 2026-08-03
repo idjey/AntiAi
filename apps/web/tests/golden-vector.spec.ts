@@ -11,6 +11,9 @@ test.describe('Browser Cryptography Integrity', () => {
 
     // 2. Navigate to hidden test page
     await page.goto('/test/golden-vector');
+    
+    // Wait for React hydration to mount the global function
+    await page.waitForFunction('typeof window.runGoldenVectorTest === "function"');
 
     // 3. Execute signing in the browser engine
     const result = await page.evaluate(async ({ secretKey, payload }) => {
@@ -45,6 +48,7 @@ test.describe('Browser Cryptography Integrity', () => {
 
     // Execute hashFile in the browser
     // We pass the raw array across the Playwright bridge and construct the Blob there
+    await page.waitForFunction('typeof window.runHashFileTest === "function"');
     const result = await page.evaluate(async (size) => {
       const arr = new Uint8Array(size);
       for(let i=0; i<size; i++) arr[i] = i % 256;

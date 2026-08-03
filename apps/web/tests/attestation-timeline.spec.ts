@@ -37,18 +37,18 @@ test.describe('Attestation Timeline', () => {
     // 2. A tampered item with one flipped byte in the signature (red path)
     // 3. A legacy item with no payloadB64 (unavailable path)
     
-    await page.route('**/v1/subjects/*', async route => {
-      if (route.request().url().includes('/attestations')) return route.fallback();
-      if (route.request().url().includes('/crypto-proof')) {
-        return route.fulfill({ status: 404, json: null });
-      }
-      return route.fulfill({
+    await page.route('**/v1/subjects/subject-hash-123', async route => {
+      await route.fulfill({
         status: 200,
         json: { hash: 'subject-hash-123', perceptualHash: null, mediaType: 'VIDEO', attestationCount: 3 }
       });
     });
 
-    await page.route('**/v1/subjects/*/attestations*', async route => {
+    await page.route('**/v1/subjects/subject-hash-123/crypto-proof', async route => {
+      await route.fulfill({ status: 404, json: null });
+    });
+
+    await page.route('**/v1/subjects/subject-hash-123/attestations', async route => {
       await route.fulfill({
         status: 200,
         json: {
@@ -112,10 +112,15 @@ test.describe('Attestation Timeline', () => {
     await page.goto('http://localhost:3000/v/subject-hash-123');
 
     // Wait for the timeline to render 3 items
-    await expect(page.getByRole('heading', { name: 'Community Attestations' })).toBeVisible();
-    await expect(page.getByText('provenance_found')).toBeVisible();
-    await expect(page.getByText('artifact_flag')).toBeVisible();
-    await expect(page.getByText('context_note')).toBeVisible();
+    try {
+      await expect(page.getByRole('heading', { name: 'Community Attestations' })).toBeVisible({ timeout: 5000 });
+    } catch (e) {
+      console.log('Page content:', await page.content());
+      throw e;
+    }
+    await expect(page.getByText('provenance_found').first()).toBeVisible();
+    await expect(page.getByText('artifact_flag').first()).toBeVisible();
+    await expect(page.getByText('context_note').first()).toBeVisible();
 
     // Verify item 1 (Valid)
     const btnValid = page.locator('div').filter({ hasText: 'provenance_found' }).getByRole('button', { name: 'Verify Signature' }).first();
