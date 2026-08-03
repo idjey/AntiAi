@@ -26,20 +26,6 @@ jest.mock('ipaddr.js', () => {
   };
 });
 
-jest.mock('undici', () => {
-  const actual = jest.requireActual('undici');
-  return {
-    ...actual,
-    Agent: class MockAgent extends actual.Agent {
-      constructor(opts: any) {
-        if (opts && opts.connect) {
-          opts.connect.ca = (global as any).TEST_CA_CERT;
-        }
-        super(opts);
-      }
-    }
-  };
-});
 
 describe('ProvenanceWorker (e2e)', () => {
   let app: any;
