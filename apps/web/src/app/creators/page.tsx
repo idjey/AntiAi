@@ -15,6 +15,7 @@ export const metadata: Metadata = {
 };
 
 export default async function CreatorsDirectoryPage() {
+    let featured = [];
     let trending = [];
     let recent = [];
 
@@ -24,6 +25,7 @@ export default async function CreatorsDirectoryPage() {
         });
         if (res.ok) {
             const data = await res.json();
+            featured = data.featured || [];
             trending = data.trending || [];
             recent = data.recent || [];
         }
@@ -32,6 +34,6 @@ export default async function CreatorsDirectoryPage() {
     }
 
     return (
-        <CreatorsDirectoryClient initialTrending={trending} initialRecent={recent} />
+        <CreatorsDirectoryClient initialFeatured={featured} initialTrending={trending} initialRecent={recent} />
     );
 }

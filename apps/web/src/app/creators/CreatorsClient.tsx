@@ -29,11 +29,12 @@ const itemVariants = {
 }
 
 interface Props {
+    initialFeatured: any[];
     initialTrending: any[];
     initialRecent: any[];
 }
 
-export default function CreatorsDirectoryClient({ initialTrending, initialRecent }: Props) {
+export default function CreatorsDirectoryClient({ initialFeatured, initialTrending, initialRecent }: Props) {
     const [searchQuery, setSearchQuery] = useState('')
     const [activeCategory, setActiveCategory] = useState('All')
     const [isFilterOpen, setIsFilterOpen] = useState(false)
@@ -46,6 +47,7 @@ export default function CreatorsDirectoryClient({ initialTrending, initialRecent
         return matchesSearch && matchesCategory
     })
 
+    const filteredFeatured = filterList(initialFeatured)
     const filteredTrending = filterList(initialTrending)
     const filteredRecent = filterList(initialRecent)
 
@@ -156,7 +158,7 @@ export default function CreatorsDirectoryClient({ initialTrending, initialRecent
             {/* --- Main Content Grid --- */}
             <div className="container-custom max-w-6xl px-4 relative z-10">
 
-                {filteredTrending.length === 0 && filteredRecent.length === 0 ? (
+                {filteredFeatured.length === 0 && filteredTrending.length === 0 && filteredRecent.length === 0 ? (
                     <motion.div
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                         className="text-center py-20"
@@ -177,6 +179,28 @@ export default function CreatorsDirectoryClient({ initialTrending, initialRecent
                     <div className="space-y-16">
 
                         {/* Featured Section */}
+                        {filteredFeatured.length > 0 && (
+                            <motion.section
+                                variants={containerVariants}
+                                initial="hidden"
+                                animate="visible"
+                            >
+                                <div className="flex items-center gap-3 mb-8">
+                                    <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+                                        <CheckCircle2 className="w-4 h-4 text-text-primary" />
+                                    </div>
+                                    <h2 className="text-2xl font-semibold text-text-primary tracking-tight">Featured Creators</h2>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {filteredFeatured.map(creator => (
+                                        <CreatorCard key={creator.id} creator={creator} featured />
+                                    ))}
+                                </div>
+                            </motion.section>
+                        )}
+
+                        {/* Trending Section */}
                         {filteredTrending.length > 0 && (
                             <motion.section
                                 variants={containerVariants}
@@ -192,7 +216,7 @@ export default function CreatorsDirectoryClient({ initialTrending, initialRecent
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {filteredTrending.map(creator => (
-                                        <CreatorCard key={creator.id} creator={creator} featured />
+                                        <CreatorCard key={creator.id} creator={creator} />
                                     ))}
                                 </div>
                             </motion.section>
@@ -247,7 +271,7 @@ function CreatorCard({ creator, featured = false, compact = false }: { creator: 
                         {/* Avatar Wrapper with verification ring */}
                         <div className="relative">
                             <div className="absolute inset-0 rounded-full border-2 border-primary/30 group-hover:border-primary transition-colors duration-500 scale-105" />
-                            <div className={`relative rounded-full overflow-hidden ${featured ? 'w-20 h-20' : 'w-16 h-16'}`}>
+                            <div className={`relative rounded-full overflow-hidden ${featured ? 'w-20 h-20 border-2 border-white/20' : 'w-16 h-16'}`}>
                                 <img
                                     src={creator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || creator.handle || 'Creator')}&background=random`}
                                     alt={creator.name || `@${creator.handle}`}
@@ -260,7 +284,7 @@ function CreatorCard({ creator, featured = false, compact = false }: { creator: 
                         </div>
 
                         <div>
-                            <h3 className={`font-semibold text-text-primary group-hover:text-primary transition-colors line-clamp-1 ${featured ? 'text-xl' : 'text-lg'}`}>
+                            <h3 className={`font-semibold text-text-primary group-hover:text-primary transition-colors line-clamp-1 ${featured ? 'text-xl font-bold tracking-tight' : 'text-lg'}`}>
                                 {creator.name}
                             </h3>
                             <p className="text-primary/80 font-medium text-sm mt-0.5">@{creator.handle}</p>
@@ -291,10 +315,9 @@ function CreatorCard({ creator, featured = false, compact = false }: { creator: 
                             )}
                         </div>
 
-                        {featured && (
-                            <div className="flex items-center gap-1.5 text-xs font-medium text-text-muted">
-                                <span className="w-1.5 h-1.5 rounded-full bg-green-500/80 animate-pulse" />
-                                {creator.followers} followers
+                        {creator.premiumBadge && (
+                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-text-primary uppercase tracking-wider px-2 py-1 bg-white/10 rounded-sm">
+                                <ShieldCheck className="w-3 h-3 text-primary" /> Featured
                             </div>
                         )}
                     </div>

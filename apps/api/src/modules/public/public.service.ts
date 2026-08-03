@@ -307,32 +307,57 @@ export class PublicService {
 
         const viewCountMap = new Map(viewCounts.map(v => [v.creatorId, v._count._all]));
 
-        // Fetch candidates for trending (either featured OR have had views)
-        const trendingCandidates = await this.prisma.creatorProfile.findMany({
+        // 2. Featured Creators
+        // Manually curated (isFeatured) or automatically featured due to 'elite' subscription (excluding 'enterprise')
+        const featuredCandidates = await this.prisma.creatorProfile.findMany({
             where: {
                 isPublic: true,
                 categories: categoryFilter,
                 OR: [
                     { isFeatured: true },
-                    { id: { in: Array.from(viewCountMap.keys()) } }
+                    {
+                        user: {
+                            subscription: {
+                                plan: 'elite'
+                            }
+                        }
+                    }
                 ]
             }
         });
 
-        // Sort candidates:
-        // 1. isFeatured always on top
-        // 2. Highest view count
-        // 3. Fallback to createdAt 
+        const featuredIds = new Set(featuredCandidates.map(f => f.id));
+
+        const featured = featuredCandidates.map(p => ({
+            id: p.id,
+            name: p.displayName || p.handle,
+            handle: p.handle,
+            avatar: p.avatarUrl,
+            categories: p.categories,
+            bio: p.bio,
+            followers: '0',
+            verifiedDate: p.createdAt.toISOString(),
+            premiumBadge: true
+        }));
+
+        // 3. Trending Organic Profiles
+        // Strictly based on view counts
+        const organicIds = Array.from(viewCountMap.keys()).filter(id => !featuredIds.has(id));
+
+        const trendingCandidates = await this.prisma.creatorProfile.findMany({
+            where: {
+                isPublic: true,
+                categories: categoryFilter,
+                id: { in: organicIds }
+            }
+        });
+
+        // Sort by views
         const trending = trendingCandidates
             .sort((a, b) => {
-                if (a.isFeatured && !b.isFeatured) return -1;
-                if (!a.isFeatured && b.isFeatured) return 1;
-
                 const viewsA = viewCountMap.get(a.id) || 0;
                 const viewsB = viewCountMap.get(b.id) || 0;
-                if (viewsA !== viewsB) return viewsB - viewsA;
-
-                return b.createdAt.getTime() - a.createdAt.getTime();
+                return viewsB - viewsA;
             })
             .slice(0, 6)
             .map(p => ({
@@ -344,12 +369,12 @@ export class PublicService {
                 bio: p.bio,
                 followers: '0',
                 verifiedDate: p.createdAt.toISOString(),
-                featured: true
+                premiumBadge: false
             }));
 
         // If we don't have enough trending, pad with the newest profiles
         if (trending.length < 6) {
-            const excludeIds = trending.map(t => t.id);
+            const excludeIds = [...featuredIds, ...trending.map(t => t.id)];
             const fallbackProfiles = await this.prisma.creatorProfile.findMany({
                 where: {
                     isPublic: true,
@@ -369,11 +394,12 @@ export class PublicService {
                 bio: p.bio,
                 followers: '0',
                 verifiedDate: p.createdAt.toISOString(),
-                featured: true
+                premiumBadge: false
             })));
         }
 
         return {
+            featured,
             trending,
             recent
         };
