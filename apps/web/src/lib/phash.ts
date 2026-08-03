@@ -1,5 +1,5 @@
 import blockhash from 'blockhash-core';
-import { downscaleBoxFilter } from '@antiai/phash/dist/resize';
+import { downscaleBoxFilter } from '@antiai/phash/browser';
 
 export interface FractionalHash {
     fraction: number;
