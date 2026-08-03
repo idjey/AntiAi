@@ -42,6 +42,7 @@ export default async function CategoryDirectoryPage({ params }: Props) {
         notFound();
     }
 
+    let featured = [];
     let trending = [];
     let recent = [];
 
@@ -51,6 +52,7 @@ export default async function CategoryDirectoryPage({ params }: Props) {
         });
         if (res.ok) {
             const data = await res.json();
+            featured = data.featured || [];
             trending = data.trending || [];
             recent = data.recent || [];
         }
@@ -59,6 +61,6 @@ export default async function CategoryDirectoryPage({ params }: Props) {
     }
 
     return (
-        <CreatorsDirectoryClient initialTrending={trending} initialRecent={recent} />
+        <CreatorsDirectoryClient initialFeatured={featured} initialTrending={trending} initialRecent={recent} />
     );
 }
