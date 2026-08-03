@@ -118,7 +118,6 @@ describe('ProofsController (e2e)', () => {
 
   afterAll(async () => {
     if (prismaService) {
-      await prismaService.proofPerceptualHash.deleteMany({ where: { proof: { channelId } } });
       await prismaService.proof.deleteMany({ where: { channelId } });
       await prismaService.video.deleteMany({ where: { id: videoId } });
       await prismaService.channel.deleteMany({ where: { id: channelId } });
