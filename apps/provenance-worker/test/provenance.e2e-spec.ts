@@ -64,8 +64,8 @@ describe('ProvenanceWorker (e2e)', () => {
     });
 
     await new Promise<void>((resolve, reject) => {
-      server.listen(443, '127.0.0.1', () => {
-        serverPort = 443;
+      server.listen(8443, '127.0.0.1', () => {
+        serverPort = 8443;
         resolve();
       });
       server.on('error', reject);
@@ -141,7 +141,7 @@ describe('ProvenanceWorker (e2e)', () => {
         subject: { connect: { id: subject.id } },
         attester: { connect: { id: user.id } },
         claimType: 'PROVENANCE_FOUND',
-        claimPayload: { sourceUrl: `https://youtube.com/test-video` },
+        claimPayload: { sourceUrl: `https://youtube.com:8443/test-video` },
         payloadHash: 'hash-' + randomUUID(),
         signature: 'mock-sig',
         status: 'PENDING',
