@@ -114,6 +114,16 @@ export class ProofsService {
         // Sign the proof — expiry is server-computed from plan limits
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + limits.proofExpiryDays);
+        let perceptualHashes: Record<string, string> | undefined = undefined;
+        let perceptualHashVersion: number | undefined = undefined;
+        if (dto.perceptual_hashes && dto.perceptual_hashes.length > 0) {
+            perceptualHashes = {};
+            for (const ph of dto.perceptual_hashes) {
+                perceptualHashes[ph.fraction.toString()] = ph.hash;
+                perceptualHashVersion = ph.version; // They should all have the same version
+            }
+        }
+
         let signedProof;
         try {
             signedProof = await signProof({
@@ -123,7 +133,8 @@ export class ProofsService {
                 expiresAt,
                 privateKeyB64,
                 contentHash: dto.content_hash,
-                perceptualHash: dto.perceptual_hash,
+                perceptualHashes,
+                perceptualHashVersion
             });
         } catch (error) {
             console.error('Crypto Signing Error:', error);
@@ -154,7 +165,7 @@ export class ProofsService {
             for (const phash of dto.perceptual_hashes) {
                 await this.prisma.$executeRaw`
                     INSERT INTO proof_perceptual_hashes (id, proof_id, anchor_fraction, phash_bits, version)
-                    VALUES (gen_random_uuid(), ${proof.id}::uuid, ${phash.fraction}, ${phash.hash}::bit(64), ${phash.version})
+                    VALUES (gen_random_uuid(), ${proof.id}::uuid, ${phash.fraction}, ('x' || ${phash.hash})::bit(64), ${phash.version})
                 `;
             }
         }

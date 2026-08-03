@@ -16,7 +16,7 @@ export interface FractionalHash {
  * @param videoSource A URL, File, or Blob representing the video.
  * @returns Array of fractional hashes.
  */
-export async function extractFractionalSequence(videoSource: string | Blob): Promise<FractionalHash[]> {
+export async function extractFractionalSequence(videoSource: string | Blob, fractions: number[] = PHASH_CONSTANTS.ANCHOR_SETS[PHASH_CONSTANTS.VERSION as keyof typeof PHASH_CONSTANTS.ANCHOR_SETS]): Promise<FractionalHash[]> {
     return new Promise((resolve, reject) => {
         const video = document.createElement('video');
         video.muted = true;
@@ -50,7 +50,7 @@ export async function extractFractionalSequence(videoSource: string | Blob): Pro
             const results: FractionalHash[] = [];
 
             try {
-                for (const fraction of PHASH_CONSTANTS.ANCHOR_FRACTIONS) {
+                for (const fraction of fractions) {
                     const targetTime = video.duration * fraction;
                     console.log(`[PhashExtract] Seeking to ${targetTime} (fraction ${fraction} of ${video.duration})`);
                     await seekVideo(video, targetTime);

@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client';
 import path from 'path';
 import fs from 'fs';
 import { execSync } from 'child_process';
+import { signProof } from '../../../packages/crypto/src/signing';
+import { CryptoLookupService } from '../../api/src/modules/subjects/services/crypto-lookup.service';
 
 test.describe('End-to-End Perceptual Lifecycle', () => {
   const prisma = new PrismaClient();
@@ -102,10 +104,30 @@ test.describe('End-to-End Perceptual Lifecycle', () => {
       ON CONFLICT (id) DO NOTHING
     `;
     
-    // Insert mock proof
+    // Format perceptual hashes for signing (object keyed by fraction)
+    const perceptualHashes: Record<string, string> = {};
+    let perceptualHashVersion = 1;
+    for (const ph of creatorHashes) {
+      perceptualHashes[ph.fraction.toString()] = ph.hash;
+      perceptualHashVersion = ph.version;
+    }
+
+    // 3. Issue Proof via real signProof implementation
+    const signedProof = await signProof({
+      kid: 'test-kid',
+      youtubeVideoId: 'vid123',
+      youtubeChannelId: 'UC123',
+      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      privateKeyB64: Buffer.from('test-private-key-mock-that-is-at-least-32-bytes-long-for-ed25519-so-lets-pad-it-out-to-be-safe-12345678901234567890123456789012').toString('base64'),
+      contentHash: undefined,
+      perceptualHashes,
+      perceptualHashVersion
+    });
+
+    // Insert mock proof (simulating ProofsService DB commit)
     await prisma.$executeRaw`
       INSERT INTO proofs (id, video_id, channel_id, kid, payload_json, payload_b64, signature_b64, expires_at, status)
-      VALUES (${proofId}::uuid, ${videoId}::uuid, ${channelId}::uuid, 'test-kid', '{}', '', '', NOW() + INTERVAL '1 year', 'active')
+      VALUES (${proofId}::uuid, ${videoId}::uuid, ${channelId}::uuid, ${signedProof.kid}, ${signedProof.payload_json}::jsonb, ${signedProof.payload_b64}, ${signedProof.signature_b64}, NOW() + INTERVAL '1 year', 'active')
     `;
 
     // Insert perceptual hashes
@@ -117,7 +139,7 @@ test.describe('End-to-End Perceptual Lifecycle', () => {
     }
 
     // 4. Platform Re-timing: Navigate to viewer page (using localhost to avoid cross-origin canvas tainting)
-    await page.goto('http://localhost/');
+    await page.goto('about:blank');
     await page.addScriptTag({ path: extractBundlePath });
 
     // Execute real extraction in the browser context on the transcoded video
@@ -130,30 +152,24 @@ test.describe('End-to-End Perceptual Lifecycle', () => {
 
     console.log('Viewer hashes:', viewerHashes);
 
-    const maxDistance = 12;
-    let matchedCount = 0;
+    const cryptoLookup = new CryptoLookupService(prisma as any);
+    const lookupResult = await cryptoLookup.lookupByPerceptualHash(viewerHashes, 12, 2);
+    
+    // Manually query the distances to print them out for the test log
     const distances: number[] = [];
-
-    for (const vh of viewerHashes) {
-      const matches = await prisma.$queryRaw<any[]>`
-        SELECT proof_id, anchor_fraction, bit_count(phash_bits # ('x' || ${vh.hash})::bit(64)) as distance
+    for (let i = 0; i < viewerHashes.length; i++) {
+      const vh = viewerHashes[i];
+      const res = await prisma.$queryRaw<any[]>`
+        SELECT bit_count(phash_bits # ('x' || ${vh.hash})::bit(64)) as distance
         FROM proof_perceptual_hashes
-        WHERE version = ${vh.version} 
-          AND anchor_fraction = ${vh.fraction}
+        WHERE proof_id = ${proofId}::uuid AND anchor_fraction = ${vh.fraction}
       `;
-      
-      if (matches.length > 0) {
-        // Output distance for debugging regardless of threshold
-        distances.push(matches[0].distance);
-        if (matches[0].distance <= maxDistance) {
-          matchedCount++;
-        }
-      }
+      if (res.length > 0) distances.push(Number(res[0].distance));
     }
-
-    console.log(`Matched! Found ${matchedCount} out of 3 matching anchors.`);
-    console.log(`Actual hamming distances for matches: ${distances.join(', ')}`);
-
-    expect(matchedCount).toBeGreaterThanOrEqual(2);
+    console.log('Hamming Distances:', distances);
+    console.log('Lookup Result:', lookupResult);
+    expect(lookupResult).not.toBeNull();
+    expect(lookupResult?.status).toBe('VERIFIED');
+    expect(lookupResult?.channel?.name).toBe('Test Channel');
   });
 });

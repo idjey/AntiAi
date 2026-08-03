@@ -24,7 +24,8 @@ export interface ProofPayload {
     youtube_video_id: string;
     youtube_channel_id: string;
     content_hash?: string;
-    perceptual_hash?: string;
+    perceptual_hashes?: Record<string, string>;
+    perceptual_hash_version?: number;
 }
 
 export interface SignedProof {
@@ -100,7 +101,8 @@ export interface BuildPayloadOptions {
     youtubeChannelId: string;
     expiresAtUnix: number;
     contentHash?: string;
-    perceptualHash?: string;
+    perceptualHashes?: Record<string, string>;
+    perceptualHashVersion?: number;
 }
 
 /**
@@ -111,7 +113,7 @@ export function buildCanonicalPayload(options: BuildPayloadOptions): {
     canonicalJson: string;
     payloadBytes: Uint8Array;
 } {
-    const { kid, youtubeVideoId, youtubeChannelId, expiresAtUnix, contentHash, perceptualHash } = options;
+    const { kid, youtubeVideoId, youtubeChannelId, expiresAtUnix, contentHash, perceptualHashes, perceptualHashVersion } = options;
 
     if (!kid) throw new Error('kid is required');
     if (!youtubeVideoId) throw new Error('youtubeVideoId is required');
@@ -137,8 +139,9 @@ export function buildCanonicalPayload(options: BuildPayloadOptions): {
     if (contentHash) {
         payload.content_hash = contentHash;
     }
-    if (perceptualHash) {
-        payload.perceptual_hash = perceptualHash;
+    if (perceptualHashes) {
+        payload.perceptual_hashes = perceptualHashes;
+        payload.perceptual_hash_version = perceptualHashVersion;
     }
 
     // Canonical JSON string per JCS (stable key ordering, minimal formatting)
@@ -157,14 +160,15 @@ export interface SignProofOptions {
     expiresAt: Date | number;
     privateKeyB64: string;
     contentHash?: string;
-    perceptualHash?: string;
+    perceptualHashes?: Record<string, string>;
+    perceptualHashVersion?: number;
 }
 
 /**
  * Sign a proof for a video using Ed25519
  */
 export async function signProof(options: SignProofOptions): Promise<SignedProof> {
-    const { kid, youtubeVideoId, youtubeChannelId, expiresAt, privateKeyB64, contentHash, perceptualHash } = options;
+    const { kid, youtubeVideoId, youtubeChannelId, expiresAt, privateKeyB64, contentHash, perceptualHashes, perceptualHashVersion } = options;
 
     if (!privateKeyB64) {
         throw new Error('privateKeyB64 must be provided');
@@ -185,7 +189,8 @@ export async function signProof(options: SignProofOptions): Promise<SignedProof>
         youtubeChannelId,
         expiresAtUnix,
         contentHash,
-        perceptualHash,
+        perceptualHashes,
+        perceptualHashVersion,
     });
 
     const privBytes = fromBase64(privateKeyB64);

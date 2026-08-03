@@ -120,7 +120,9 @@ export default function ImportVideoPage() {
                 setStatus('hashing')
                 // Dynamically import to avoid SSR issues with canvas/video
                 const { extractFractionalSequence } = await import('@/lib/phash')
-                perceptual_hashes = await extractFractionalSequence(file, [0.2, 0.5, 0.8])
+                const { PHASH_CONSTANTS } = await import('@antiai/phash/dist/constants')
+                const currentFractions = PHASH_CONSTANTS.ANCHOR_SETS[PHASH_CONSTANTS.VERSION]
+                perceptual_hashes = await extractFractionalSequence(file, currentFractions)
             }
 
             // 3. Generate Proof

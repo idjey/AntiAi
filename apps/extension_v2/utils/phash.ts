@@ -35,7 +35,7 @@ function seekVideo(video: HTMLVideoElement, time: number): Promise<void> {
     });
 }
 
-export async function extractFractionalSequence(video: HTMLVideoElement): Promise<FractionalHash[]> {
+export async function extractFractionalSequence(video: HTMLVideoElement, fractions: number[]): Promise<FractionalHash[]> {
     if (!video.duration || !isFinite(video.duration)) {
         throw new Error("Invalid video duration");
     }
@@ -51,7 +51,7 @@ export async function extractFractionalSequence(video: HTMLVideoElement): Promis
     const originalTime = video.currentTime;
 
     try {
-        for (const fraction of PHASH_CONSTANTS.ANCHOR_FRACTIONS) {
+        for (const fraction of fractions) {
             const targetTime = video.duration * fraction;
             await seekVideo(video, targetTime);
             
