@@ -74,6 +74,9 @@ jobs:
           GOOGLE_CLIENT_ID: "mock-google-client-id"
           GOOGLE_CLIENT_SECRET: "mock-google-client-secret"
           GOOGLE_CALLBACK_URL: "http://localhost:4000/v1/auth/google/callback"
+          SIGNING_KEY_ID: "test-key-id"
+          SIGNING_PUBLIC_KEY_B64: "MCowBQYDK2VwAyEA0DX42yHDP8akoN3pg9LQzfYxQWxezPyvoR5BbTEXRYU="
+          SIGNING_PRIVATE_KEY_B64: "MC4CAQAwBQYDK2VwBCIEIHM11+KG4g2twRipTZFDRIKLbvq5wegfzCleaIaa+utp"
         run: npm run test -- --coverage && npm run test:e2e -w apps/api && npm run test:e2e -w apps/provenance-worker
 
       - name: Install Playwright Browsers and ffmpeg
@@ -90,6 +93,9 @@ jobs:
           GOOGLE_CLIENT_ID: "mock-google-client-id"
           GOOGLE_CLIENT_SECRET: "mock-google-client-secret"
           GOOGLE_CALLBACK_URL: "http://localhost:4000/v1/auth/google/callback"
+          SIGNING_KEY_ID: "test-key-id"
+          SIGNING_PUBLIC_KEY_B64: "MCowBQYDK2VwAyEA0DX42yHDP8akoN3pg9LQzfYxQWxezPyvoR5BbTEXRYU="
+          SIGNING_PRIVATE_KEY_B64: "MC4CAQAwBQYDK2VwBCIEIHM11+KG4g2twRipTZFDRIKLbvq5wegfzCleaIaa+utp"
         run: |
           # Start the backend API in the background
           cd apps/api
