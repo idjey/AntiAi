@@ -86,14 +86,14 @@ describe('Media Fetcher SSRF and Redirects', () => {
     // The initial DNS lookup for the first URL resolves to the local server
     const mockDnsLookup = async () => [{ address: '127.0.0.1', family: 4 as const }];
     
-    await expect(fetchPinned(`${serverUrl}/redirect-internal`, mockDnsLookup))
+    await expect(fetchPinned(`${serverUrl}/redirect-internal`, mockDnsLookup as any))
       .rejects.toThrow(new SsrfViolation('HOST_NOT_ALLOWLISTED', { host: '10.0.0.5' }));
   });
 
   it('blocks redirect to metadata IP', async () => {
     const mockDnsLookup = async () => [{ address: '127.0.0.1', family: 4 as const }];
     
-    await expect(fetchPinned(`${serverUrl}/redirect-metadata`, mockDnsLookup))
+    await expect(fetchPinned(`${serverUrl}/redirect-metadata`, mockDnsLookup as any))
       .rejects.toThrow(new SsrfViolation('PROTOCOL', { protocol: 'http:' }));
   });
 
@@ -105,7 +105,7 @@ describe('Media Fetcher SSRF and Redirects', () => {
       return [{ address: '127.0.0.1', family: 4 as const }];
     };
     
-    await expect(fetchPinned(`${serverUrl}/redirect-evil`, mockDnsLookup))
+    await expect(fetchPinned(`${serverUrl}/redirect-evil`, mockDnsLookup as any))
       .rejects.toThrow(new SsrfViolation('HOST_NOT_ALLOWLISTED', { host: 'evil-redirect.com' }));
   });
 });
