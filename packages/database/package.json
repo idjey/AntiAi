@@ -7,7 +7,7 @@
     "types": "./dist/index.d.ts",
     "scripts": {
         "generate": "npx prisma generate",
-        "push": "npx prisma db push",
+        "push": "node ./scripts/ensure-extensions.js && npx prisma db push",
         "migrate": "npx prisma migrate dev",
         "migrate:deploy": "npx prisma migrate deploy",
         "studio": "npx prisma studio",
@@ -21,6 +21,7 @@
     },
     "dependencies": {
         "@prisma/client": "^5.22.0",
-        "bcrypt": "^5.1.1"
+        "bcrypt": "^5.1.1",
+        "pg": "^8.22.0"
     }
 }
