@@ -55,19 +55,8 @@ export function VerdictDisplay({ cryptoProof, actualContentHash }: VerdictDispla
 
       // 2. Parse payload to get the signed content hash
       const payloadStr = new TextDecoder().decode(payloadBytes);
-      const payloadJson = JSON.parse(payloadStr);
-      // Depending on how the provenance worker formats the signed payload, usually it has `youtubeVideoId` or `hash`. 
-      // Wait! The user's spec says: "The signature matches the decoded payloadB64 AND the payload's hash matches the actual content hash"
-      // Wait, the payload might NOT contain the actual content hash directly. But `cryptoProof.contentHash` is returned by the server. 
-      // If the creator signed a youtube ID, the server linked it to the contentHash.
-      // But the spec says: "flip a byte in the content hash in the payloadB64... and assert TAMPERED"
-      // So the payload MUST contain the content hash? Wait, the Proof model payload doesn't contain the video bytes hash, it contains youtubeVideoId.
-      // Let's assume the payload JSON *does* contain `contentHash` or `subject.hash`. 
-      // If we flip a byte in payloadB64, `isValidSig` will be false!
-      // Wait, "mutate the content hash in the payloadB64 (but leave the signature valid)" - you can't mutate the payloadB64 without breaking the signature! 
-      // Ah! The user meant mutate the server-provided `cryptoProof.contentHash` or the UI's `actualContentHash` comparison.
-      
-      const signedHashMatches = cryptoProof.contentHash === actualContentHash;
+      const payloadObj = JSON.parse(payloadStr);
+      const signedHashMatches = payloadObj.subject?.hash === actualContentHash;
 
       if (!signedHashMatches) {
         return { 

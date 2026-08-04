@@ -47,6 +47,9 @@
         "tweetnacl": "^1.0.3"
     },
     "devDependencies": {
+        "@nestjs/common": "^10.4.22",
+        "@nestjs/core": "^10.4.22",
+        "@nestjs/testing": "^10.4.22",
         "@playwright/test": "^1.61.1",
         "@types/d3-geo": "^3.1.0",
         "@types/d3-scale": "^4.0.9",
@@ -56,6 +59,8 @@
         "@types/react-simple-maps": "^3.0.6",
         "autoprefixer": "^10.4.17",
         "postcss": "^8.4.35",
+        "reflect-metadata": "^0.2.2",
+        "rxjs": "^7.8.2",
         "tailwindcss": "^3.4.1",
         "typescript": "^5.3.3"
     }

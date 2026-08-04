@@ -17,10 +17,24 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: process.env.CI ? 'npm run start' : 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  webServer: [
+    {
+      command: 'cd ../api && npx nest start',
+      url: 'http://localhost:4000/v1/subjects/resolve',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120000,
+      env: {
+        GOOGLE_CLIENT_ID: 'mock-client-id',
+        GOOGLE_CLIENT_SECRET: 'mock-client-secret',
+        PORT: '4000',
+        DATABASE_URL: 'postgresql://postgres:3190@localhost:5432/antiai?schema=public'
+      },
+    },
+    {
+      command: process.env.CI ? 'npx next start' : 'npx next dev',
+      url: 'http://localhost:3000',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120000,
+    }
+  ],
 });

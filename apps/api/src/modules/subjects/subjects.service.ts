@@ -182,7 +182,7 @@ export class SubjectsService {
   }
 
   async getCryptoProof(hash: string) {
-    const proof = await this.prisma.proof.findFirst({
+    let proof = await this.prisma.proof.findFirst({
       where: { contentHash: hash },
       orderBy: { issuedAt: 'desc' },
       include: {
@@ -191,6 +191,34 @@ export class SubjectsService {
         }
       }
     });
+
+    if (!proof) {
+      // Fallback: check if the subject has a perceptual hash and find a matching proof
+      const subject = await this.prisma.subject.findUnique({
+        where: { hash },
+        select: { perceptualHash: true, mediaType: true }
+      });
+
+      if (subject && subject.perceptualHash) {
+        const candidates = await this.phashRepo.nearest(subject.perceptualHash, subject.mediaType, 8);
+        if (candidates.length > 0) {
+          const originalSubject = await this.prisma.subject.findUnique({
+            where: { hash: candidates[0].hash }
+          });
+          if (originalSubject) {
+            proof = await this.prisma.proof.findFirst({
+              where: { contentHash: originalSubject.hash },
+              orderBy: { issuedAt: 'desc' },
+              include: {
+                signingKey: {
+                  select: { publicKeyB64: true }
+                }
+              }
+            });
+          }
+        }
+      }
+    }
 
     if (!proof) {
       return null;
