@@ -107,4 +107,5 @@ jobs:
           echo "API is ready"
           
           cd ../web
+          npm run build
           npx playwright test

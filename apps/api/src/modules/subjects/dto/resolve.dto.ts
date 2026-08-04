@@ -6,9 +6,9 @@ export const resolveSchema = z.object({
   perceptualHashes: z.array(z.object({
     fraction: z.number(),
     hash: z.string().regex(/^[0-9a-f]{16}$/)
-  })).optional(),
+  }).strict()).optional(),
   mediaType: z.enum(['VIDEO', 'IMAGE', 'AUDIO', 'PDF', 'OTHER']),
-}).refine(d => d.hash || (d.perceptualHashes && d.perceptualHashes.length > 0), { message: 'hash or perceptualHashes required' });
+}).strict().refine(d => d.hash || (d.perceptualHashes && d.perceptualHashes.length > 0), { message: 'hash or perceptualHashes required' });
 
 export type ResolveDto = z.infer<typeof resolveSchema>;
 
