@@ -60,7 +60,7 @@ export default function ProvenanceHuntPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           hash,
-          perceptualHash,
+          ...(perceptualHash ? { perceptualHashes: [{ fraction: 1.0, hash: perceptualHash }] } : {}),
           mediaType,
         }),
       });

@@ -30,11 +30,17 @@ export default function MinimalHostPage() {
 
       if (!subRes.ok) throw new Error('Subject not found');
       
-      const subData = await subRes.json();
-      const attData = attRes.ok ? await attRes.json() : { items: [] };
-      const proofData = proofRes.ok ? await proofRes.json() : null;
+      const subText = await subRes.text();
+      const subData = subText ? JSON.parse(subText) : null;
+      if (!subData) throw new Error('Subject not found');
 
-      setSubject(subData);
+      const attText = attRes.ok ? await attRes.text() : null;
+      const attData = attText ? JSON.parse(attText) : { items: [] };
+
+      const proofText = proofRes.ok ? await proofRes.text() : null;
+      const proofData = proofText ? JSON.parse(proofText) : null;
+
+      setSubject(subData.subject || subData);
       setAttestations(attData.items || []);
       setCryptoProof(proofData);
     } catch (err: any) {
