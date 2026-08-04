@@ -16,18 +16,30 @@ export class SubjectPhashRepository {
    */
   async nearest(perceptualHash: string, mediaType: MediaType, maxDistance = 8): Promise<SubjectDistance[]> {
     // Injecting the raw hex into the bit string format required by Postgres.
-    // The bits are safe: the schema pipe regex (/^[0-9a-f]{16}$/) guarantees it's pure hex.
+    if (!perceptualHash || typeof perceptualHash !== 'string' || !/^[0-9a-fA-F]{16}$/.test(perceptualHash)) {
+      console.warn(`[SubjectPhashRepository] Invalid perceptualHash requested for nearest-neighbor scan: "${perceptualHash}"`);
+      return [];
+    }
+
     const hexLiteral = perceptualHash;
 
     const results = await this.prisma.$queryRaw<any[]>`
       SELECT 
         id, hash, "perceptualHash", "mediaType", "sizeBytes", "firstSeenAt", 
         "attestationCount", "verdictSummary", "checkCount",
-        bit_count("phashBits" # ('x' || ${hexLiteral})::bit(64)) AS distance
+        (CASE 
+          WHEN length("perceptualHash") = 16 AND "perceptualHash" ~ '^[0-9a-fA-F]+$'
+          THEN bit_count(('x' || "perceptualHash")::bit(64) # ('x' || ${hexLiteral})::bit(64))
+          ELSE 999
+        END) AS distance
       FROM "subjects"
       WHERE "mediaType"::text = ${mediaType}
-        AND "phashBits" IS NOT NULL
-        AND bit_count("phashBits" # ('x' || ${hexLiteral})::bit(64)) <= ${maxDistance}
+        AND "perceptualHash" IS NOT NULL
+        AND (CASE 
+          WHEN length("perceptualHash") = 16 AND "perceptualHash" ~ '^[0-9a-fA-F]+$'
+          THEN bit_count(('x' || "perceptualHash")::bit(64) # ('x' || ${hexLiteral})::bit(64))
+          ELSE 999
+        END) <= ${maxDistance}
       ORDER BY distance ASC
       LIMIT 5;
     `;
