@@ -27,8 +27,8 @@ describe('POST /v1/subjects/resolve (e2e)', () => {
 
   it('correctly matches a subject using perceptual nearest-neighbor scan', async () => {
     // 1. Setup a subject with a known perceptual hash
-    // We will use 'ffffffffffffffff' as the base perceptual hash (64 bits, all 1s).
-    const basePhash = 'ffffffffffffffff';
+    // We will use a random perceptual hash for the base to avoid dirty database collisions
+    const basePhash = randomBytes(8).toString('hex'); // 16 chars (64 bits)
     const exactHash = randomBytes(32).toString('hex'); // 64 char hex
 
     const subject = await prisma.subject.create({
@@ -39,9 +39,30 @@ describe('POST /v1/subjects/resolve (e2e)', () => {
       }
     });
 
+    // Seed a distant subject (invert all bits -> Hamming distance 64)
+    const distantPhash = basePhash.split('').map(c => (15 - parseInt(c, 16)).toString(16)).join('');
+    const distantSubject = await prisma.subject.create({
+      data: {
+        hash: randomBytes(32).toString('hex'),
+        perceptualHash: distantPhash,
+        mediaType: 'IMAGE',
+      }
+    });
+
+    // Seed a malformed subject (survives the scan due to CASE guard)
+    const malformedPhash = 'malformed-invalid-hash';
+    const malformedSubject = await prisma.subject.create({
+      data: {
+        hash: randomBytes(32).toString('hex'),
+        perceptualHash: malformedPhash,
+        mediaType: 'IMAGE',
+      }
+    });
+
     // 2. We resolve with a slightly different perceptual hash.
-    // 'fffffffffffffffe' has a Hamming distance of 1 from 'ffffffffffffffff'.
-    const nearDuplicatePhash = 'fffffffffffffffe';
+    // Flip the last bit to get a Hamming distance of 1.
+    const lastCharHex = parseInt(basePhash[15], 16) ^ 1;
+    const nearDuplicatePhash = basePhash.slice(0, 15) + lastCharHex.toString(16);
 
     // The endpoint expects an array of perceptual hashes (fraction and hash)
     const payload = {
@@ -63,7 +84,9 @@ describe('POST /v1/subjects/resolve (e2e)', () => {
     // It should have returned a 'perceptual' match with the original subject
     expect(response.body.match).toBe('perceptual');
     expect(response.body.subject).toBeDefined();
-    expect(response.body.subject.id).toBe(subject.id);
+    expect(response.body.subject.id).toBe(subject.id); // Matches the near-duplicate
+    expect(response.body.subject.id).not.toBe(distantSubject.id); // Excludes the distant one
+    expect(response.body.subject.id).not.toBe(malformedSubject.id); // Excludes the malformed one
     expect(response.body.distance).toBe(1); // distance is 1
   });
 });
