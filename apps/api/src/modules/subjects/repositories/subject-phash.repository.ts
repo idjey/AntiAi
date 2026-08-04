@@ -23,11 +23,11 @@ export class SubjectPhashRepository {
       SELECT 
         id, hash, "perceptualHash", "mediaType", "sizeBytes", "firstSeenAt", 
         "attestationCount", "verdictSummary", "checkCount",
-        bit_count("phashBits" # ('x' || ${hexLiteral})::bit(64)) AS distance
+        bit_count(('x' || "perceptualHash")::bit(64) # ('x' || ${hexLiteral})::bit(64)) AS distance
       FROM "subjects"
       WHERE "mediaType"::text = ${mediaType}
-        AND "phashBits" IS NOT NULL
-        AND bit_count("phashBits" # ('x' || ${hexLiteral})::bit(64)) <= ${maxDistance}
+        AND "perceptualHash" IS NOT NULL
+        AND bit_count(('x' || "perceptualHash")::bit(64) # ('x' || ${hexLiteral})::bit(64)) <= ${maxDistance}
       ORDER BY distance ASC
       LIMIT 5;
     `;
