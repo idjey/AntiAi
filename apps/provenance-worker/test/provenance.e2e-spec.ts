@@ -54,7 +54,7 @@ describe('ProvenanceWorker (e2e)', () => {
       validity: 365
     });
 
-    // Make the CA cert available to the undici mock
+    // Make the CA cert available globally for the native https fetcher
     (global as any).TEST_CA_CERT = ca.cert;
 
     const gifBytes = Buffer.from('R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=', 'base64');
