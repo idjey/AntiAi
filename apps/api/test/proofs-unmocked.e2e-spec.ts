@@ -3,29 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { EventEmitter } from 'events';
 
-// Mock ioredis, bullmq, bull to avoid connection errors during e2e tests
-jest.mock('ioredis', () => {
-  const RedisMock = require('ioredis-mock');
-  RedisMock.Redis = RedisMock;
-  RedisMock.default = RedisMock;
-  return RedisMock;
-});
-
-jest.mock('bullmq', () => ({
-  Queue: class { add = jest.fn(); on = jest.fn(); close = jest.fn(); },
-  Worker: class { on = jest.fn(); close = jest.fn(); },
-  QueueEvents: class { on = jest.fn(); close = jest.fn(); },
-}));
-
-jest.mock('bull', () => {
-  return class {
-    constructor() {}
-    add = jest.fn();
-    on = jest.fn();
-    process = jest.fn();
-    close = jest.fn();
-  };
-});
+// No mocks! We are testing the real queue and DB connection logic.
 
 
 
@@ -55,18 +33,8 @@ describe('ProofsController (e2e)', () => {
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
     jwtService = moduleFixture.get<JwtService>(JwtService);
     await app.init();
-    // Cascading cleanup of any orphaned data from previous runs
-    const staleUsers = await prismaService.user.findMany({ where: { email: 'creator_e2e_proofs@example.com' } });
-    for (const u of staleUsers) {
-      const channels = await prismaService.channel.findMany({ where: { userId: u.id } });
-      for (const ch of channels) {
-        await prismaService.proofPerceptualHash.deleteMany({ where: { proof: { channelId: ch.id } } });
-        await prismaService.proof.deleteMany({ where: { channelId: ch.id } });
-        await prismaService.video.deleteMany({ where: { channelId: ch.id } });
-      }
-      await prismaService.channel.deleteMany({ where: { userId: u.id } });
-      await prismaService.subscription.deleteMany({ where: { userId: u.id } });
-    }
+    
+    // Cleanup first just in case
     await prismaService.user.deleteMany({ where: { email: 'creator_e2e_proofs@example.com' } });
 
     // Seed test user
@@ -184,7 +152,23 @@ describe('ProofsController (e2e)', () => {
     // Check DB relation
     expect(dbProof?.perceptualHashes.length).toBe(3);
     
-    const fractions = dbProof?.perceptualHashes.map((ph: any) => ph.anchorFraction).sort();
-    expect(fractions).toEqual([0.2, 0.5, 0.8]);
+    // Explicitly query raw phash_bits to ensure it didn't suffer the Quest bug (silently zeroed out or dropped)
+    const rawHashes: any[] = await prismaService.$queryRaw`
+      SELECT anchor_fraction as "anchorFraction", phash_bits::text as "phashBitsText"
+      FROM proof_perceptual_hashes
+      WHERE proof_id = ${proofId}::uuid
+      ORDER BY anchor_fraction ASC
+    `;
+    expect(rawHashes.length).toBe(3);
+    expect(rawHashes[0].anchorFraction).toBe(0.2);
+    // Convert 1e71f1c1c1e36173 to binary
+    const expectedBinary0 = BigInt('0x1e71f1c1c1e36173').toString(2).padStart(64, '0');
+    expect(rawHashes[0].phashBitsText).toBe(expectedBinary0);
+
+    const expectedBinary1 = BigInt('0x3b61e1d1a3c3c1f1').toString(2).padStart(64, '0');
+    expect(rawHashes[1].phashBitsText).toBe(expectedBinary1);
+
+    const expectedBinary2 = BigInt('0xf1e0e1f0e0e3c0f5').toString(2).padStart(64, '0');
+    expect(rawHashes[2].phashBitsText).toBe(expectedBinary2);
   });
 });

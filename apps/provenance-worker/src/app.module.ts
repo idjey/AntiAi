@@ -4,11 +4,20 @@ import { AppService } from './app.service';
 import { PrismaService } from './prisma.service';
 import { ProvenanceProcessor, DNS_LOOKUP } from './provenance.processor';
 import { PhashService } from './phash.service';
-import { getQueueToken } from '@nestjs/bullmq';
+import { getQueueToken, BullModule } from '@nestjs/bullmq';
 import { lookup } from 'node:dns/promises';
 
 @Module({
-  imports: [],
+  imports: [
+    BullModule.forRoot({
+      connection: {
+        url: process.env.REDIS_URL || 'redis://localhost:6379',
+      },
+    }),
+    BullModule.registerQueue({
+      name: 'provenance-verify',
+    }),
+  ],
   controllers: [AppController],
   providers: [
     AppService, 
