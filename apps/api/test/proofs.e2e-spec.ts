@@ -55,8 +55,18 @@ describe('ProofsController (e2e)', () => {
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
     jwtService = moduleFixture.get<JwtService>(JwtService);
     await app.init();
-    
-    // Cleanup first just in case
+    // Cascading cleanup of any orphaned data from previous runs
+    const staleUsers = await prismaService.user.findMany({ where: { email: 'creator_e2e_proofs@example.com' } });
+    for (const u of staleUsers) {
+      const channels = await prismaService.channel.findMany({ where: { userId: u.id } });
+      for (const ch of channels) {
+        await prismaService.proofPerceptualHash.deleteMany({ where: { proof: { channelId: ch.id } } });
+        await prismaService.proof.deleteMany({ where: { channelId: ch.id } });
+        await prismaService.video.deleteMany({ where: { channelId: ch.id } });
+      }
+      await prismaService.channel.deleteMany({ where: { userId: u.id } });
+      await prismaService.subscription.deleteMany({ where: { userId: u.id } });
+    }
     await prismaService.user.deleteMany({ where: { email: 'creator_e2e_proofs@example.com' } });
 
     // Seed test user

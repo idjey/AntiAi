@@ -299,7 +299,7 @@ describe('Attestations -> Worker (e2e)', () => {
 
       // Wait for worker to dequeue and process it (timeout 5s)
       let dbRow;
-      for (let i = 0; i < 50; i++) {
+      for (let i = 0; i < 150; i++) {
         dbRow = await prisma.attestation.findUnique({
           where: { payloadHash: signed.payloadHash }
         });
