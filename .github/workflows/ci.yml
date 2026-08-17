@@ -106,6 +106,28 @@ jobs:
           timeout 60 bash -c 'until curl -s http://localhost:4000/health | grep -q "ok"; do sleep 1; done'
           echo "API is ready"
           
+          # Build Next.js and start the standalone server
           cd ../web
           npm run build
+          
+          # Copy static assets for standalone mode
+          cp -r public .next/standalone/apps/web/public 2>/dev/null || true
+          cp -r .next/static .next/standalone/apps/web/.next/static 2>/dev/null || true
+          # Also copy to root standalone in case Next.js puts server.js there
+          cp -r public .next/standalone/public 2>/dev/null || true
+          mkdir -p .next/standalone/.next
+          cp -r .next/static .next/standalone/.next/static 2>/dev/null || true
+          
+          # Find and start the standalone server
+          STANDALONE_SERVER=$(find .next/standalone -name "server.js" -path "*/apps/web/*" 2>/dev/null | head -1)
+          if [ -z "$STANDALONE_SERVER" ]; then
+            STANDALONE_SERVER=".next/standalone/server.js"
+          fi
+          echo "Starting standalone server: $STANDALONE_SERVER"
+          PORT=3000 node "$STANDALONE_SERVER" &
+          
+          echo "Waiting for Next.js to start..."
+          timeout 60 bash -c 'until curl -s http://localhost:3000 > /dev/null 2>&1; do sleep 1; done'
+          echo "Next.js is ready"
+          
           npx playwright test
