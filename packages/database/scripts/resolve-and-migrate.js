@@ -19,13 +19,14 @@ const path = require('path');
 const fs = require('fs');
 
 const PRISMA = 'npx prisma';
-const MIGRATIONS_DIR = path.join(__dirname, 'prisma', 'migrations');
+const PACKAGE_ROOT = path.join(__dirname, '..');
+const MIGRATIONS_DIR = path.join(PACKAGE_ROOT, 'prisma', 'migrations');
 
 function run(cmd, opts = {}) {
   console.log(`[resolve-and-migrate] Running: ${cmd}`);
   try {
     const output = execSync(cmd, {
-      cwd: __dirname,
+      cwd: PACKAGE_ROOT,
       stdio: 'pipe',
       encoding: 'utf-8',
       ...opts,
