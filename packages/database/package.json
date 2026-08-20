@@ -9,7 +9,7 @@
         "generate": "npx prisma generate",
         "push": "node ./scripts/ensure-extensions.js && npx prisma db push",
         "migrate": "npx prisma migrate dev",
-        "migrate:deploy": "npx prisma migrate deploy",
+        "migrate:deploy": "node ./scripts/resolve-and-migrate.js",
         "studio": "npx prisma studio",
         "build": "tsc",
         "clean": "rimraf dist"
