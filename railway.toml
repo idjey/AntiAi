@@ -1,13 +1,6 @@
 [build]
 builder = "RAILPACK"
 buildCommand = "npm install --include=dev && npm run build:packages && npm run build --workspace=@antiai/api && npm run build --workspace=@antiai/web"
-watchPatterns = [
-  "/apps/api/**",
-  "/apps/web/**",
-  "/packages/database/**",
-  "/packages/config/**",
-  "/railway.toml"
-]
 
 [deploy]
 # This command runs after the build is complete but before the new deployment starts taking traffic.
