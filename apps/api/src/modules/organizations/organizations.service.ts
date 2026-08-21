@@ -51,6 +51,26 @@ export class OrganizationsService {
     return org;
   }
 
+  async getMemberMe(organizationId: string, userId: string) {
+    const membership = await this.prisma.teamMember.findUnique({
+      where: {
+        organizationId_userId: {
+          organizationId,
+          userId,
+        },
+      },
+      include: {
+        organization: true,
+      },
+    });
+
+    if (!membership) {
+      throw new ForbiddenException('User is not a member of this organization');
+    }
+
+    return membership;
+  }
+
   async inviteMember(organizationId: string, email: string, role: OrgRole) {
     const existingUser = await this.prisma.user.findUnique({ 
       where: { email }, 

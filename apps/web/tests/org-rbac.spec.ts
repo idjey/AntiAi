@@ -159,7 +159,7 @@ test.describe('Org RBAC Real-Boundary Tests', () => {
     // Verify backend blocked it
     expect(bypassRes.status()).toBe(403);
     const err = await bypassRes.json();
-    expect(err.message).toMatch(/Requires organization role/i);
+    expect(err.message).toMatch(/Requires one of roles: OWNER, ADMIN/i);
   });
 
   test('Test 4 (Cross-Org Security): OWNER of Org A blocked from Org B', async ({ page, request }) => {

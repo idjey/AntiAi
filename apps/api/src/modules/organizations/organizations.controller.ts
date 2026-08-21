@@ -19,6 +19,14 @@ export class OrganizationsController {
     return this.orgsService.createOrganization(req.user.id, name, slug);
   }
 
+  @Get(':organizationId/members/me')
+  async getMemberMe(
+    @Req() req: any,
+    @Param('organizationId') orgId: string,
+  ) {
+    return this.orgsService.getMemberMe(orgId, req.user.id);
+  }
+
   @Get(':organizationId')
   @UseGuards(OrgRoleGuard)
   @OrgRoles(OrgRole.OWNER, OrgRole.ADMIN, OrgRole.CREATOR)
