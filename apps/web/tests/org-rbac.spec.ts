@@ -146,7 +146,7 @@ test.describe('Org RBAC Real-Boundary Tests', () => {
     await page.getByRole('button', { name: 'Send Invite' }).click();
 
     // Expect success toast or UI update
-    await expect(page.getByText('Invite sent successfully')).toBeVisible();
+    await expect(page.getByText('Invite sent successfully').first()).toBeVisible();
   });
 
   test('Test 3 (Security API Bypass): CREATOR bypassing UI receives 403', async ({ request }) => {
