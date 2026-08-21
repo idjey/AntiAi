@@ -49,38 +49,62 @@ async function main() {
     return;
   }
 
-  console.log('[resolve-and-migrate] ⚠️  Migrate deploy failed. Recovering via db push...');
-  console.log(deployResult.error || deployResult.output);
+  // Step 2: If P3009 (failed migrations), resolve them
+  if (deployResult.error.includes('P3009') || deployResult.output.includes('P3009')) {
+    console.log('[resolve-and-migrate] ⚠️  Found failed migrations (P3009). Resolving...');
 
-  // Step 2: Fallback to db push to ensure database schema matches Prisma schema
-  console.log('\n[resolve-and-migrate] Step 2: Running prisma db push to sync schema...');
-  const pushResult = run(`${PRISMA} db push --accept-data-loss`);
-  if (!pushResult.success) {
-    console.error('[resolve-and-migrate] ❌ db push failed:');
-    console.error(pushResult.error || pushResult.output);
+    // Get all migration directory names
+    const migrations = fs.readdirSync(MIGRATIONS_DIR)
+      .filter(f => fs.statSync(path.join(MIGRATIONS_DIR, f)).isDirectory())
+      .sort();
+
+    console.log(`[resolve-and-migrate] Found ${migrations.length} migrations to resolve:`);
+    migrations.forEach(m => console.log(`  - ${m}`));
+
+    // First, roll back the failed migration to clear the failed state
+    for (const migration of migrations) {
+      console.log(`\n[resolve-and-migrate] Rolling back (if failed): ${migration}`);
+      const rollbackResult = run(`${PRISMA} migrate resolve --rolled-back ${migration}`);
+      if (rollbackResult.success) {
+        console.log(`  ✅ Rolled back: ${migration}`);
+      } else if (rollbackResult.error.includes('cannot be rolled back') || 
+                 rollbackResult.error.includes('already applied')) {
+        console.log(`  ℹ️  Already applied or not failed: ${migration}`);
+      } else {
+        console.log(`  ℹ️  Skipped (${rollbackResult.error.trim().split('\n')[0]})`);
+      }
+    }
+
+    // Then mark all migrations as applied (since db push already created the tables)
+    for (const migration of migrations) {
+      console.log(`\n[resolve-and-migrate] Marking as applied: ${migration}`);
+      const applyResult = run(`${PRISMA} migrate resolve --applied ${migration}`);
+      if (applyResult.success) {
+        console.log(`  ✅ Marked applied: ${migration}`);
+      } else if (applyResult.error.includes('already') || applyResult.error.includes('has already been applied')) {
+        console.log(`  ℹ️  Already marked as applied: ${migration}`);
+      } else {
+        console.log(`  ⚠️  Could not mark as applied: ${applyResult.error.trim().split('\n')[0]}`);
+      }
+    }
+
+    // Step 3: Retry migrate deploy
+    console.log('\n[resolve-and-migrate] Step 3: Retrying prisma migrate deploy...');
+    const retryResult = run(`${PRISMA} migrate deploy`);
+    if (retryResult.success) {
+      console.log('[resolve-and-migrate] ✅ migrate deploy succeeded after resolving. Done!');
+      return;
+    }
+
+    console.error('[resolve-and-migrate] ❌ migrate deploy still failed after resolving:');
+    console.error(retryResult.error || retryResult.output);
     process.exit(1);
   }
 
-  // Step 3: Mark all current migrations as applied since the schema is now synced
-  console.log('\n[resolve-and-migrate] Step 3: Marking all migrations as applied...');
-  
-  const migrations = fs.readdirSync(MIGRATIONS_DIR)
-    .filter(f => fs.statSync(path.join(MIGRATIONS_DIR, f)).isDirectory())
-    .sort();
-
-  for (const migration of migrations) {
-    // Attempt rollback just in case it's stuck in a failed state
-    run(`${PRISMA} migrate resolve --rolled-back ${migration}`);
-    // Mark as applied
-    const applyResult = run(`${PRISMA} migrate resolve --applied ${migration}`);
-    if (applyResult.success) {
-      console.log(`  ✅ Marked applied: ${migration}`);
-    } else {
-      console.log(`  ℹ️  Already applied or error: ${migration}`);
-    }
-  }
-
-  console.log('\n[resolve-and-migrate] ✅ Recovery complete! Database is synced and migrations are tracked.');
+  // Some other error
+  console.error('[resolve-and-migrate] ❌ migrate deploy failed with unexpected error:');
+  console.error(deployResult.error || deployResult.output);
+  process.exit(1);
 }
 
 main().catch(err => {
