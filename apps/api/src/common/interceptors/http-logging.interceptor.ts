@@ -67,7 +67,7 @@ export class HttpLoggingInterceptor implements NestInterceptor {
         let errorMessage: string | null = null;
 
         return next.handle().pipe(
-            catchError((err) => {
+            catchError((err: any) => {
                 errorMessage = err?.message || err?.toString() || 'Unknown error';
                 throw err;
             }),
@@ -103,7 +103,7 @@ export class HttpLoggingInterceptor implements NestInterceptor {
                                 correlationId,
                             },
                         })
-                        .catch((err) => {
+                        .catch((err: any) => {
                             this.logger.error('Failed to write HTTP log', err?.message);
                         });
                 });

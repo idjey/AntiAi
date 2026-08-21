@@ -21,22 +21,118 @@ export class OrganizationsService {
     });
   }
 
-  async inviteMember(organizationId: string, email: string, role: OrgRole) {
-    const targetUser = await this.prisma.user.findUnique({ where: { email } });
-    if (!targetUser) throw new BadRequestException('User not found');
+  async getOrganization(organizationId: string) {
+    const org = await this.prisma.organization.findUnique({
+      where: { id: organizationId },
+      include: {
+        teamMembers: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                profile: true
+              }
+            }
+          }
+        },
+        pendingInvites: {
+          where: {
+            status: 'PENDING'
+          }
+        }
+      }
+    });
 
-    try {
-      return await this.prisma.teamMember.create({
+    if (!org) {
+      throw new BadRequestException('Organization not found');
+    }
+
+    return org;
+  }
+
+  async getMemberMe(organizationId: string, userId: string) {
+    const membership = await this.prisma.teamMember.findUnique({
+      where: {
+        organizationId_userId: {
+          organizationId,
+          userId,
+        },
+      },
+      include: {
+        organization: true,
+      },
+    });
+
+    if (!membership) {
+      throw new ForbiddenException('User is not a member of this organization');
+    }
+
+    return membership;
+  }
+
+  async inviteMember(organizationId: string, email: string, role: OrgRole) {
+    const existingUser = await this.prisma.user.findUnique({ 
+      where: { email }, 
+      include: { teamMemberships: { where: { organizationId } } } 
+    });
+    if (existingUser && existingUser.teamMemberships.length > 0) {
+      throw new ConflictException('User is already a member');
+    }
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
+
+    return this.prisma.pendingInvite.upsert({
+      where: {
+        organizationId_email: {
+          organizationId,
+          email,
+        }
+      },
+      create: {
+        organizationId,
+        email,
+        role,
+        status: 'PENDING',
+        expiresAt,
+      },
+      update: {
+        role,
+        status: 'PENDING',
+        expiresAt,
+      }
+    });
+  }
+
+  async acceptInvite(organizationId: string, inviteId: string, userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new BadRequestException('User not found');
+    if (!user.isEmailVerified) {
+      throw new ForbiddenException('Email must be verified to accept an invite');
+    }
+
+    const invite = await this.prisma.pendingInvite.findUnique({ where: { id: inviteId } });
+    if (!invite) throw new BadRequestException('Invite not found');
+    if (invite.organizationId !== organizationId) throw new ForbiddenException('Invalid organization');
+    if (invite.email !== user.email) throw new ForbiddenException('Invite email does not match user email');
+    if (invite.status !== 'PENDING') throw new BadRequestException('Invite is no longer pending');
+    if (invite.expiresAt < new Date()) throw new BadRequestException('Invite has expired');
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.pendingInvite.update({
+        where: { id: inviteId },
+        data: { status: 'ACCEPTED' },
+      });
+
+      return tx.teamMember.create({
         data: {
           organizationId,
-          userId: targetUser.id,
-          role,
+          userId: user.id,
+          role: invite.role,
         }
       });
-    } catch (e: any) {
-      if (e.code === 'P2002') throw new ConflictException('User is already a member');
-      throw e;
-    }
+    });
   }
 
   async removeMember(organizationId: string, targetUserId: string, requester: TeamMember) {
@@ -117,5 +213,57 @@ export class OrganizationsService {
       }
       throw e;
     }
+  }
+
+  async leaveOrganization(organizationId: string, requester: TeamMember) {
+    if (requester.role === OrgRole.OWNER) {
+      const ownerCount = await this.prisma.teamMember.count({
+        where: { organizationId, role: OrgRole.OWNER }
+      });
+      if (ownerCount <= 1) {
+        throw new ForbiddenException('Cannot leave as the last owner of the organization');
+      }
+    }
+
+    return this.prisma.teamMember.delete({
+      where: { organizationId_userId: { organizationId, userId: requester.userId } }
+    });
+  }
+
+  async transferOwnership(organizationId: string, targetUserId: string, requester: TeamMember) {
+    if (targetUserId === requester.userId) {
+      throw new BadRequestException('Cannot transfer ownership to yourself');
+    }
+
+    const targetMembership = await this.prisma.teamMember.findUnique({
+      where: { organizationId_userId: { organizationId, userId: targetUserId } }
+    });
+    if (!targetMembership) {
+      throw new BadRequestException('Target user is not a member of this organization');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // Promote target
+      await tx.teamMember.update({
+        where: { id: targetMembership.id },
+        data: { role: OrgRole.OWNER }
+      });
+
+      // Demote self to ADMIN
+      await tx.teamMember.update({
+        where: { id: requester.id },
+        data: { role: OrgRole.ADMIN }
+      });
+
+      // Assert post-transaction invariant
+      const ownerCount = await tx.teamMember.count({
+        where: { organizationId, role: OrgRole.OWNER }
+      });
+      if (ownerCount < 1) {
+        throw new ConflictException('Ownership transfer resulted in zero owners');
+      }
+
+      return { success: true };
+    });
   }
 }
