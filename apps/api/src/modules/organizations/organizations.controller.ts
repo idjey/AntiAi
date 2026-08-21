@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, Delete, Put, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Body, Param, Delete, Put, UseGuards, Req, Get } from '@nestjs/common';
 import { OrganizationsService } from './organizations.service';
 import { OrgRole, TeamMember } from '@prisma/client';
 import { OrgRoleGuard } from '../../common/guards/org-role.guard';
@@ -19,7 +19,14 @@ export class OrganizationsController {
     return this.orgsService.createOrganization(req.user.id, name, slug);
   }
 
-  @Post(':organizationId/members')
+  @Get(':organizationId')
+  @UseGuards(OrgRoleGuard)
+  @OrgRoles(OrgRole.OWNER, OrgRole.ADMIN, OrgRole.CREATOR)
+  async getOrganization(@Param('organizationId') orgId: string) {
+    return this.orgsService.getOrganization(orgId);
+  }
+
+  @Post(':organizationId/invites')
   @UseGuards(OrgRoleGuard)
   @OrgRoles(OrgRole.OWNER, OrgRole.ADMIN)
   async inviteMember(
@@ -60,5 +67,37 @@ export class OrganizationsController {
   @OrgRoles(OrgRole.OWNER)
   async deleteOrganization(@Param('organizationId') orgId: string) {
     return this.orgsService.deleteOrganization(orgId);
+  }
+
+  @Post(':organizationId/invites/:inviteId/accept')
+  async acceptInvite(
+    @Req() req: any,
+    @Param('organizationId') orgId: string,
+    @Param('inviteId') inviteId: string,
+  ) {
+    return this.orgsService.acceptInvite(orgId, inviteId, req.user.id);
+  }
+
+  @Delete(':organizationId/leave')
+  @UseGuards(OrgRoleGuard)
+  @OrgRoles(OrgRole.OWNER, OrgRole.ADMIN, OrgRole.CREATOR)
+  async leaveOrganization(
+    @Req() req: any,
+    @Param('organizationId') orgId: string,
+  ) {
+    const requester: TeamMember = req.orgMembership;
+    return this.orgsService.leaveOrganization(orgId, requester);
+  }
+
+  @Post(':organizationId/transfer-ownership')
+  @UseGuards(OrgRoleGuard)
+  @OrgRoles(OrgRole.OWNER)
+  async transferOwnership(
+    @Req() req: any,
+    @Param('organizationId') orgId: string,
+    @Body('targetUserId') targetUserId: string,
+  ) {
+    const requester: TeamMember = req.orgMembership;
+    return this.orgsService.transferOwnership(orgId, targetUserId, requester);
   }
 }
