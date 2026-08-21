@@ -914,6 +914,30 @@ enum OrgRole {
   CREATOR
 }
 
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+}
+
+model PendingInvite {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  email          String
+  role           OrgRole      @default(CREATOR)
+  status         InviteStatus @default(PENDING)
+  expiresAt      DateTime     @map("expires_at")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Using a unique constraint to allow "update in place" (upsert) for re-invites
+  @@unique([organizationId, email])
+  @@index([email])
+  @@index([organizationId, status])
+  @@map("pending_invites")
+}
+
 model Organization {
   id           String                    @id @default(uuid()) @db.Uuid
   name         String
@@ -922,6 +946,7 @@ model Organization {
   updatedAt    DateTime                  @updatedAt @map("updated_at")
   subscription OrganizationSubscription?
   teamMembers  TeamMember[]
+  pendingInvites PendingInvite[]
 
   @@map("organizations")
 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import OrganizationSwitcher from '@/components/dashboard/OrganizationSwitcher'
 
 export default function DashboardLayout({
     children,
@@ -254,23 +255,29 @@ export default function DashboardLayout({
     return (
         <div className="min-h-screen bg-background flex">
             {/* Sidebar (Desktop) */}
-            <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-surface border-r border-border flex-shrink-0 hidden md:flex flex-col transition-all duration-300 relative group`}>
-                <div className={`p-6 ${isCollapsed ? 'px-4' : ''}`}>
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+            <aside className={`hidden md:flex flex-col bg-surface border-r border-border transition-all duration-300 relative z-40 ${isCollapsed ? 'w-20' : 'w-64'}`}>
+                <div className={`p-6 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} border-b border-transparent mb-2`}>
+                    <div className="flex items-center gap-2 overflow-hidden">
+                        <div className="w-8 h-8 shrink-0 rounded-lg bg-primary flex items-center justify-center">
                             <svg className="w-5 h-5 text-background" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296a3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
                             </svg>
                         </div>
                         {!isCollapsed && (
-                            <span className="text-xl font-bold tracking-tight">
+                            <span className="text-xl font-bold tracking-tight whitespace-nowrap">
                                 antiai<span className="text-primary">.me</span>
                             </span>
                         )}
                     </div>
                 </div>
 
-                <nav className="flex-1 px-4 py-4 space-y-1">
+                {!isCollapsed && (
+                    <div className="px-4">
+                        <OrganizationSwitcher />
+                    </div>
+                )}
+
+                <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-hide">
                     {navItems.map((item) => {
                         const isActive = pathname === item.href
                         return (
@@ -379,8 +386,12 @@ export default function DashboardLayout({
                         </svg>
                     </button>
                 </div>
+                
+                <div className="px-4">
+                    <OrganizationSwitcher />
+                </div>
 
-                <nav className="flex-1 px-4 py-4 space-y-1">
+                <nav className="flex-1 px-4 py-2 space-y-1">
                     {navItems.map((item) => {
                         const isActive = pathname === item.href
                         return (
