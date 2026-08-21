@@ -13,6 +13,9 @@ import { Inject } from '@nestjs/common';
     {
       provide: REDIS_TOKEN,
       useFactory: () => {
+        if (process.env.REDIS_URL) {
+          return new Redis(process.env.REDIS_URL);
+        }
         return new Redis({
           host: process.env.REDIS_HOST || 'localhost',
           port: parseInt(process.env.REDIS_PORT || '6379', 10),
