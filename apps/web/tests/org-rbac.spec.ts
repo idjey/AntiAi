@@ -60,8 +60,9 @@ test.beforeAll(async ({ request }) => {
   // 3. Create Org A (Owner creates)
   const createOrgA = await request.post(`${API_URL}/organizations`, {
     headers: { Authorization: `Bearer ${ownerToken}` },
-    data: { name: `Org A ${runId}` }
+    data: { name: `Org A ${runId}`, slug: `org-a-${runId}` }
   });
+  expect(createOrgA.ok()).toBeTruthy();
   const orgA = await createOrgA.json();
   orgAId = orgA.id;
 
@@ -85,8 +86,9 @@ test.beforeAll(async ({ request }) => {
 
   const createOrgB = await request.post(`${API_URL}/organizations`, {
     headers: { Authorization: `Bearer ${ownerBToken}` },
-    data: { name: `Org B ${runId}` }
+    data: { name: `Org B ${runId}`, slug: `org-b-${runId}` }
   });
+  expect(createOrgB.ok()).toBeTruthy();
   const orgB = await createOrgB.json();
   orgBId = orgB.id;
 
