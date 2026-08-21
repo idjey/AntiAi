@@ -1,3 +1,4 @@
+// Deploy trigger: Railway watch patterns require changes in /apps/api/** to trigger a redeploy.
 // Polyfill: Node 18 doesn't expose crypto globally (needed by @nestjs/schedule)
 import { webcrypto } from 'node:crypto';
 if (typeof globalThis.crypto === 'undefined') {
