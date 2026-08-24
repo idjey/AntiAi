@@ -8,7 +8,7 @@
 ALTER TABLE "attestations" ADD COLUMN     "payload_b64" TEXT;
 
 -- AlterTable
-ALTER TABLE "subjects" DROP COLUMN "phashBits";
+ALTER TABLE "subjects" DROP COLUMN IF EXISTS "phashBits";
 
 -- CreateTable
 CREATE TABLE "proof_perceptual_hashes" (
