@@ -4,6 +4,8 @@ import { OrgRole, TeamMember } from '@prisma/client';
 
 @Injectable()
 export class OrganizationsService {
+  public static readonly DEFAULT_FREE_SEATS = 5;
+
   constructor(private readonly prisma: PrismaService) {}
 
   async createOrganization(userId: string, name: string, slug: string) {
@@ -83,25 +85,52 @@ export class OrganizationsService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
 
-    return this.prisma.pendingInvite.upsert({
-      where: {
-        organizationId_email: {
+    return this.prisma.$transaction(async (tx) => {
+      // Lock the organization row to prevent TOCTOU race condition
+      const orgs = await tx.$queryRaw<{ max_seats: number }[]>`
+        SELECT max_seats FROM organizations WHERE id = ${organizationId}::uuid FOR UPDATE
+      `;
+      
+      if (!orgs || orgs.length === 0) {
+        throw new BadRequestException('Organization not found');
+      }
+
+      const maxSeats = orgs[0].max_seats;
+
+      const memberCount = await tx.teamMember.count({ where: { organizationId } });
+      const pendingCount = await tx.pendingInvite.count({ where: { organizationId, status: 'PENDING' } });
+      
+      const isExistingPending = await tx.pendingInvite.findUnique({
+        where: { organizationId_email: { organizationId, email } }
+      });
+      
+      // If updating an existing pending invite, it doesn't consume an additional seat
+      const additionalSeat = isExistingPending && isExistingPending.status === 'PENDING' ? 0 : 1;
+
+      if (memberCount + pendingCount + additionalSeat > maxSeats) {
+        throw new ConflictException('Seat limit reached. Please purchase more seats.');
+      }
+
+      return tx.pendingInvite.upsert({
+        where: {
+          organizationId_email: {
+            organizationId,
+            email,
+          }
+        },
+        create: {
           organizationId,
           email,
+          role,
+          status: 'PENDING',
+          expiresAt,
+        },
+        update: {
+          role,
+          status: 'PENDING',
+          expiresAt,
         }
-      },
-      create: {
-        organizationId,
-        email,
-        role,
-        status: 'PENDING',
-        expiresAt,
-      },
-      update: {
-        role,
-        status: 'PENDING',
-        expiresAt,
-      }
+      });
     });
   }
 
@@ -264,6 +293,24 @@ export class OrganizationsService {
       }
 
       return { success: true };
+    });
+  }
+
+  async purchaseSeats(organizationId: string, amount: number = 5) {
+    return this.prisma.$transaction(async (tx) => {
+      const orgs = await tx.$queryRaw<{ id: string, max_seats: number }[]>`
+        SELECT id, max_seats FROM organizations WHERE id = ${organizationId}::uuid FOR UPDATE
+      `;
+      if (!orgs || orgs.length === 0) {
+        throw new BadRequestException('Organization not found');
+      }
+
+      return tx.organization.update({
+        where: { id: organizationId },
+        data: {
+          maxSeats: { increment: amount }
+        }
+      });
     });
   }
 }

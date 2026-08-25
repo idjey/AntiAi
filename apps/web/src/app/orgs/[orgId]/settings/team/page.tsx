@@ -12,6 +12,7 @@ export default function TeamManagementPage({ params }: { params: { orgId: string
     
     const [members, setMembers] = useState<any[]>([])
     const [pendingInvites, setPendingInvites] = useState<any[]>([])
+    const [maxSeats, setMaxSeats] = useState<number>(5)
     const [isLoading, setIsLoading] = useState(true)
 
     // Modals state
@@ -27,6 +28,7 @@ export default function TeamManagementPage({ params }: { params: { orgId: string
     const [transferConfirm, setTransferConfirm] = useState('')
     const [isTransferring, setIsTransferring] = useState(false)
     
+    const [isBuyingSeats, setIsBuyingSeats] = useState(false)
     const [isActionLoading, setIsActionLoading] = useState<string | null>(null)
 
     const fetchTeam = async () => {
@@ -40,6 +42,7 @@ export default function TeamManagementPage({ params }: { params: { orgId: string
             const data = await res.json()
             setMembers(data.teamMembers || [])
             setPendingInvites(data.pendingInvites || [])
+            setMaxSeats(data.maxSeats || 5)
         } catch (error) {
             console.error(error)
             toast.error('Failed to load team members')
@@ -176,6 +179,34 @@ export default function TeamManagementPage({ params }: { params: { orgId: string
         }
     }
 
+    const handleBuySeats = async () => {
+        setIsBuyingSeats(true)
+        try {
+            const token = localStorage.getItem('token')
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+            const res = await fetch(`${apiUrl}/organizations/${params.orgId}/buy-seats`, {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ amount: 5 })
+            })
+            
+            if (!res.ok) {
+                const err = await res.json()
+                throw new Error(err.message || 'Failed to buy seats')
+            }
+            
+            toast.success('Seats added successfully!')
+            fetchTeam()
+        } catch (error: any) {
+            toast.error(error.message)
+        } finally {
+            setIsBuyingSeats(false)
+        }
+    }
+
     if (isLoading) {
         return (
             <div className="p-8">
@@ -200,6 +231,9 @@ export default function TeamManagementPage({ params }: { params: { orgId: string
         return false
     }
 
+    const usedSeats = members.length + pendingInvites.length;
+    const isFull = usedSeats >= maxSeats;
+
     return (
         <div className="p-6 lg:p-8 max-w-5xl mx-auto">
             <div className="flex justify-between items-center mb-8">
@@ -210,7 +244,9 @@ export default function TeamManagementPage({ params }: { params: { orgId: string
                 {canInvite && (
                     <button 
                         onClick={() => setIsInviteModalOpen(true)}
-                        className="bg-white text-black px-4 py-2 rounded-md font-medium text-sm hover:bg-white/90 transition-colors"
+                        disabled={isFull}
+                        title={isFull ? "Seat limit reached" : ""}
+                        className="bg-white text-black px-4 py-2 rounded-md font-medium text-sm hover:bg-white/90 disabled:opacity-50 transition-colors"
                     >
                         Invite Member
                     </button>
@@ -218,6 +254,35 @@ export default function TeamManagementPage({ params }: { params: { orgId: string
             </div>
 
             <div className="space-y-6">
+                {/* Seat Limit UI */}
+                <div className="bg-[#111111] border border-white/10 rounded-xl p-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 className="font-semibold">Seat Usage</h2>
+                            <p className="text-sm text-white/60">
+                                You are currently using {usedSeats} of {maxSeats} available seats.
+                            </p>
+                        </div>
+                        {role === 'OWNER' && (
+                            <button
+                                onClick={handleBuySeats}
+                                disabled={isBuyingSeats}
+                                className="px-4 py-2 text-sm bg-white/5 border border-white/10 rounded-md hover:bg-white/10 transition-colors text-white font-medium disabled:opacity-50"
+                            >
+                                {isBuyingSeats ? 'Processing...' : 'Buy 5 More Seats'}
+                            </button>
+                        )}
+                    </div>
+                    
+                    {/* Progress Bar */}
+                    <div className="w-full bg-white/5 rounded-full h-2.5 overflow-hidden">
+                        <div 
+                            className={`h-2.5 rounded-full ${isFull ? 'bg-red-500' : 'bg-green-500'}`} 
+                            style={{ width: `${Math.min((usedSeats / maxSeats) * 100, 100)}%` }}
+                        ></div>
+                    </div>
+                </div>
+
                 <div className="bg-[#111111] border border-white/10 rounded-xl overflow-hidden">
                     <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/[0.02]">
                         <h2 className="font-semibold">Active Members</h2>

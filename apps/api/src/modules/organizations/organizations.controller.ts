@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, Delete, Put, UseGuards, Req, Get } from '@nestjs/common';
+import { Controller, Post, Body, Param, Delete, Put, UseGuards, Req, Get, NotImplementedException } from '@nestjs/common';
 import { OrganizationsService } from './organizations.service';
 import { OrgRole, TeamMember } from '@prisma/client';
 import { OrgRoleGuard } from '../../common/guards/org-role.guard';
@@ -107,5 +107,19 @@ export class OrganizationsController {
   ) {
     const requester: TeamMember = req.orgMembership;
     return this.orgsService.transferOwnership(orgId, targetUserId, requester);
+  }
+
+  @Post(':organizationId/buy-seats')
+  @UseGuards(OrgRoleGuard)
+  @OrgRoles(OrgRole.OWNER)
+  async buySeats(
+    @Param('organizationId') orgId: string,
+    @Body('amount') amountStr?: string,
+  ) {
+    if (process.env.ENABLE_MOCK_BILLING !== 'true') {
+      throw new NotImplementedException('Billing integration is not enabled');
+    }
+    const amount = amountStr ? parseInt(amountStr as any, 10) : 5;
+    return this.orgsService.purchaseSeats(orgId, amount);
   }
 }
