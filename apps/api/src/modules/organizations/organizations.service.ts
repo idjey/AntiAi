@@ -1,12 +1,16 @@
 import { Injectable, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OrgRole, TeamMember } from '@prisma/client';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class OrganizationsService {
   public static readonly DEFAULT_FREE_SEATS = 5;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService
+  ) {}
 
   async createOrganization(userId: string, name: string, slug: string) {
     return this.prisma.organization.create({
@@ -85,8 +89,11 @@ export class OrganizationsService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
 
-    return this.prisma.$transaction(async (tx) => {
-      // Lock the organization row to prevent TOCTOU race condition
+    return this.auditService.executeWithAuditRetry(() => this.prisma.$transaction(async (tx) => {
+      // 1. Audit Chain Serialization Lock (two-argument to prevent collision)
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('audit_log'), hashtext(${organizationId}::text))`;
+
+      // Lock the organization row to prevent TOCTOU race condition for seats
       const orgs = await tx.$queryRaw<{ max_seats: number }[]>`
         SELECT max_seats FROM organizations WHERE id = ${organizationId}::uuid FOR UPDATE
       `;
@@ -111,7 +118,7 @@ export class OrganizationsService {
         throw new ConflictException('Seat limit reached. Please purchase more seats.');
       }
 
-      return tx.pendingInvite.upsert({
+      const invite = await tx.pendingInvite.upsert({
         where: {
           organizationId_email: {
             organizationId,
@@ -131,7 +138,16 @@ export class OrganizationsService {
           expiresAt,
         }
       });
-    });
+
+      await this.auditService.logActionInTx(tx, organizationId, {
+        action: 'MEMBER_INVITED',
+        entityType: 'PendingInvite',
+        entityId: invite.id,
+        metadata: { email, role },
+      });
+
+      return invite;
+    }));
   }
 
   async acceptInvite(organizationId: string, inviteId: string, userId: string) {
@@ -148,20 +164,32 @@ export class OrganizationsService {
     if (invite.status !== 'PENDING') throw new BadRequestException('Invite is no longer pending');
     if (invite.expiresAt < new Date()) throw new BadRequestException('Invite has expired');
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.auditService.executeWithAuditRetry(() => this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('audit_log'), hashtext(${organizationId}::text))`;
+
       await tx.pendingInvite.update({
         where: { id: inviteId },
         data: { status: 'ACCEPTED' },
       });
 
-      return tx.teamMember.create({
+      const member = await tx.teamMember.create({
         data: {
           organizationId,
           userId: user.id,
           role: invite.role,
         }
       });
-    });
+
+      await this.auditService.logActionInTx(tx, organizationId, {
+        userId,
+        action: 'INVITE_ACCEPTED',
+        entityType: 'TeamMember',
+        entityId: member.id,
+        metadata: { role: invite.role },
+      });
+
+      return member;
+    }));
   }
 
   async removeMember(organizationId: string, targetUserId: string, requester: TeamMember) {
@@ -187,9 +215,23 @@ export class OrganizationsService {
       }
     }
 
-    return this.prisma.teamMember.delete({
-      where: { organizationId_userId: { organizationId, userId: targetUserId } }
-    });
+    return this.auditService.executeWithAuditRetry(() => this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('audit_log'), hashtext(${organizationId}::text))`;
+
+      const deleted = await tx.teamMember.delete({
+        where: { organizationId_userId: { organizationId, userId: targetUserId } }
+      });
+
+      await this.auditService.logActionInTx(tx, organizationId, {
+        userId: requester.userId,
+        action: 'MEMBER_REMOVED',
+        entityType: 'TeamMember',
+        entityId: deleted.id,
+        metadata: { removedUserId: targetUserId, role: targetMembership.role },
+      });
+
+      return deleted;
+    }));
   }
 
   async updateMemberRole(organizationId: string, targetUserId: string, newRole: OrgRole, requester: TeamMember) {
@@ -224,10 +266,24 @@ export class OrganizationsService {
       }
     }
 
-    return this.prisma.teamMember.update({
-      where: { organizationId_userId: { organizationId, userId: targetUserId } },
-      data: { role: newRole }
-    });
+    return this.auditService.executeWithAuditRetry(() => this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('audit_log'), hashtext(${organizationId}::text))`;
+
+      const updated = await tx.teamMember.update({
+        where: { organizationId_userId: { organizationId, userId: targetUserId } },
+        data: { role: newRole }
+      });
+
+      await this.auditService.logActionInTx(tx, organizationId, {
+        userId: requester.userId,
+        action: 'MEMBER_ROLE_UPDATED',
+        entityType: 'TeamMember',
+        entityId: updated.id,
+        metadata: { targetUserId, oldRole: targetMembership.role, newRole },
+      });
+
+      return updated;
+    }));
   }
 
   async deleteOrganization(organizationId: string) {
@@ -271,7 +327,9 @@ export class OrganizationsService {
       throw new BadRequestException('Target user is not a member of this organization');
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.auditService.executeWithAuditRetry(() => this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('audit_log'), hashtext(${organizationId}::text))`;
+
       // Promote target
       await tx.teamMember.update({
         where: { id: targetMembership.id },
@@ -292,12 +350,22 @@ export class OrganizationsService {
         throw new ConflictException('Ownership transfer resulted in zero owners');
       }
 
+      await this.auditService.logActionInTx(tx, organizationId, {
+        userId: requester.userId,
+        action: 'OWNERSHIP_TRANSFERRED',
+        entityType: 'Organization',
+        entityId: organizationId,
+        metadata: { newOwnerId: targetUserId },
+      });
+
       return { success: true };
-    });
+    }));
   }
 
   async purchaseSeats(organizationId: string, amount: number = 5) {
-    return this.prisma.$transaction(async (tx) => {
+    return this.auditService.executeWithAuditRetry(() => this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('audit_log'), hashtext(${organizationId}::text))`;
+
       const orgs = await tx.$queryRaw<{ id: string, max_seats: number }[]>`
         SELECT id, max_seats FROM organizations WHERE id = ${organizationId}::uuid FOR UPDATE
       `;
@@ -305,12 +373,21 @@ export class OrganizationsService {
         throw new BadRequestException('Organization not found');
       }
 
-      return tx.organization.update({
+      const updated = await tx.organization.update({
         where: { id: organizationId },
         data: {
           maxSeats: { increment: amount }
         }
       });
-    });
+
+      await this.auditService.logActionInTx(tx, organizationId, {
+        action: 'SEATS_PURCHASED',
+        entityType: 'Organization',
+        entityId: organizationId,
+        metadata: { amountPurchased: amount, newMaxSeats: updated.maxSeats },
+      });
+
+      return updated;
+    }));
   }
 }

@@ -7,12 +7,14 @@ import { IdentityCacheService } from './services/identity-cache.service';
 import { RateLimitService } from './services/rate-limit.service';
 import { IdempotencyService } from './services/idempotency.service';
 import { RedisModule } from '../redis/redis.module';
+import { BillingModule } from '../billing/billing.module';
 
 import { CanariesModule } from '../canaries/canaries.module';
 
 @Module({
   imports: [
     RedisModule,
+    BillingModule,
     forwardRef(() => CanariesModule),
     BullModule.registerQueue({ name: 'aggregation' }),
     BullModule.registerQueue({ name: 'provenance-verify' }),

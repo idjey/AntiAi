@@ -271,18 +271,38 @@ model ApiKey {
 }
 
 model AuditLog {
-  id         BigInt   @id @default(autoincrement())
-  userId     String?  @map("user_id") @db.Uuid
-  action     String
-  entityType String?  @map("entity_type")
-  entityId   String?  @map("entity_id")
-  metadata   Json     @default("{}")
-  createdAt  DateTime @default(now()) @map("created_at")
-  user       User?    @relation(fields: [userId], references: [id])
+  id             BigInt   @id @default(autoincrement())
+  organizationId String   @map("organization_id") @db.Uuid
+  userId         String?  @map("user_id") @db.Uuid
+  action         String
+  entityType     String?  @map("entity_type")
+  entityId       String?  @map("entity_id")
+  metadata       Json     @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at")
 
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([action, createdAt(sort: Desc)])
+  previousHash String @map("previous_hash")
+  hash         String @unique
+
+  user         User?        @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, previousHash])
+  @@index([organizationId, createdAt(sort: Desc)])
   @@map("audit_logs")
+}
+
+model AuditCheckpoint {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  lastEntryId    BigInt   @map("last_entry_id")
+  headHash       String   @map("head_hash")
+  signature      String
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@map("audit_checkpoints")
 }
 
 model Report {
@@ -939,15 +959,17 @@ model PendingInvite {
 }
 
 model Organization {
-  id           String                    @id @default(uuid()) @db.Uuid
-  name           String
-  slug           String                    @unique @db.Citext
-  maxSeats       Int                       @default(5) @map("max_seats")
-  createdAt      DateTime                  @default(now()) @map("created_at")
-  updatedAt      DateTime                  @updatedAt @map("updated_at")
-  subscription OrganizationSubscription?
-  teamMembers  TeamMember[]
-  pendingInvites PendingInvite[]
+  id              String                    @id @default(uuid()) @db.Uuid
+  name            String
+  slug            String                    @unique @db.Citext
+  maxSeats        Int                       @default(5) @map("max_seats")
+  createdAt       DateTime                  @default(now()) @map("created_at")
+  updatedAt       DateTime                  @updatedAt @map("updated_at")
+  subscription    OrganizationSubscription?
+  teamMembers     TeamMember[]
+  pendingInvites  PendingInvite[]
+  AuditLog        AuditLog[]
+  AuditCheckpoint AuditCheckpoint[]
 
   @@map("organizations")
 }

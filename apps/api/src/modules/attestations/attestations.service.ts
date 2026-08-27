@@ -9,6 +9,8 @@ import { RateLimitService } from './services/rate-limit.service';
 import { IdempotencyService } from './services/idempotency.service';
 import { SubmitAttestationDto, PUBLIC_CLAIM_TYPES } from './dto/submit-attestation.dto';
 import { AttestationError } from './errors/attestation-errors';
+import { SlaService } from '../billing/sla.service';
+import { PlanTier } from '@prisma/client';
 
 export interface SubmitResult {
   id: string;
@@ -59,11 +61,12 @@ export class AttestationsService {
     private idempotency: IdempotencyService,
     private prisma: PrismaService,
     private canaries: CanariesService,
+    private slaService: SlaService,
     @InjectQueue('aggregation') private aggregationQ: Queue,
     @InjectQueue('provenance-verify') private provenanceQ: Queue,
   ) {}
 
-  async submit(dto: SubmitAttestationDto): Promise<SubmitResult> {
+  async submit(dto: SubmitAttestationDto, tier: PlanTier = PlanTier.free): Promise<SubmitResult> {
     // Step 1 happened in the pipe. Phase 1 domain gate:
     if (dto.payload.context.domain !== 'public'
         || !PUBLIC_CLAIM_TYPES.has(dto.payload.claim.type)) {
@@ -134,11 +137,13 @@ export class AttestationsService {
     await this.idempotency.record(dto.payloadHash, attestation.id);
 
     // Step 9 — enqueue AFTER commit, never inside the transaction
+    const priority = this.slaService.getQueuePriority(tier);
+    
     await this.aggregationQ.add('recompute', { subjectHash: dto.payload.subject.hash },
-      { jobId: `agg-${dto.payload.subject.hash}`, removeOnComplete: true });
+      { jobId: `agg-${dto.payload.subject.hash}`, removeOnComplete: true, priority });
     if (attestation.claimType === 'PROVENANCE_FOUND') {
       await this.provenanceQ.add('verify', { attestationId: attestation.id },
-        { jobId: `prov-${attestation.id}`, attempts: 3, backoff: { type: 'exponential', delay: 30_000 } });
+        { jobId: `prov-${attestation.id}`, attempts: 3, backoff: { type: 'exponential', delay: 30_000 }, priority });
     }
 
     // Step 10: Process Canaries

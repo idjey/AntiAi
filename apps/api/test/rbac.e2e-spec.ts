@@ -418,6 +418,15 @@ describe('RBAC Enforcement (e2e)', () => {
         
         // One should get 201, the other should get 409
         expect(statuses).toEqual([201, 409]);
+        
+        // Assert the total seats used is exactly 5
+        const currentMembers = await prisma.teamMember.count({
+          where: { organizationId: limitOrgId }
+        });
+        const pendingInvites = await prisma.pendingInvite.count({
+          where: { organizationId: limitOrgId }
+        });
+        expect(currentMembers + pendingInvites).toEqual(5);
       });
 
       it('DENY: Limit strictly enforced including pending invites', async () => {

@@ -5,6 +5,8 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { BullModule } from '@nestjs/bullmq';
 import { HttpLoggingInterceptor } from './common/interceptors/http-logging.interceptor';
+import { TieredThrottlerGuard } from './common/guards/tiered-throttler.guard';
+import { RedisThrottlerStorage } from './common/guards/redis-throttler.storage';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ChannelsModule } from './modules/channels/channels.module';
@@ -30,6 +32,7 @@ import { VouchesModule } from './modules/vouches/vouches.module';
 import { CanariesModule } from './modules/canaries/canaries.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { OrganizationsModule } from './modules/organizations/organizations.module';
+import { AuditModule } from './modules/audit/audit.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { HealthController } from './health.controller';
@@ -54,11 +57,20 @@ import { HealthController } from './health.controller';
             },
         }),
 
-        // Rate limiting
-        ThrottlerModule.forRoot([{
-             ttl: 60000,
-             limit: 100,
-        }]),
+        // Rate limiting with Redis shared state
+        ThrottlerModule.forRootAsync({
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: (config: ConfigService) => ({
+                throttlers: [{
+                    ttl: 60000,
+                    limit: 100,
+                }],
+                storage: new RedisThrottlerStorage(
+                    config.get<string>('REDIS_URL') || 'redis://localhost:6379'
+                ),
+            }),
+        }),
 
         // BullMQ
         BullModule.forRootAsync({
@@ -115,11 +127,12 @@ import { HealthController } from './health.controller';
         CanariesModule,
         IdentityModule,
         OrganizationsModule,
+        AuditModule,
     ],
     providers: [
         {
             provide: APP_GUARD,
-            useClass: ThrottlerGuard,
+            useClass: TieredThrottlerGuard,
         },
         {
             provide: APP_INTERCEPTOR,
