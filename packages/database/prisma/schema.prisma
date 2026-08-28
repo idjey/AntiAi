@@ -835,6 +835,7 @@ enum VerificationStatus {
 }
 
 enum ProofStatus {
+  pending
   active
   expired
   revoked

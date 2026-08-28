@@ -11,9 +11,9 @@ describe('AppController (e2e)', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
-    .overrideProvider(getQueueToken('aggregation'))
-    .useValue({ add: jest.fn() })
-    .compile();
+      .overrideProvider(getQueueToken('aggregation'))
+      .useValue({ add: jest.fn() })
+      .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();

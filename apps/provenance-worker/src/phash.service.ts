@@ -12,7 +12,9 @@ export class PhashService {
     }
 
     if (mediaType === 'VIDEO') {
-      throw new Error('Video pHash not yet implemented (deferred until ffmpeg integration)');
+      throw new Error(
+        'Video pHash not yet implemented (deferred until ffmpeg integration)',
+      );
     }
 
     throw new Error(`pHash not supported for mediaType: ${mediaType}`);

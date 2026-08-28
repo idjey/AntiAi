@@ -4,12 +4,16 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { PrismaService } from './prisma.service';
 import { fetchPinned } from './media-fetcher';
 import { SsrfViolation, DnsLookup } from './ssrf-guard';
-import { PhashService, hammingDistance, MACHINE_VERIFIABLE } from './phash.service';
+import {
+  PhashService,
+  hammingDistance,
+  MACHINE_VERIFIABLE,
+} from './phash.service';
 import { Inject, Optional } from '@nestjs/common';
 
 export const DNS_LOOKUP = 'DNS_LOOKUP';
 
-const PHASH_MATCH_THRESHOLD = 8;   // Hamming distance; tune with real re-upload corpus
+const PHASH_MATCH_THRESHOLD = 8; // Hamming distance; tune with real re-upload corpus
 
 @Processor('provenance-verify')
 export class ProvenanceProcessor extends WorkerHost {
@@ -27,9 +31,9 @@ export class ProvenanceProcessor extends WorkerHost {
       where: { id: job.data.attestationId },
       include: { subject: true },
     });
-    
+
     const claim = attestation.claimPayload as { sourceUrl?: string };
-    
+
     if (!claim.sourceUrl) {
       return; // Nothing to verify
     }
@@ -44,16 +48,25 @@ export class ProvenanceProcessor extends WorkerHost {
 
     try {
       const media = await fetchPinned(claim.sourceUrl, this.lookupFn);
-      const candidateHash = await this.phash.compute(media, attestation.subject.mediaType);
-      const distance = hammingDistance(candidateHash, attestation.subject.perceptualHash!);
+      const candidateHash = await this.phash.compute(
+        media,
+        attestation.subject.mediaType,
+      );
+      const distance = hammingDistance(
+        candidateHash,
+        attestation.subject.perceptualHash!,
+      );
       matchScore = 1 - distance / candidateHash.length / 4; // normalized, hex-nibble based
-      verdict = distance <= PHASH_MATCH_THRESHOLD ? 'MACHINE_VERIFIED' : 'PENDING';
+      verdict =
+        distance <= PHASH_MATCH_THRESHOLD ? 'MACHINE_VERIFIED' : 'PENDING';
     } catch (e) {
       if (e instanceof SsrfViolation) {
         // Security telemetry, not a retry: an SSRF attempt is a signal about the attester.
         console.warn('SSRF_ATTEMPT', {
-          attestationId: attestation.id, attesterId: attestation.attesterId,
-          url: claim.sourceUrl, violation: e.code,
+          attestationId: attestation.id,
+          attesterId: attestation.attesterId,
+          url: claim.sourceUrl,
+          violation: e.code,
         });
         return; // attestation stays PENDING; do NOT retry
       }
@@ -64,13 +77,20 @@ export class ProvenanceProcessor extends WorkerHost {
       where: { id: attestation.id },
       data: {
         status: verdict,
-        claimPayload: { ...claim, matchScore, verifiedAt: new Date().toISOString() },
+        claimPayload: {
+          ...claim,
+          matchScore,
+          verifiedAt: new Date().toISOString(),
+        },
       },
     });
-    
+
     if (verdict === 'MACHINE_VERIFIED') {
-      await this.aggregationQ.add('recompute', { subjectHash: attestation.subject.hash },
-        { jobId: `agg:${attestation.subject.hash}` });
+      await this.aggregationQ.add(
+        'recompute',
+        { subjectHash: attestation.subject.hash },
+        { jobId: `agg:${attestation.subject.hash}` },
+      );
     }
   }
 }

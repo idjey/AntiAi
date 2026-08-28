@@ -22,10 +22,9 @@ jest.mock('ipaddr.js', () => {
         ip.range = () => 'unicast';
       }
       return ip;
-    }
+    },
   };
 });
-
 
 describe('ProvenanceWorker (e2e)', () => {
   let app: any;
@@ -45,23 +44,29 @@ describe('ProvenanceWorker (e2e)', () => {
       countryCode: 'US',
       state: 'CA',
       locality: 'SF',
-      validity: 365
+      validity: 365,
     });
 
     const cert = await mkcert.createCert({
       ca: { key: ca.key, cert: ca.cert },
       domains: ['127.0.0.1', 'youtube.com'],
-      validity: 365
+      validity: 365,
     });
 
     // Make the CA cert available globally for the native https fetcher
     (global as any).TEST_CA_CERT = ca.cert;
 
-    const gifBytes = Buffer.from('R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=', 'base64');
-    server = https.createServer({ key: cert.key, cert: cert.cert }, (req, res) => {
-      res.writeHead(200, { 'Content-Type': 'image/gif' });
-      res.end(gifBytes);
-    });
+    const gifBytes = Buffer.from(
+      'R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=',
+      'base64',
+    );
+    server = https.createServer(
+      { key: cert.key, cert: cert.cert },
+      (req, res) => {
+        res.writeHead(200, { 'Content-Type': 'image/gif' });
+        res.end(gifBytes);
+      },
+    );
 
     await new Promise<void>((resolve, reject) => {
       server.listen(8443, '127.0.0.1', () => {
@@ -79,20 +84,20 @@ describe('ProvenanceWorker (e2e)', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
-    .overrideProvider(getQueueToken('aggregation'))
-    .useValue(mockAggregationQueue)
-    .overrideProvider(DNS_LOOKUP)
-    .useValue(async (hostname: string, options: any) => {
-      if (hostname === 'youtube.com') {
-        return [{ address: '127.0.0.1', family: 4 }];
-      }
-      return lookup(hostname, options);
-    })
-    .compile();
+      .overrideProvider(getQueueToken('aggregation'))
+      .useValue(mockAggregationQueue)
+      .overrideProvider(DNS_LOOKUP)
+      .useValue(async (hostname: string, options: any) => {
+        if (hostname === 'youtube.com') {
+          return [{ address: '127.0.0.1', family: 4 }];
+        }
+        return lookup(hostname, options);
+      })
+      .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
-    
+
     prisma = app.get(PrismaService);
     processor = app.get(ProvenanceProcessor);
   }, 30000);
@@ -112,7 +117,10 @@ describe('ProvenanceWorker (e2e)', () => {
   it('1. Golden Path: Worker successfully verifies a known URL and flips to MACHINE_VERIFIED', async () => {
     // Generate actual pHash for the 1x1 black GIF
     const phashService = app.get(PhashService);
-    const gifBytes = Buffer.from('R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=', 'base64');
+    const gifBytes = Buffer.from(
+      'R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=',
+      'base64',
+    );
     const pHash = await phashService.compute(gifBytes, 'IMAGE');
 
     // Seed dummy subject with the EXACT pHash
@@ -121,7 +129,7 @@ describe('ProvenanceWorker (e2e)', () => {
         hash: 'sha256-mock-' + randomUUID(),
         mediaType: 'IMAGE',
         perceptualHash: pHash,
-      }
+      },
     });
 
     const user = await prisma.verifierIdentity.create({
@@ -132,7 +140,7 @@ describe('ProvenanceWorker (e2e)', () => {
         keyId: 'mock-' + randomUUID(),
         publicKey: 'mock-' + randomUUID(),
         platform: 'extension',
-      }
+      },
     });
 
     const attestation = await prisma.attestation.create({
@@ -148,14 +156,16 @@ describe('ProvenanceWorker (e2e)', () => {
         version: '1',
         clientTimestamp: new Date(),
         nonce: randomUUID(),
-      }
+      },
     });
 
     // Run the processor synchronously as a BullMQ job
     await processor.process({ data: { attestationId: attestation.id } } as Job);
 
     // Assert it flipped to MACHINE_VERIFIED in the real DB
-    const updated = await prisma.attestation.findUnique({ where: { id: attestation.id } });
+    const updated = await prisma.attestation.findUnique({
+      where: { id: attestation.id },
+    });
     expect(updated?.status).toBe('MACHINE_VERIFIED');
     expect((updated?.claimPayload as any).matchScore).toBeDefined();
   });
@@ -166,7 +176,7 @@ describe('ProvenanceWorker (e2e)', () => {
         hash: 'sha256-mock-' + randomUUID(),
         mediaType: 'IMAGE',
         perceptualHash: 'any-hash',
-      }
+      },
     });
 
     const user = await prisma.verifierIdentity.create({
@@ -177,7 +187,7 @@ describe('ProvenanceWorker (e2e)', () => {
         keyId: 'mock-' + randomUUID(),
         publicKey: 'mock-' + randomUUID(),
         platform: 'extension',
-      }
+      },
     });
 
     const attestation = await prisma.attestation.create({
@@ -193,16 +203,18 @@ describe('ProvenanceWorker (e2e)', () => {
         version: '1',
         clientTimestamp: new Date(),
         nonce: randomUUID(),
-      }
+      },
     });
 
     // Run the processor. We expect it to NOT throw an error (which tells BullMQ not to retry).
     await expect(
-      processor.process({ data: { attestationId: attestation.id } } as Job)
+      processor.process({ data: { attestationId: attestation.id } } as Job),
     ).resolves.not.toThrow();
 
     // The status should remain PENDING because it failed the guard.
-    const updated = await prisma.attestation.findUnique({ where: { id: attestation.id } });
+    const updated = await prisma.attestation.findUnique({
+      where: { id: attestation.id },
+    });
     expect(updated?.status).toBe('PENDING');
     expect((updated?.claimPayload as any).matchScore).toBeUndefined();
   });

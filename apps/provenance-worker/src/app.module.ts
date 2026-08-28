@@ -20,12 +20,15 @@ import { lookup } from 'node:dns/promises';
   ],
   controllers: [AppController],
   providers: [
-    AppService, 
-    PrismaService, 
-    PhashService, 
+    AppService,
+    PrismaService,
+    PhashService,
     ProvenanceProcessor,
-    { provide: getQueueToken('aggregation'), useValue: { add: async () => {} } },
-    { provide: DNS_LOOKUP, useValue: lookup }
+    {
+      provide: getQueueToken('aggregation'),
+      useValue: { add: async () => {} },
+    },
+    { provide: DNS_LOOKUP, useValue: lookup },
   ],
 })
 export class AppModule {}

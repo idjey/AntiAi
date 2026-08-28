@@ -27,7 +27,8 @@ jest.mock('bull', () => {
   };
 });
 
-
+let globalPrismaService: any;
+let mockSignerApp: any;
 
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
@@ -42,10 +43,18 @@ describe('ProofsController (e2e)', () => {
   let channelId: string;
   let videoId: string;
 
-  beforeAll(async () => {
+  beforeAll(async () => { console.log('DB URL:', process.env.DATABASE_URL);
     process.env.GOOGLE_CLIENT_ID = 'test-client-id';
     process.env.GOOGLE_CLIENT_SECRET = 'test-client-secret';
     process.env.GOOGLE_CALLBACK_URL = 'http://localhost:3000/auth/google/callback';
+    process.env.SIGNER_SERVICE_URL = 'http://127.0.0.1:4001';
+
+    process.env.SIGNING_PRIVATE_KEY_B64 = 'c29tZS1mYWtlLWtleS10aGF0LWlzLTMyLWJ5dGVzLWxvbmc='; // valid 32 byte base64 key
+    
+    // Import and start the REAL signer instead of a mock!
+    // Since index.ts calls start() automatically, this boots the real fastify app on port 4001
+    mockSignerApp = require('../../signer/src/index.ts').server;
+    await mockSignerApp.ready();
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -53,6 +62,7 @@ describe('ProofsController (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
+    globalPrismaService = prismaService;
     jwtService = moduleFixture.get<JwtService>(JwtService);
     await app.init();
     // Cascading cleanup of any orphaned data from previous runs
@@ -124,9 +134,11 @@ describe('ProofsController (e2e)', () => {
     });
     
     authToken = jwtService.sign({ sub: user.id, email: user.email, role: user.role });
+
   });
 
   afterAll(async () => {
+    await mockSignerApp.close();
     if (prismaService) {
       await prismaService.proof.deleteMany({ where: { channelId } });
       await prismaService.video.deleteMany({ where: { id: videoId } });

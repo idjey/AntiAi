@@ -124,44 +124,26 @@ export class ProofsService {
             }
         }
 
-        let signedProof;
-        try {
-            signedProof = await signProof({
-                kid,
-                youtubeVideoId: video.platformId,
-                youtubeChannelId: video.channel.platformId,
-                expiresAt,
-                privateKeyB64,
-                contentHash: dto.content_hash,
-                perceptualHashes,
-                perceptualHashVersion
-            });
-        } catch (error) {
-            console.error('Crypto Signing Error:', error);
-            throw new BadRequestException('Failed to sign proof: ' + error.message);
-        }
-
-        // Store proof
+        // Store proof initially as pending
         const proof = await this.prisma.proof.create({
             data: {
                 videoId: video.id,
                 channelId: video.channelId,
-                alg: signedProof.alg,
-                kid: signedProof.kid,
-                payloadJson: signedProof.payload_json as any,
-                payloadB64: signedProof.payload_b64,
-                signatureB64: signedProof.signature_b64,
+                alg: 'Ed25519',
+                kid,
+                payloadJson: {},
+                payloadB64: 'PENDING',
+                signatureB64: 'PENDING',
                 contentHash: dto.content_hash,
                 expiresAt,
-                status: 'active',
+                status: 'pending' as any, // Cast as any if Prisma types are stale
             },
             include: {
                 video: { select: { platformId: true, title: true } },
             },
         });
 
-        // Insert perceptual hashes using raw SQL due to Unsupported("bit(64)") column
-        if (dto.perceptual_hashes && dto.perceptual_hashes.length > 0) {
+        if (dto.perceptual_hashes) {
             for (const phash of dto.perceptual_hashes) {
                 await this.prisma.$executeRaw`
                     INSERT INTO proof_perceptual_hashes (id, proof_id, anchor_fraction, phash_bits, version)
@@ -169,6 +151,43 @@ export class ProofsService {
                 `;
             }
         }
+
+        // Delegate signing to the isolated signer service
+        let signedProofResult;
+        try {
+            const jwt = require('jsonwebtoken');
+            const token = jwt.sign({ service: 'api' }, process.env.INTERNAL_SIGNER_SECRET || 'dev-internal-secret', { expiresIn: '5m' });
+
+            const response = await fetch('http://localhost:4001/internal/sign', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ proofId: proof.id })
+            });
+
+            if (!response.ok) {
+                const errBody = await response.text();
+                throw new Error(`Signer returned ${response.status}: ${errBody}`);
+            }
+
+            signedProofResult = await response.json();
+
+            // The signer updates the DB asynchronously, but we need the signed record for the return payload.
+            // In a robust implementation, the signer would return the full updated record, or we fetch it.
+            // We'll refetch it.
+        } catch (error) {
+            console.error('Signer Service Error:', error);
+            // Optionally delete the pending proof, or leave it for async cleanup
+            throw new BadRequestException('Failed to sign proof via isolated signer: ' + (error as any).message);
+        }
+
+        const completedProof = await this.prisma.proof.findUnique({
+            where: { id: proof.id }
+        });
+
+
 
         // Log to transparency log
         await this.prisma.transparencyLog.create({
@@ -179,7 +198,7 @@ export class ProofsService {
                 data: {
                     video_id: video.platformId,
                     channel_id: video.channel.platformId,
-                    kid: signedProof.kid,
+                    kid: kid,
                 },
             },
         });
@@ -190,7 +209,7 @@ export class ProofsService {
             data: { videosThisMonth: { increment: 1 } },
         });
 
-        return this.formatProof(proof);
+        return this.formatProof(completedProof);
     }
 
     async reissueProof(userId: string, dto: ReissueProofDto) {
