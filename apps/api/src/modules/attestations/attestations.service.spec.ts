@@ -5,6 +5,7 @@ import { EnvelopeVerifierService } from './services/envelope-verifier.service';
 import { IdentityCacheService } from './services/identity-cache.service';
 import { RateLimitService } from './services/rate-limit.service';
 import { IdempotencyService } from './services/idempotency.service';
+import { SlaService } from '../billing/sla.service';
 import { getQueueToken } from '@nestjs/bullmq';
 import { AttestationError } from './errors/attestation-errors';
 import { CanariesService } from '../canaries/canaries.service';
@@ -67,6 +68,7 @@ describe('AttestationsService', () => {
         { provide: RateLimitService, useValue: mockRateLimit },
         { provide: IdempotencyService, useValue: mockIdempotency },
         { provide: CanariesService, useValue: mockCanaries },
+        { provide: SlaService, useValue: { getQueuePriority: jest.fn().mockReturnValue(1) } },
         { provide: getQueueToken('aggregation'), useValue: mockAggQ },
         { provide: getQueueToken('provenance-verify'), useValue: mockProvQ },
       ],
