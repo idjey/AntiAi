@@ -2,22 +2,19 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { PrismaClient } from '@antiai/database';
 import { buildCanonicalPayload } from '@antiai/crypto';
-import { LocalKmsClient } from '../kms/local-kms';
-import { IKmsClient } from '../kms/kms-client';
+import { AwsKmsClient } from '../kms/aws-kms';
+import Redis from 'ioredis';
 
 const prisma = new PrismaClient();
 
-// In production, this would be injected or swapped based on NODE_ENV.
-let kmsClient: IKmsClient;
-try {
-  kmsClient = new LocalKmsClient();
-} catch (e) {
-  console.error("Failed to initialize KMS Client:", e);
-  process.exit(1);
-}
+// Setup Redis for rate limiting
+const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+const redis = new Redis(redisUrl);
+
+// Instantiate AwsKmsClient (region uses AWS_REGION or defaults)
+const kmsClient = new AwsKmsClient();
 
 // 1. STRICT INPUT VALIDATION
-// The request supplies ONLY the identifier. No payload hints.
 const signRequestSchema = z.object({
   proofId: z.string().uuid()
 });
@@ -32,13 +29,13 @@ export async function signRoute(fastify: FastifyInstance) {
     const { proofId } = parseResult.data;
 
     // 2. FETCH SOURCE OF TRUTH (DATABASE)
-    // Fetch the proof and the strictly necessary related entities to re-derive the payload.
     const proof = await prisma.proof.findUnique({
       where: { id: proofId },
       include: {
         video: true,
         channel: true,
-        perceptualHashes: true
+        perceptualHashes: true,
+        signingKey: true
       }
     });
 
@@ -46,17 +43,46 @@ export async function signRoute(fastify: FastifyInstance) {
       return reply.status(404).send({ error: 'Proof not found in database' });
     }
 
-    // A real implementation might use a 'pending' state, but for Increment 1 
-    // we assume the API creates it without a signature, and we just sign it if it lacks one,
-    // or we just unconditionally re-sign it (idempotency).
-    
+    if (!proof.signingKey) {
+      return reply.status(500).send({ error: 'SigningKey not associated with proof' });
+    }
+
+    const { signingKey } = proof;
+
+    // 3. VELOCITY LIMITS (Redis)
+    // Keyed by `kid` to bound every signing path (including platform key)
+    const currentMinute = Math.floor(Date.now() / 60000);
+    const rateLimitKey = `signer:ratelimit:kid:${signingKey.id}:${currentMinute}`;
+    const maxSignsPerMinute = signingKey.rateLimitMax || 500;
+
+    const currentCount = await redis.incr(rateLimitKey);
+    if (currentCount === 1) {
+      // Set expiration to 60 seconds
+      await redis.expire(rateLimitKey, 60);
+    }
+
+    if (currentCount > maxSignsPerMinute) {
+      request.log.warn(`Rate limit exceeded for kid ${signingKey.id}. Count: ${currentCount}`);
+      return reply.status(429).send({ error: 'Velocity limit exceeded for this key' });
+    }
+
+    // 4. SECURITY BOUNDARY ENFORCEMENT
+    if (signingKey.provider === 'local') {
+      // The legacy local key stays for verification ONLY.
+      // This signer structurally refuses to load local private keys.
+      return reply.status(501).send({ error: 'Signer is KMS-only. Local provider is unsupported for signing.' });
+    }
+
+    if (signingKey.provider !== 'aws_kms' || !signingKey.providerKeyId) {
+      return reply.status(500).send({ error: 'Invalid provider or missing providerKeyId for KMS signing' });
+    }
+
+    // 5. RE-DERIVE PAYLOAD
     let phashes: Record<string, string> | undefined = undefined;
     let phashVersion: number | undefined = undefined;
     
     if (proof.perceptualHashes && proof.perceptualHashes.length > 0) {
       phashes = {};
-      
-      // Use raw SQL to read the bit(64) column properly. Cast to varchar to get a string of 1s and 0s.
       const rawHashes = await prisma.$queryRaw<Array<{ anchor_fraction: number, phash_bin: string, version: number }>>`
         SELECT anchor_fraction, phash_bits::varchar as phash_bin, version 
         FROM proof_perceptual_hashes 
@@ -64,15 +90,12 @@ export async function signRoute(fastify: FastifyInstance) {
       `;
       
       for (const row of rawHashes) {
-        // Convert binary string back to hex. Pad with 0s to ensure it's 16 chars (64 bits).
         const hex = BigInt('0b' + row.phash_bin).toString(16).padStart(16, '0');
         phashes[row.anchor_fraction.toString()] = hex;
-        phashVersion = row.version; // Assumes all have the same version
+        phashVersion = row.version;
       }
     }
 
-    // 3. RE-DERIVE PAYLOAD
-    // We derive everything strictly from the DB records. No request input is used here.
     const expiresAtUnix = Math.floor(proof.expiresAt.getTime() / 1000);
     
     const { payload, payloadBytes } = buildCanonicalPayload({
@@ -85,34 +108,25 @@ export async function signRoute(fastify: FastifyInstance) {
       perceptualHashVersion: phashVersion
     });
 
-    // 4. SIGN VIA KMS STUB
+    // 6. SIGN VIA KMS
     try {
-      // Stub uses 'Ed25519' exclusively.
-      const signatureB64 = await kmsClient.sign(Buffer.from(payloadBytes), proof.kid, 'Ed25519');
-
-      // The signature logic in @noble/ed25519 signs the raw payloadBytes, not the sha512 hash in some modes.
-      // Wait, let's check what `@antiai/crypto` does: `ed25519.sign(payloadBytes, priv32)` 
-      // It signs the raw bytes! Not the hash.
-      // So KMS client must sign payloadBytes directly if it's acting as a drop-in. 
-      // For a real AWS KMS Ed25519, the payload size is limited to 4096 bytes unless hashed. 
-      // Our payload is well under 4096 bytes. We will pass payloadBytes to the KMS stub.
-      const rawSigB64 = await kmsClient.sign(Buffer.from(payloadBytes), proof.kid, 'Ed25519');
+      const rawSigB64Url = await kmsClient.sign(Buffer.from(payloadBytes), signingKey.providerKeyId, 'Ed25519');
 
       const payload_b64 = Buffer.from(payloadBytes).toString('base64');
       const payloadB64Url = payload_b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 
-      // 5. UPDATE DB
+      // 7. UPDATE DB
       await prisma.proof.update({
         where: { id: proofId },
         data: {
-          signatureB64: rawSigB64,
+          signatureB64: rawSigB64Url,
           payloadB64: payloadB64Url,
           payloadJson: payload as any,
           status: 'active' as any
         }
       });
 
-      return reply.send({ signatureB64: rawSigB64 });
+      return reply.send({ signatureB64: rawSigB64Url });
     } catch (err: any) {
       request.log.error(`KMS Signing failed: ${err.message}`);
       return reply.status(500).send({ error: 'Failed to sign proof' });

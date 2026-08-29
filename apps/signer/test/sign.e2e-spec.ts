@@ -6,6 +6,10 @@ import * as jwt from 'jsonwebtoken';
 import { PrismaClient } from '@antiai/database';
 import { buildCanonicalPayload } from '@antiai/crypto';
 import { server } from '../src/index';
+import { mockClient } from 'aws-sdk-client-mock';
+import { KMSClient, SignCommand } from '@aws-sdk/client-kms';
+
+const kmsMock = mockClient(KMSClient);
 
 const prisma = new PrismaClient();
 const INTERNAL_SIGNER_SECRET = process.env.INTERNAL_SIGNER_SECRET || 'dev-internal-secret';
@@ -27,12 +31,18 @@ describe('Signer Service (e2e)', () => {
       data: { email: `test-${Date.now()}@example.com`, role: 'creator', isEmailVerified: true }
     });
     
+    kmsMock.on(SignCommand).resolves({
+      Signature: new Uint8Array(64).fill(1) // Fake 64-byte Ed25519 signature
+    });
+    
     const signingKey = await prisma.signingKey.create({
       data: {
         id: `kid-${Date.now()}`,
         publicKeyB64: `pk-${Date.now()}`,
         isActive: true,
         alg: 'Ed25519',
+        provider: 'aws_kms',
+        providerKeyId: 'test-kms-key-id'
       }
     });
 
@@ -88,6 +98,7 @@ describe('Signer Service (e2e)', () => {
   });
 
   afterAll(async () => {
+    kmsMock.restore();
     await server.close();
     await prisma.$disconnect();
   });
@@ -130,44 +141,39 @@ describe('Signer Service (e2e)', () => {
     expect(updatedProof!.signatureB64).toBe(res.body.signatureB64);
     expect((updatedProof as any).status).toBe('active');
 
-    // ASSERTION: Verify the output signature was generated over the DB derived bytes, not the fraudulent ones.
-    // If it used 'FRAUDULENT_CONTENT_HASH' or 'FRAUDULENT_VIDEO_ID', the verification against dbDerivedPayloadBytes would fail.
-    const crypto = require('crypto');
-    
-    // Convert signature back to bytes
-    const sigB64 = res.body.signatureB64.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((res.body.signatureB64.length + 3) % 4);
-    const sigBytes = Buffer.from(sigB64, 'base64');
-
-    // We must fetch the public key for the stub's seed to verify. 
-    // Wait, the stub signs using process.env.SIGNING_PRIVATE_KEY_B64
-    const privB64 = process.env.SIGNING_PRIVATE_KEY_B64;
-    if (!privB64) throw new Error("Missing SIGNING_PRIVATE_KEY_B64");
-    
-    const rawKey = Buffer.from(privB64, 'base64');
-    const priv32 = rawKey.length === 32 ? rawKey : rawKey.slice(0, 32);
-    
-    const privateKey = crypto.createPrivateKey({
-      key: Buffer.concat([
-        Buffer.from('302e020100300506032b657004220420', 'hex'), // DER prefix for Ed25519
-        priv32
-      ]),
-      format: 'der',
-      type: 'pkcs8'
-    });
-    const pubKeyObj = crypto.createPublicKey(privateKey);
-
-    // We MUST use the one saved in the DB to verify the signature, because it contains a random nonce generated at signing time.
-    const updatedPayloadB64Url = updatedProof!.payloadB64;
-    const b64 = updatedPayloadB64Url.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((updatedPayloadB64Url.length + 3) % 4);
-    const dbDerivedPayloadBytes = Buffer.from(b64, 'base64');
-    
     // VERIFY IT IGNORED FRAUDULENT DATA
-    const parsedPayload = JSON.parse(dbDerivedPayloadBytes.toString('utf-8'));
+    const parsedPayload = JSON.parse(Buffer.from(dbDerivedPayloadBytes).toString('utf-8'));
     expect(parsedPayload.content_hash).toBe(dbRecord.contentHash);
     expect(parsedPayload.youtube_video_id).toBe(testVideo.platformId);
     
-    const isValid = crypto.verify(null, dbDerivedPayloadBytes, pubKeyObj, sigBytes);
-    
-    expect(isValid).toBe(true);
+    // We mocked KMS so we just expect the signature to match what our mock returns (64 bytes of 1s in base64url)
+    const expectedSigB64 = Buffer.from(new Uint8Array(64).fill(1)).toString('base64');
+    const expectedSigB64Url = expectedSigB64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+    expect(res.body.signatureB64).toBe(expectedSigB64Url);
+  });
+
+  it('enforces velocity limits keyed by kid', async () => {
+    // We already made 1 successful sign above. Let's make more to hit the limit.
+    // By default the limit is 500, but let's change the signingKey limit to 2 for this test
+    const key = await prisma.signingKey.findFirst({ where: { id: dbRecord.kid }});
+    await prisma.signingKey.update({
+      where: { id: key!.id },
+      data: { rateLimitMax: 2 }
+    });
+
+    // Request 2 (should succeed, count = 2)
+    const res2 = await request(server.server)
+      .post('/internal/sign')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ proofId: testProofId });
+    expect(res2.status).toBe(200);
+
+    // Request 3 (should fail, limit is 2)
+    const res3 = await request(server.server)
+      .post('/internal/sign')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ proofId: testProofId });
+    expect(res3.status).toBe(429);
+    expect(res3.body.error).toContain('Velocity limit exceeded');
   });
 });

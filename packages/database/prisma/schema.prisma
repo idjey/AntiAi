@@ -127,11 +127,16 @@ model OAuthAccount {
 model SigningKey {
   id           String    @id
   alg          String    @default("Ed25519")
-  publicKeyB64 String    @map("public_key_b64")
-  isActive     Boolean   @default(true) @map("is_active")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  retiredAt    DateTime? @map("retired_at")
-  proofs       Proof[]
+  publicKeyB64   String       @map("public_key_b64")
+  isActive       Boolean      @default(true) @map("is_active")
+  provider       String       @default("local") // "local" or "aws_kms"
+  providerKeyId  String?      @map("provider_key_id") // AWS KMS ARN or Alias
+  organizationId String?      @map("organization_id") @db.Uuid
+  rateLimitMax   Int          @default(500) @map("rate_limit_max")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  retiredAt      DateTime?    @map("retired_at")
+  proofs         Proof[]
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([isActive])
   @@map("signing_keys")
@@ -969,8 +974,9 @@ model Organization {
   subscription    OrganizationSubscription?
   teamMembers     TeamMember[]
   pendingInvites  PendingInvite[]
-  AuditLog        AuditLog[]
-  AuditCheckpoint AuditCheckpoint[]
+  auditLogs        AuditLog[]
+  auditCheckpoints AuditCheckpoint[]
+  signingKeys      SigningKey[]
 
   @@map("organizations")
 }

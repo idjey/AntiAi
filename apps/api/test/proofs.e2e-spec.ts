@@ -130,6 +130,8 @@ describe('ProofsController (e2e)', () => {
         alg: 'Ed25519',
         publicKeyB64: 'mock_public_key_b64',
         isActive: true,
+        provider: 'aws_kms',
+        providerKeyId: 'test-kms-key-id'
       }
     });
     

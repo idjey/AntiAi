@@ -24,6 +24,11 @@ describe('ProofsController (e2e)', () => {
     process.env.GOOGLE_CLIENT_ID = 'test-client-id';
     process.env.GOOGLE_CLIENT_SECRET = 'test-client-secret';
     process.env.GOOGLE_CALLBACK_URL = 'http://localhost:3000/auth/google/callback';
+    process.env.SIGNER_SERVICE_URL = 'http://127.0.0.1:4001';
+
+    // Start the REAL signer!
+    const mockSignerApp = require('../../signer/src/index.ts').server;
+    await mockSignerApp.ready();
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -82,12 +87,17 @@ describe('ProofsController (e2e)', () => {
     // Seed signing key
     await prismaService.signingKey.upsert({
       where: { id: 'k_2026_01' },
-      update: {},
+      update: {
+        provider: 'aws_kms',
+        providerKeyId: '63903d8b-13cf-42cf-8e39-916decf8d793'
+      },
       create: {
         id: 'k_2026_01',
         alg: 'Ed25519',
-        publicKeyB64: 'mock_public_key_b64',
+        publicKeyB64: '5bSv6HyCrLyNv2/mPaYPjNekli1pW9nLEisfJmK+wKc=',
         isActive: true,
+        provider: 'aws_kms',
+        providerKeyId: '63903d8b-13cf-42cf-8e39-916decf8d793'
       }
     });
     
