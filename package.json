@@ -8,6 +8,7 @@
     "packages/*"
   ],
   "scripts": {
+    "start": "echo 'Monorepo root. Use a workspace start command.'",
     "build:packages": "npm run build -w packages/shared -w packages/crypto -w packages/database -w packages/attestation-core -w packages/phash",
     "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
     "dev:web": "cd apps/web && npm run dev",
