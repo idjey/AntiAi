@@ -119,18 +119,25 @@ export class ProofsService {
             );
         }
 
-        // Get signing key
-        const kid = this.configService.get<string>('SIGNING_KEY_ID');
-        const privateKeyB64 = this.configService.get<string>('SIGNING_PRIVATE_KEY_B64');
+        // ── INCREMENT 3: GRADUAL ROLLOUT & FALLBACK ──
+        const rolloutPct = await this.getRolloutPct();
+        const useKms = Math.random() * 100 < rolloutPct || dto.content_hash === 'shadow-verify-test';
 
-        if (!kid || !privateKeyB64) {
+        // Get signing keys
+        const legacyKid = this.configService.get<string>('SIGNING_KEY_ID');
+        const privateKeyB64 = this.configService.get<string>('SIGNING_PRIVATE_KEY_B64');
+        const kmsKid = this.configService.get<string>('KMS_SIGNING_KEY_ID') || 'k_2026_02';
+
+        if (!legacyKid || !privateKeyB64) {
             throw new BadRequestException('Signing keys not configured');
         }
 
-        // Ensure SigningKey exists in DB (Foreign Key constraint)
+        const kid = useKms ? kmsKid : legacyKid;
+
+        // Ensure SigningKey exists in DB (Foreign Key constraint) for legacy key
         const publicKeyB64 = this.configService.get<string>('SIGNING_PUBLIC_KEY_B64');
         if (publicKeyB64) {
-            await this.ensureSigningKey(kid, publicKeyB64);
+            await this.ensureSigningKey(legacyKid, publicKeyB64);
         }
 
         // Sign the proof — expiry is server-computed from plan limits
@@ -173,10 +180,6 @@ export class ProofsService {
                 `;
             }
         }
-
-        // ── INCREMENT 3: GRADUAL ROLLOUT & FALLBACK ──
-        const rolloutPct = await this.getRolloutPct();
-        const useKms = Math.random() * 100 < rolloutPct || dto.content_hash === 'shadow-verify-test';
 
         let signedProofResult = null;
         let kmsSuccess = false;
@@ -246,7 +249,7 @@ export class ProofsService {
             // Fallback to legacy CPU-bound signer
             console.log(`[ProofsService] Using legacy local signer for proof ${proof.id}`);
             const signedProof = await signProof({
-                kid,
+                kid: legacyKid,
                 youtubeVideoId: video.platformId,
                 youtubeChannelId: video.channel.platformId,
                 expiresAt,
