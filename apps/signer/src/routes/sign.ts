@@ -4,6 +4,7 @@ import { PrismaClient } from '@antiai/database';
 import { buildCanonicalPayload } from '@antiai/crypto';
 import { AwsKmsClient } from '../kms/aws-kms';
 import Redis from 'ioredis';
+import * as crypto from 'crypto';
 
 const prisma = new PrismaClient();
 
@@ -111,6 +112,37 @@ export async function signRoute(fastify: FastifyInstance) {
     // 6. SIGN VIA KMS
     try {
       const rawSigB64Url = await kmsClient.sign(Buffer.from(payloadBytes), signingKey.providerKeyId, 'Ed25519');
+
+      // Convert URL-safe base64 back to raw buffer for verification
+      const rawSigBuffer = Buffer.from(
+        rawSigB64Url.replace(/-/g, '+').replace(/_/g, '/'),
+        'base64'
+      );
+
+      // Extract DB public key bytes
+      const publicKeyBytes = Buffer.from(signingKey.publicKeyB64, 'base64');
+      
+      // Wrap raw Ed25519 public key in SPKI/DER envelope for Node crypto
+      const spkiPrefix = Buffer.from('302a300506032b6570032100', 'hex');
+      const fullSpki = Buffer.concat([spkiPrefix, publicKeyBytes]);
+      
+      const publicKeyObject = crypto.createPublicKey({
+        key: fullSpki,
+        format: 'der',
+        type: 'spki'
+      });
+
+      const isValid = crypto.verify(
+        null,
+        Buffer.from(payloadBytes),
+        publicKeyObject,
+        rawSigBuffer
+      );
+
+      if (!isValid) {
+        request.log.error(`CRITICAL: KMS signature failed self-verification for kid ${signingKey.id}!`);
+        throw new Error('KMS signature self-verification failed');
+      }
 
       const payload_b64 = Buffer.from(payloadBytes).toString('base64');
       const payloadB64Url = payload_b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');

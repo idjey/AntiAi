@@ -11,6 +11,7 @@ import { VideosService } from '../videos/videos.service';
 import { signProof } from '@antiai/crypto';
 import { IssueProofDto, ReissueProofDto } from './dto';
 import { getPlanLimits } from '@antiai/shared';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class ProofsService {
@@ -19,6 +20,27 @@ export class ProofsService {
         private readonly configService: ConfigService,
         private readonly videosService: VideosService,
     ) { }
+
+    private rolloutCache: { pct: number; expiresAt: number } = { pct: 0, expiresAt: 0 };
+
+    private async getRolloutPct(): Promise<number> {
+        const now = Date.now();
+        if (now < this.rolloutCache.expiresAt) {
+            return this.rolloutCache.pct;
+        }
+
+        try {
+            const setting = await this.prisma.systemSetting.findUnique({
+                where: { key: 'KMS_ROLLOUT_PCT' },
+            });
+            const pct = parseInt(setting?.value || '0', 10) || 0;
+            this.rolloutCache = { pct, expiresAt: now + 5000 }; // 5-second TTL
+            return pct;
+        } catch (err) {
+            console.error('Failed to read KMS_ROLLOUT_PCT from DB', err);
+            return 0;
+        }
+    }
 
     async listUserProofs(userId: string, videoId?: string) {
         // Get user's verified channels
@@ -152,35 +174,97 @@ export class ProofsService {
             }
         }
 
-        // Delegate signing to the isolated signer service
-        let signedProofResult;
-        try {
-            const jwt = require('jsonwebtoken');
-            const token = jwt.sign({ service: 'api' }, process.env.INTERNAL_SIGNER_SECRET || 'dev-internal-secret', { expiresIn: '5m' });
+        // ── INCREMENT 3: GRADUAL ROLLOUT & FALLBACK ──
+        const rolloutPct = await this.getRolloutPct();
+        const useKms = Math.random() * 100 < rolloutPct;
 
-            const response = await fetch('http://localhost:4001/internal/sign', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ proofId: proof.id })
+        let signedProofResult = null;
+        let kmsSuccess = false;
+
+        if (useKms) {
+            try {
+                const jwt = require('jsonwebtoken');
+                const token = jwt.sign({ service: 'api' }, process.env.INTERNAL_SIGNER_SECRET || 'dev-internal-secret', { expiresIn: '5m' });
+
+                const response = await fetch('http://localhost:4001/internal/sign', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ proofId: proof.id })
+                });
+
+                if (!response.ok) {
+                    const errBody = await response.text();
+                    throw new Error(`Signer returned ${response.status}: ${errBody}`);
+                }
+
+                signedProofResult = await response.json();
+
+                // ── GUARDRAIL 2: SELF-VERIFICATION (WORKER SIDE) ──
+                const updatedProof = await this.prisma.proof.findUnique({ where: { id: proof.id } });
+                if (!updatedProof || !updatedProof.signatureB64) {
+                    throw new Error('Signer succeeded but DB not updated with signature');
+                }
+
+                const rawSigBuffer = Buffer.from(
+                    updatedProof.signatureB64.replace(/-/g, '+').replace(/_/g, '/'),
+                    'base64'
+                );
+
+                if (!publicKeyB64) {
+                    throw new Error('SIGNING_PUBLIC_KEY_B64 not configured');
+                }
+                const publicKeyBytes = Buffer.from(publicKeyB64, 'base64');
+                const spkiPrefix = Buffer.from('302a300506032b6570032100', 'hex');
+                const fullSpki = Buffer.concat([spkiPrefix, publicKeyBytes]);
+                
+                const publicKeyObject = crypto.createPublicKey({
+                    key: fullSpki,
+                    format: 'der',
+                    type: 'spki'
+                });
+
+                const decodedPayload = Buffer.from(updatedProof.payloadB64.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+                
+                if (!crypto.verify(null, decodedPayload, publicKeyObject, rawSigBuffer)) {
+                     throw new Error('Worker-side KMS signature self-verification failed');
+                }
+
+                kmsSuccess = true;
+            } catch (error) {
+                console.error('KMS Signer Service Error, falling back to legacy:', error);
+                // Fallback to legacy
+                kmsSuccess = false;
+            }
+        }
+
+        if (!kmsSuccess) {
+            // Fallback to legacy CPU-bound signer
+            console.log(`[ProofsService] Using legacy local signer for proof ${proof.id}`);
+            const signedProof = await signProof({
+                kid,
+                youtubeVideoId: video.platformId,
+                youtubeChannelId: video.channel.platformId,
+                expiresAt,
+                privateKeyB64,
+                contentHash: dto.content_hash,
+                perceptualHashes,
+                perceptualHashVersion
             });
 
-            if (!response.ok) {
-                const errBody = await response.text();
-                throw new Error(`Signer returned ${response.status}: ${errBody}`);
-            }
-
-            signedProofResult = await response.json();
-
-            // The signer updates the DB asynchronously, but we need the signed record for the return payload.
-            // In a robust implementation, the signer would return the full updated record, or we fetch it.
-            // We'll refetch it.
-        } catch (error) {
-            console.error('Signer Service Error:', error);
-            // Optionally delete the pending proof, or leave it for async cleanup
-            throw new BadRequestException('Failed to sign proof via isolated signer: ' + (error as any).message);
+            await this.prisma.proof.update({
+                where: { id: proof.id },
+                data: {
+                    alg: signedProof.alg,
+                    kid: signedProof.kid,
+                    payloadJson: signedProof.payload_json as any,
+                    payloadB64: signedProof.payload_b64,
+                    signatureB64: signedProof.signature_b64,
+                    status: 'active' as any,
+                },
+            });
         }
 
         const completedProof = await this.prisma.proof.findUnique({

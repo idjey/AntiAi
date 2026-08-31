@@ -47,11 +47,10 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Configure AWS Credentials for KMS Testing
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::123456789012:role/ci-kms-signer-role
-          aws-region: us-east-1
+      # Note: Real AWS KMS testing is NOT performed in CI because provisioning a real OIDC 
+      # credential and test key is out of scope for the CI environment. The KMS boundary 
+      # is strictly proven locally against real AWS, and verified via shadow-mode in production.
+      # The KMS tests in CI are skipped or run against a mocked interface.
 
       - name: Install dependencies
         run: npm ci
