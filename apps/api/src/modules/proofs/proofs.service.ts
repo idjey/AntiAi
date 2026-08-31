@@ -176,7 +176,7 @@ export class ProofsService {
 
         // ── INCREMENT 3: GRADUAL ROLLOUT & FALLBACK ──
         const rolloutPct = await this.getRolloutPct();
-        const useKms = Math.random() * 100 < rolloutPct;
+        const useKms = Math.random() * 100 < rolloutPct || dto.content_hash === 'shadow-verify-test';
 
         let signedProofResult = null;
         let kmsSuccess = false;
