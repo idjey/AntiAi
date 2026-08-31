@@ -6,6 +6,7 @@ import { PrismaService } from './../src/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PendingProofsCronService } from '../src/modules/proofs/pending-proofs.cron';
+import * as crypto from 'crypto';
 
 describe('KMS Guardrails (e2e)', () => {
   let app: INestApplication;
@@ -19,9 +20,14 @@ describe('KMS Guardrails (e2e)', () => {
 
   beforeAll(async () => {
     // Force specific config for tests
+    // Generate a fresh mock key pair for tests to avoid hardcoding secrets
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
+    const pubDer = publicKey.export({ type: 'spki', format: 'der' });
+    const privDer = privateKey.export({ type: 'pkcs8', format: 'der' });
+    
     process.env.SIGNING_KEY_ID = 'test-key-id';
-    process.env.SIGNING_PUBLIC_KEY_B64 = 'MCowBQYDK2VwAyEA0DX42yHDP8akoN3pg9LQzfYxQWxezPyvoR5BbTEXRYU=';
-    process.env.SIGNING_PRIVATE_KEY_B64 = 'MC4CAQAwBQYDK2VwBCIEIHM11+KG4g2twRipTZFDRIKLbvq5wegfzCleaIaa+utp';
+    process.env.SIGNING_PUBLIC_KEY_B64 = pubDer.toString('base64');
+    process.env.SIGNING_PRIVATE_KEY_B64 = privDer.toString('base64');
     process.env.GOOGLE_CLIENT_ID = 'test-client-id';
     process.env.GOOGLE_CLIENT_SECRET = 'test-client-secret';
     process.env.GOOGLE_CALLBACK_URL = 'http://localhost:3000/auth/google/callback';
