@@ -184,9 +184,11 @@ export class ProofsService {
         if (useKms) {
             try {
                 const jwt = require('jsonwebtoken');
-                const token = jwt.sign({ service: 'api' }, process.env.INTERNAL_SIGNER_SECRET || 'dev-internal-secret', { expiresIn: '5m' });
+                const internalSecret = this.configService.get<string>('INTERNAL_SIGNER_SECRET') || 'dev-internal-secret';
+                const token = jwt.sign({ service: 'api' }, internalSecret, { expiresIn: '5m' });
 
-                const response = await fetch('http://localhost:4001/internal/sign', {
+                const signerUrl = this.configService.get<string>('SIGNER_URL') || 'http://localhost:4001';
+                const response = await fetch(`${signerUrl}/internal/sign`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
