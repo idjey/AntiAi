@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "description": "AntiAI.me Isolated Signer Service",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node dist/src/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "test": "jest",
     "test:e2e": "jest --config ./test/jest-e2e.json",
