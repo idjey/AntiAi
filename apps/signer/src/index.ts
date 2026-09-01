@@ -28,7 +28,7 @@ server.register(signRoute, { prefix: '/internal' });
 
 const start = async () => {
   try {
-    await server.listen({ port: 4001, host: '0.0.0.0' });
+    await server.listen({ port: 4001, host: '::' });
     server.log.info(`Signer service listening on port 4001`);
   } catch (err) {
     server.log.error(err);
