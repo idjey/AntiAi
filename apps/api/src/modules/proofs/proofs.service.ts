@@ -218,10 +218,11 @@ export class ProofsService {
                     'base64'
                 );
 
-                if (!publicKeyB64) {
-                    throw new Error('SIGNING_PUBLIC_KEY_B64 not configured');
+                const signingKeyRecord = await this.prisma.signingKey.findUnique({ where: { id: updatedProof.kid } });
+                if (!signingKeyRecord || !signingKeyRecord.publicKeyB64) {
+                    throw new Error('Signing key not found in database for proof');
                 }
-                const publicKeyBytes = Buffer.from(publicKeyB64, 'base64');
+                const publicKeyBytes = Buffer.from(signingKeyRecord.publicKeyB64, 'base64');
                 const spkiPrefix = Buffer.from('302a300506032b6570032100', 'hex');
                 const fullSpki = Buffer.concat([spkiPrefix, publicKeyBytes]);
                 
